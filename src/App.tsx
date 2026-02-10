@@ -3,23 +3,44 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ScreeningProvider } from "./contexts/ScreeningContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import PediScreenLayout from "./components/pediscreen/PediScreenLayout";
+import PediScreenHome from "./pages/PediScreenHome";
+import ScreeningScreen from "./pages/ScreeningScreen";
+import ResultsScreen from "./pages/ResultsScreen";
+import ScreeningHistory from "./pages/ScreeningHistory";
+import Profiles from "./pages/Profiles";
+import Settings from "./pages/Settings";
+import Education from "./pages/Education";
+import LearnMore from "./pages/LearnMore";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+      <ScreeningProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/pediscreen" element={<PediScreenLayout />}>
+              <Route index element={<PediScreenHome />} />
+              <Route path="screening" element={<ScreeningScreen />} />
+              <Route path="results" element={<ResultsScreen />} />
+              <Route path="history" element={<ScreeningHistory />} />
+              <Route path="profiles" element={<Profiles />} />
+              <Route path="settings" element={<Settings />} />
+              <Route path="education" element={<Education />} />
+              <Route path="learn-more" element={<LearnMore />} />
+            </Route>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </ScreeningProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
