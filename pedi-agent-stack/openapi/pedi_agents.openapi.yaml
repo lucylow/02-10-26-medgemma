@@ -1,0 +1,226 @@
+openapi: 3.0.3
+info:
+  title: PediScreen Agents API
+  version: "1.0.0"
+  description: API spec for Intake, Embedding, VisionQA, Temporal, MedGemma, Safety, Jobs, and Webhooks
+servers:
+  - url: http://localhost:7000
+paths:
+  /v1/intake:
+    post:
+      summary: Intake new case
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Intake'
+      responses:
+        '201':
+          description: Accepted intake
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseRecord'
+        '400':
+          description: Bad request
+  /v1/embed:
+    post:
+      summary: Return embedding (multipart file or pass-through)
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Embedding
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmbeddingItem'
+  /v1/visionqa:
+    post:
+      summary: Vision quality and features extraction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                case_id:
+                  type: string
+                embedding:
+                  $ref: '#/components/schemas/EmbeddingItem'
+                image_url:
+                  type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VisionQAResponse'
+  /v1/temporal/compare:
+    post:
+      summary: Compare embedding with case history
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                case_id:
+                  type: string
+                embedding:
+                  $ref: '#/components/schemas/EmbeddingItem'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemporalOutput'
+  /v1/medgemma/infer:
+    post:
+      summary: Infer structured screening JSON
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MedGemmaRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedGemmaOutput'
+        '202':
+          description: Accepted (async)
+  /v1/safety/check:
+    post:
+      summary: Run safety checks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                medgemma_output:
+                  $ref: '#/components/schemas/MedGemmaOutput'
+                observations:
+                  type: string
+      responses:
+        '200':
+          description: Safety result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SafetyResult'
+  /v1/jobs/{job_id}:
+    get:
+      summary: Job status
+      parameters:
+        - in: path
+          name: job_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string }
+                  result: { type: object }
+  /v1/webhooks/register:
+    post:
+      summary: Register webhook for clinic notifications
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                url: { type: string }
+                secret_name: { type: string }
+      responses:
+        '201':
+          description: webhook registered
+components:
+  schemas:
+    Intake:
+      type: object
+      required: [age_months]
+      properties:
+        case_id: { type: string }
+        age_months: { type: integer }
+        observations: { type: string }
+        consent: { type: object }
+        image_url: { type: string }
+    CaseRecord:
+      type: object
+      properties:
+        case_id: { type: string }
+        normalized: { type: object }
+    EmbeddingItem:
+      type: object
+      properties:
+        model: { type: string }
+        shape:
+          type: array
+          items: { type: integer }
+        b64: { type: string }
+        emb_version: { type: string }
+    VisionQAResponse:
+      type: object
+      properties:
+        features: { type: object }
+        mask_url: { type: string }
+        confidence: { type: number }
+    TemporalOutput:
+      type: object
+      properties:
+        delta_cosine: { type: number }
+        stability: { type: string }
+    MedGemmaRequest:
+      type: object
+      properties:
+        case_id: { type: string }
+        age_months: { type: integer }
+        observations: { type: string }
+        features: { type: object }
+        temporal: { type: object }
+        examples:
+          type: array
+          items: { type: object }
+    MedGemmaOutput:
+      type: object
+      properties:
+        summary:
+          type: array
+          items: { type: string }
+        risk: { type: string }
+        rationale: { type: string }
+        next_steps:
+          type: array
+          items: { type: string }
+        confidence: { type: number }
+        adapter_id: { type: string }
+        model_version: { type: string }
+    SafetyResult:
+      type: object
+      properties:
+        ok: { type: boolean }
+        reasons:
+          type: array
+          items: { type: string }

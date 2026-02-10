@@ -1,0 +1,5 @@
+fastapi==0.95.2
+uvicorn[standard]==0.22.0
+pillow==10.1.0
+numpy==1.24.3
+loguru==0.7.0

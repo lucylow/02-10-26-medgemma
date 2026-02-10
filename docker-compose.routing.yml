@@ -1,0 +1,41 @@
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  orchestrator:
+    build:
+      context: .
+      dockerfile: app/backend/Dockerfile
+    command: uvicorn app.backend.orchestrator.main:app --host 0.0.0.0 --port 7000
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - MEDGEMMA_URL=http://medgemma-service:5000/v1/medgemma/infer
+    ports:
+      - "7000:7000"
+    depends_on:
+      - redis
+
+  worker:
+    build:
+      context: .
+      dockerfile: app/backend/Dockerfile
+    command: celery -A app.backend.worker.tasks worker --loglevel=info
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - ORCHESTRATOR_URL=http://orchestrator:7000
+    depends_on:
+      - redis
+      - orchestrator
+
+  # Specialized Agent Services (Stubs/Examples)
+  medgemma-service:
+    build:
+      context: .
+      dockerfile: app/backend/Dockerfile
+    command: uvicorn app.backend.main:app --host 0.0.0.0 --port 5000
+    environment:
+      - GEMMA3_ENABLED=1
+    ports:
+      - "5000:5000"
