@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Camera, Upload, X, Loader2, Shield, Brain, CheckCircle2, Circle, Eye, Sparkles, Scan } from 'lucide-react';
+import { Camera, Upload, X, Loader2, Shield, Brain, CheckCircle2, Circle, Eye, Sparkles, Scan, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';

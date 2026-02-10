@@ -63,7 +63,7 @@ const Profiles = () => {
                     <div className={`w-14 h-14 rounded-2xl ${child.color} flex items-center justify-center text-xl font-bold`}>
                       {child.initials}
                     </div>
-                    <Badge variant={child.status === 'On track' ? 'success' : 'warning'} className="rounded-full">
+                    <Badge variant={child.status === 'On track' ? 'default' : 'destructive'} className="rounded-full">
                       {child.status}
                     </Badge>
                   </div>
