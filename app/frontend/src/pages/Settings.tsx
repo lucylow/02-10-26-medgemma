@@ -119,7 +119,7 @@ const Settings = () => {
                   <Label>Model Precision</Label>
                   <div className="grid grid-cols-3 gap-2">
                     <Button variant="outline" className="text-xs">4-bit (Fastest)</Button>
-                    <Button variant="primary" className="text-xs">8-bit (Balanced)</Button>
+                    <Button variant="default" className="text-xs">8-bit (Balanced)</Button>
                     <Button variant="outline" className="text-xs">FP16 (Precise)</Button>
                   </div>
                 </div>

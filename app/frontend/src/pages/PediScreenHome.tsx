@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Baby, ClipboardList, Shield, Brain, ArrowRight, History, Sparkles, CheckCircle2, Users, HeartHandshake } from 'lucide-react';
+import { Baby, ClipboardList, Shield, Brain, ArrowRight, History, Sparkles, CheckCircle2, Users, HeartHandshake, Stethoscope } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const PediScreenHome = () => {

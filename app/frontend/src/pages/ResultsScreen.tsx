@@ -2,7 +2,7 @@ import React from 'react';
 import { useLocation, Link, Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Share2, Plus, CheckCircle, AlertTriangle, AlertCircle, HelpCircle, Printer, Calendar, Lightbulb, Target, TrendingUp, Clock, Users, Eye, Sparkles, Shield, Info, ClipboardCheck, MessageSquare, ExternalLink, Stethoscope } from 'lucide-react';
+import { Share2, Plus, CheckCircle, AlertTriangle, AlertCircle, HelpCircle, Printer, Calendar, Lightbulb, Target, TrendingUp, Clock, Users, Eye, Sparkles, Shield, Info, ClipboardCheck, MessageSquare, ExternalLink, Stethoscope, Brain } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
