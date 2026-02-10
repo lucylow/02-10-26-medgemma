@@ -309,10 +309,51 @@ const ScreeningScreen = () => {
                     style={{ width: `${Math.min(((currentScreening.observations?.length || 0) / 300) * 100, 100)}%` }} 
                   />
                 </div>
+              <div className="flex items-center gap-2 mt-2">
+                <div className="h-1.5 flex-1 bg-muted rounded-full overflow-hidden">
+                  <motion.div 
+                    className={cn(
+                      "h-full rounded-full",
+                      (currentScreening.observations?.length || 0) > 100 ? "bg-primary" : "bg-amber-500"
+                    )} 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${Math.min(((currentScreening.observations?.length || 0) / 300) * 100, 100)}%` }}
+                    transition={{ duration: 0.3 }}
+                  />
+                </div>
                 <span className="text-[10px] text-muted-foreground uppercase whitespace-nowrap">
-                  MedGemma Density: {(currentScreening.observations?.length || 0) > 100 ? 'Optimal' : 'Needs Detail'}
+                  {(currentScreening.observations?.length || 0) > 100 ? '✓ Good detail' : 'Add more detail'}
                 </span>
               </div>
+
+              {/* Smart suggestions based on observation length */}
+              {(currentScreening.observations?.length || 0) > 0 && (currentScreening.observations?.length || 0) < 80 && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  className="mt-3 p-3 rounded-lg bg-muted/50 border border-border"
+                >
+                  <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
+                    <Sparkles className="w-3 h-3" /> Try adding details about:
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {['Words they use', 'How they play', 'Eye contact', 'Following instructions', 'Physical milestones'].map((suggestion) => (
+                      <button
+                        key={suggestion}
+                        type="button"
+                        className="text-xs px-2.5 py-1 rounded-full bg-background border border-border text-muted-foreground hover:text-primary hover:border-primary/30 transition-colors"
+                        onClick={() => {
+                          const current = currentScreening.observations || '';
+                          const separator = current.endsWith('.') || current.endsWith(' ') || !current ? '' : '. ';
+                          updateScreening({ observations: current + separator + suggestion + ': ' });
+                        }}
+                      >
+                        {suggestion}
+                      </button>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
               </div>
             </CardContent>
           </Card>
@@ -497,8 +538,12 @@ const ScreeningScreen = () => {
                   )}
                 </Button>
               </motion.div>
-              <p className="text-center text-sm text-muted-foreground mt-4 italic">
-                ⚕️ This tool provides screening support only. Results require clinical review.
+              <div className="flex items-center justify-center gap-2 mt-4 text-sm text-muted-foreground">
+                <Shield className="w-4 h-4 text-primary" />
+                <p>Screening support only — results require clinical review.</p>
+              </div>
+              <p className="text-center text-xs text-muted-foreground/60 mt-2">
+                Takes about 10 seconds. Your data stays private.
               </p>
             </CardContent>
           </Card>
