@@ -6,8 +6,17 @@ rcli = redis.from_url(REDIS_URL, decode_responses=True)
 
 def write_job(job_id: str, mapping: dict):
     key = f"job:{job_id}"
-    rcli.hset(key, mapping=mapping)
-    rcli.expire(key, 60*60*24*7)
+    # Ensure all values are strings for Redis HSET
+    safe = {}
+    for k, v in mapping.items():
+        if isinstance(v, str):
+            safe[k] = v
+        elif isinstance(v, (dict, list)):
+            safe[k] = json.dumps(v)
+        else:
+            safe[k] = str(v)
+    rcli.hset(key, mapping=safe)
+    rcli.expire(key, 60 * 60 * 24 * 7)
 
 def read_job(job_id: str) -> dict:
     key = f"job:{job_id}"

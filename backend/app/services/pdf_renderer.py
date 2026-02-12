@@ -82,7 +82,12 @@ def render_report_html(report: Dict) -> str:
 
 
 def generate_pdf_bytes(report: Dict) -> bytes:
-    """Render report to PDF bytes using WeasyPrint."""
+    """Render report to PDF bytes using WeasyPrint.
+    Uses TechnicalReport renderer when report has technical_summary + domains.
+    """
+    if report.get("technical_summary") is not None and report.get("domains") is not None:
+        from app.renderers.report_renderer import render_pdf
+        return render_pdf(report)
     try:
         from weasyprint import HTML
 

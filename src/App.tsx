@@ -19,6 +19,7 @@ import Education from "./pages/Education";
 import LearnMore from "./pages/LearnMore";
 import RadiologyQueue from "./pages/RadiologyQueue";
 import TechnicalWriter from "./pages/TechnicalWriter";
+import DetailedReportEditor from "./pages/DetailedReportEditor";
 
 const queryClient = new QueryClient();
 
@@ -47,6 +48,7 @@ const App = () => {
               <Route path="learn-more" element={<LearnMore />} />
               <Route path="radiology" element={<RadiologyQueue />} />
               <Route path="technical-writer" element={<TechnicalWriter />} />
+              <Route path="report/:reportId" element={<DetailedReportEditor />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

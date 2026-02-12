@@ -29,3 +29,27 @@ def verify_signature(secret: str, payload_bytes: bytes, signature_hex: str) -> b
     mac = hmac.new(secret.encode("utf-8"), payload_bytes, digestmod=hashlib.sha256).hexdigest()
     # Use hmac.compare_digest to avoid timing attacks
     return hmac.compare_digest(mac, signature_hex)
+
+
+def deliver_webhook(clinic_id: str, event: dict) -> bool:
+    """
+    Deliver webhook event to registered clinic URL.
+    Returns True if delivery succeeded, False otherwise.
+    """
+    import requests
+    from loguru import logger
+
+    wh = get_webhook(clinic_id)
+    if not wh:
+        return False
+    url = wh["url"]
+    secret = wh["secret"]
+    sig = sign_payload(secret, event)
+    headers = {"Content-Type": "application/json", "X-PediSig": sig}
+    try:
+        r = requests.post(url, json=event, headers=headers, timeout=6)
+        r.raise_for_status()
+        return True
+    except Exception as e:
+        logger.error("Webhook delivery failed for clinic %s: %s", clinic_id, e)
+        return False

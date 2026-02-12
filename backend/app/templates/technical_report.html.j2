@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Technical Report — {{ report.report_id }}</title>
+  <style>
+    body { font-family: 'Segoe UI', system-ui, sans-serif; color: #111; margin: 28px; max-width: 800px; }
+    h1 { color: #1a73e8; font-size: 1.5rem; }
+    .meta { color: #666; font-size: 12px; margin-bottom: 12px; }
+    .section { margin-top: 18px; padding-bottom: 8px; border-bottom: 1px solid #eee; }
+    .section h3 { font-size: 1rem; margin-bottom: 6px; }
+    .note { font-size: 13px; color: #444; line-height: 1.5; }
+    ul, ol { margin-top: 8px; padding-left: 20px; }
+    .provenance { font-size: 11px; color: #888; margin-top: 4px; }
+    .domain { margin: 8px 0; padding: 8px; background: #f8f9fa; border-radius: 4px; }
+    .citation { font-size: 12px; margin: 4px 0; }
+    .citation a { color: #1a73e8; }
+    .risk-low { color: #0d7d0d; }
+    .risk-medium { color: #b86c00; }
+    .risk-high { color: #c5221f; }
+    .risk-unknown { color: #666; }
+  </style>
+</head>
+<body>
+  <h1>MedGemma — Developmental Screening Technical Report</h1>
+  <div class="meta">
+    Report ID: {{ report.report_id }} •
+    {% if report.screening_id %}Screening: {{ report.screening_id }} •{% endif %}
+    Status: {{ report.status }} •
+    Created: {{ report.created_at | default('') }}
+  </div>
+
+  <div class="section">
+    <h3>Overall Risk Assessment</h3>
+    <div class="note risk-{{ report.risk_assessment_overall | default('unknown') }}">
+      <strong>{{ report.risk_assessment_overall | default('unknown') | upper }}</strong>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>Clinical Summary</h3>
+    <div class="note">{{ report.clinical_summary | default('') }}</div>
+  </div>
+
+  <div class="section">
+    <h3>Technical Summary</h3>
+    <div class="note">{{ report.technical_summary | default('') }}</div>
+  </div>
+
+  <div class="section">
+    <h3>Parent Summary</h3>
+    <div class="note">{{ report.parent_summary | default('') }}</div>
+  </div>
+
+  {% if report.domains %}
+  <div class="section">
+    <h3>Domain Assessments</h3>
+    {% for d in report.domains %}
+    <div class="domain">
+      <strong>{{ d.domain }}</strong>: {{ d.rating }}
+      <div class="note">{{ d.rationale }}</div>
+      {% if d.quantitative_scores %}
+      <div class="provenance">Scores: {{ d.quantitative_scores }}</div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if report.evidence %}
+  <div class="section">
+    <h3>Evidence</h3>
+    <ul>
+      {% for ev in report.evidence %}
+      <li>
+        <span class="note">[{{ ev.type }}] {{ ev.summary }}</span>
+        {% if ev.provenance %}
+        <div class="provenance">Provenance: {{ ev.provenance.get('model', '') }} {{ ev.provenance.get('prompt_hash', '')[:16] or '' }}...</div>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <div class="section">
+    <h3>Recommendations</h3>
+    <ol>
+      {% for rec in report.recommendations | default([]) %}
+      <li class="note">{{ rec }}</li>
+      {% endfor %}
+    </ol>
+  </div>
+
+  {% if report.citations %}
+  <div class="section">
+    <h3>Citations</h3>
+    {% for c in report.citations %}
+    <div class="citation">
+      <span id="cit-{{ c.id }}">[{{ c.id }}]</span> {{ c.text }}
+      {% if c.url %}<a href="{{ c.url }}" target="_blank">Link</a>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="section">
+    <h3>Disclaimer</h3>
+    <div class="note">This report is an automated draft produced by MedGemma Detailed Writer. It requires clinician review and sign-off prior to insertion in the medical record.</div>
+  </div>
+</body>
+</html>

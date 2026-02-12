@@ -7,12 +7,17 @@ import json
 import time
 from typing import Optional
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, Body, status
+from fastapi.responses import Response
 
 from app.core.config import settings
 from app.core.logger import logger
 from app.core.security import get_api_key
+from app.security.google_auth import require_clinician
 from app.services.db import get_db
+from app.services.edit_guard import validate_edit
+from app.services.fda_mapper import map_report_to_fda
+from app.services.pdf_exporter import export_report_pdf
 from app.services.pdf_renderer import generate_pdf_bytes
 from app.services.report_generator import generate_report_from_screening
 
@@ -114,6 +119,67 @@ async def get_report_by_screening(
     }
 
 
+@router.post("/api/reports/{report_id}/patch")
+async def patch_report(
+    report_id: str,
+    body: dict = Body(...),
+    api_key: str = Depends(get_api_key),
+):
+    """
+    Apply clinician edits to a draft report. Merges edits into draft_json,
+    appends audit entry, returns updated draft.
+    """
+    db = get_db()
+    doc = await db.reports.find_one({"report_id": report_id})
+    if not doc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="report not found")
+    if doc.get("status") != "draft":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot patch a finalized report",
+        )
+
+    draft = doc.get("draft_json") or {}
+    if isinstance(draft, dict) and "draft_json" in draft:
+        draft = draft.get("draft_json", draft)
+    draft = dict(draft) if isinstance(draft, dict) else {}
+
+    # Merge clinician edits
+    allowed = ("clinical_summary", "technical_summary", "parent_summary", "recommendations")
+    changes = {}
+    for k in allowed:
+        if k in body:
+            val = body[k]
+            if k == "recommendations" and isinstance(val, str):
+                val = [r.strip() for r in val.split("\n") if r.strip()]
+            draft[k] = val
+            changes[k] = val
+
+    await db.reports.update_one(
+        {"report_id": report_id},
+        {"$set": {"draft_json": draft}},
+    )
+
+    try:
+        await db.report_audit.insert_one(
+            {
+                "report_id": report_id,
+                "action": "edited",
+                "actor": "clinician",
+                "payload": {"changes": changes},
+                "created_at": time.time(),
+            }
+        )
+    except Exception as e:
+        logger.warning("Audit log insert failed: %s", e)
+
+    return {
+        "report_id": report_id,
+        "draft_json": draft,
+        "status": "draft",
+    }
+
+
 @router.get("/api/reports/{report_id}")
 async def get_report(report_id: str, api_key: str = Depends(get_api_key)):
     """Fetch a report by ID."""
@@ -137,16 +203,31 @@ async def get_report(report_id: str, api_key: str = Depends(get_api_key)):
     }
 
 
+@router.get("/api/reports/drafts")
+async def list_drafts(clinician: dict = Depends(require_clinician)):
+    """List draft reports for clinician dashboard (requires Google Identity)."""
+    db = get_db()
+    cursor = db.reports.find({"status": "draft"}).sort("created_at", -1)
+    items = []
+    async for doc in cursor:
+        items.append({
+            "report_id": doc.get("report_id"),
+            "screening_id": doc.get("screening_id"),
+            "created_at": doc.get("created_at"),
+        })
+    return {"items": items}
+
+
 @router.post("/api/reports/{report_id}/approve")
 async def approve_report(
     report_id: str,
+    clinician: dict = Depends(require_clinician),
     clinician_id: str = Form(""),
     sign_note: Optional[str] = Form(None),
     send_to_ehr: Optional[bool] = Form(False),
     fhir_token: Optional[str] = Form(None),
     clinical_summary: Optional[str] = Form(None),
     recommendations: Optional[str] = Form(None),
-    api_key: str = Depends(get_api_key),
 ):
     """
     Clinician approves a draft report. This endpoint:
@@ -173,8 +254,9 @@ async def approve_report(
         final_json["recommendations"] = [
             r.strip() for r in recommendations.split("\n") if r.strip()
         ]
+    clinician_email = clinician.get("email") or clinician_id or "clinician"
     final_json["clinician_approval"] = {
-        "clinician_id": clinician_id or "clinician",
+        "clinician_id": clinician_email,
         "signed_at": int(time.time()),
         "note": sign_note or "",
     }
@@ -186,7 +268,7 @@ async def approve_report(
             "$set": {
                 "final_json": final_json,
                 "status": "finalized",
-                "clinician_id": clinician_id or "clinician",
+                "clinician_id": clinician_email,
                 "clinician_signed_at": time.time(),
             }
         },
@@ -198,7 +280,7 @@ async def approve_report(
             {
                 "report_id": report_id,
                 "action": "signed",
-                "actor": clinician_id or "clinician",
+                "actor": clinician_email,
                 "payload": {"sign_note": sign_note},
                 "created_at": time.time(),
             }
@@ -234,6 +316,64 @@ async def approve_report(
         "ehr_response": ehr_response,
         "pdf_base64": pdf_b64,
     }
+
+
+@router.get("/api/reports/export/pdf")
+async def export_pdf(
+    report_id: str,
+    clinician: Optional[str] = None,
+    api_key: str = Depends(get_api_key),
+):
+    """Export report as PDF with locked sections (audit-ready, clinician-safe)."""
+    db = get_db()
+    doc = await db.reports.find_one({"report_id": report_id})
+    if not doc:
+        doc = await db.reports.find_one({"screening_id": report_id}, sort=[("created_at", -1)])
+    if not doc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="report not found")
+    report = doc.get("final_json") or doc.get("draft_json") or {}
+    if isinstance(report, dict) and "draft_json" in report:
+        report = report.get("draft_json", report)
+    version = "final" if doc.get("status") == "finalized" else "draft"
+    clinician_name = doc.get("clinician_id") or clinician
+    pdf = export_report_pdf(report, clinician_name, version)
+    return Response(
+        pdf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": "attachment; filename=pediatric_report.pdf"},
+    )
+
+
+@router.get("/api/reports/regulatory/fda-map")
+async def fda_mapping(
+    report_id: str,
+    api_key: str = Depends(get_api_key),
+):
+    """Return FDA SaMD vs CDS risk mapping for a report."""
+    db = get_db()
+    doc = await db.reports.find_one({"report_id": report_id})
+    if not doc:
+        # Try by screening_id
+        doc = await db.reports.find_one({"screening_id": report_id}, sort=[("created_at", -1)])
+    if not doc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="report not found")
+    report = doc.get("final_json") or doc.get("draft_json") or {}
+    if isinstance(report, dict) and "draft_json" in report:
+        report = report.get("draft_json", report)
+    return map_report_to_fda(report)
+
+
+@router.post("/api/reports/validate-edit")
+async def validate_edit_endpoint(
+    body: dict = Body(...),
+    api_key: str = Depends(get_api_key),
+):
+    """Validate edits against safety constraints; returns flags if violations detected."""
+    content = body.get("content", "")
+    if isinstance(content, list):
+        content = " ".join(str(c) for c in content)
+    flags = validate_edit(str(content))
+    return {"valid": len(flags) == 0, "flags": flags}
 
 
 @router.get("/api/reports")

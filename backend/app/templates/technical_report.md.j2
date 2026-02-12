@@ -1,0 +1,77 @@
+# MedGemma — Developmental Screening Technical Report
+
+**Report ID:** {{ report.report_id }}
+{% if report.screening_id %}**Screening:** {{ report.screening_id }}{% endif %}
+**Status:** {{ report.status }}
+**Created:** {{ report.created_at | default('') }}
+
+---
+
+## Overall Risk Assessment
+
+**{{ report.risk_assessment_overall | default('unknown') | upper }}**
+
+---
+
+## Clinical Summary
+
+{{ report.clinical_summary | default('') }}
+
+---
+
+## Technical Summary
+
+{{ report.technical_summary | default('') }}
+
+---
+
+## Parent Summary
+
+{{ report.parent_summary | default('') }}
+
+---
+
+## Domain Assessments
+
+{% for d in report.domains | default([]) %}
+### {{ d.domain }}
+
+- **Rating:** {{ d.rating }}
+- **Rationale:** {{ d.rationale }}
+{% if d.quantitative_scores %}
+- **Scores:** {{ d.quantitative_scores }}
+{% endif %}
+
+{% endfor %}
+
+---
+
+## Evidence
+
+{% for ev in report.evidence | default([]) %}
+- [{{ ev.type }}] {{ ev.summary }}
+  {% if ev.provenance %}*(Provenance: {{ ev.provenance.get('model', '') }})*{% endif %}
+
+{% endfor %}
+
+---
+
+## Recommendations
+
+{% for rec in report.recommendations | default([]) %}
+{{ loop.index }}. {{ rec }}
+
+{% endfor %}
+
+---
+
+## Citations
+
+{% for c in report.citations | default([]) %}
+- [{{ c.id }}] {{ c.text }}{% if c.url %} — [Link]({{ c.url }}){% endif %}
+
+{% endfor %}
+
+---
+
+*This report is an automated draft produced by MedGemma Detailed Writer. It requires clinician review and sign-off prior to insertion in the medical record.*

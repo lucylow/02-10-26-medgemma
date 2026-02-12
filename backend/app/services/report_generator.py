@@ -148,6 +148,42 @@ async def generate_report_from_screening(
             "influence": 0.3,
         })
 
+    # 3b. MedSigLIP image embeddings + longitudinal storage (Vertex or HF fallback)
+    if image_bytes:
+        try:
+            from app.services.medsiglip_vertex import get_medsiglip_embedding
+            from app.services.embedding_store import store_embedding
+
+            vis = None
+            try:
+                import asyncio
+                vis = await asyncio.to_thread(get_medsiglip_embedding, image_bytes)
+            except Exception as e:
+                logger.warning("MedSigLIP Vertex failed: %s", e)
+                try:
+                    from app.services.medsiglip_hf import get_medsiglip_embedding_hf
+                    vis = await get_medsiglip_embedding_hf(image_bytes)
+                except Exception as e2:
+                    logger.warning("MedSigLIP HF fallback failed: %s", e2)
+
+            if vis and vis.get("embedding"):
+                visual_summary = vis.get("summary") or visual_summary_from_svc or ""
+                await store_embedding(
+                    screening_id=skeleton["screening_id"] or "",
+                    report_id=skeleton["report_id"],
+                    model=vis["model"],
+                    embedding=vis["embedding"],
+                    metadata={"summary": visual_summary},
+                )
+                skeleton["model_evidence"].append({
+                    "type": "image_embedding",
+                    "model": vis["model"],
+                    "summary": visual_summary,
+                    "influence": 0.25,
+                })
+        except Exception as e:
+            logger.warning("MedSigLIP embedding/storage skipped: %s", e)
+
     model_raw = analysis_baseline.get("model_raw")
     if model_raw:
         try:

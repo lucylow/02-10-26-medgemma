@@ -1,0 +1,36 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: Arial, sans-serif; color: #111; margin: 28px; }
+    h1 { color: #1a73e8; font-size: 1.25rem; }
+    .locked { background: #f3f3f3; border-left: 4px solid #888; padding: 12px; margin: 12px 0; }
+    .editable { border-left: 4px solid #4f46e5; padding: 12px; margin: 12px 0; }
+    .section h3 { font-size: 1rem; margin: 0 0 8px 0; }
+    .footer { font-size: 10px; color: #666; margin-top: 24px; padding-top: 12px; border-top: 1px solid #ddd; }
+    .meta { font-size: 11px; color: #666; margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+
+<h1>PediScreen AI – Clinical Summary</h1>
+<div class="meta">Report ID: {{ patient_id }} | Generated {{ generated_at }} | Version: {{ version }}</div>
+
+{% for s in sections %}
+  <div class="section {{ 'locked' if s.locked else 'editable' }}">
+    <h3>{{ s.title }}{% if s.locked %} (Locked){% endif %}</h3>
+    <p style="white-space: pre-wrap; margin: 0;">{{ s.content }}</p>
+  </div>
+{% endfor %}
+
+<hr />
+<div class="footer">
+  Reviewed by {{ clinician }}<br/>
+  Generated {{ generated_at }}<br/>
+  Version: {{ version }}<br/>
+  This document contains AI-assisted content and requires clinical interpretation.
+</div>
+
+</body>
+</html>

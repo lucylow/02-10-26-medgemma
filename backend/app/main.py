@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.logger import logger
-from app.api import analyze, screenings, health, technical_writing, radiology, reports
+from app.api import analyze, screenings, health, technical_writing, radiology, reports, medgemma_detailed, citations, infra
 
 app = FastAPI(title=settings.APP_NAME)
 
@@ -28,6 +28,9 @@ app.include_router(health.router)
 app.include_router(technical_writing.router)
 app.include_router(radiology.router)
 app.include_router(reports.router)
+app.include_router(medgemma_detailed.router)
+app.include_router(citations.router)
+app.include_router(infra.router)
 
 @app.on_event("startup")
 async def startup_event():

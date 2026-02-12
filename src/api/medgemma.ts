@@ -217,3 +217,68 @@ export async function approveReport(
   }
   return res.json();
 }
+
+/**
+ * Validate edits against safety constraints (prohibited phrases, required disclaimers).
+ */
+export async function validateEdit(
+  content: string,
+  apiKey?: string
+): Promise<{ valid: boolean; flags: string[] }> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (apiKey) headers['x-api-key'] = apiKey;
+  const res = await fetch(`${API_BASE}/reports/validate-edit`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ content }),
+  });
+  if (!res.ok) throw new Error('Validation failed');
+  return res.json();
+}
+
+/**
+ * Get FDA SaMD vs CDS regulatory mapping for a report.
+ */
+export async function getFdaMapping(
+  reportId: string,
+  apiKey?: string
+): Promise<{
+  classification: string;
+  criteria: string[];
+  sa_md_risk: string;
+  human_in_loop: boolean;
+  explainable: boolean;
+  no_autonomous_diagnosis: boolean;
+}> {
+  const headers: Record<string, string> = {};
+  if (apiKey) headers['x-api-key'] = apiKey;
+  const res = await fetch(
+    `${API_BASE}/reports/regulatory/fda-map?report_id=${encodeURIComponent(reportId)}`,
+    { headers }
+  );
+  if (!res.ok) throw new Error('FDA mapping not found');
+  return res.json();
+}
+
+/**
+ * Export report as PDF with locked sections (audit-ready). Fetches and triggers download.
+ */
+export async function exportReportPdf(
+  reportId: string,
+  clinician?: string,
+  apiKey?: string
+): Promise<void> {
+  const params = new URLSearchParams({ report_id: reportId });
+  if (clinician) params.set('clinician', clinician);
+  const headers: Record<string, string> = {};
+  if (apiKey) headers['x-api-key'] = apiKey;
+  const res = await fetch(`${API_BASE}/reports/export/pdf?${params}`, { headers });
+  if (!res.ok) throw new Error('PDF export failed');
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'pediatric_report.pdf';
+  a.click();
+  URL.revokeObjectURL(url);
+}

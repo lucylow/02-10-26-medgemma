@@ -36,6 +36,19 @@ class Settings(BaseSettings):
     # FHIR / EHR integration (SMART on FHIR)
     FHIR_BASE_URL: Optional[str] = Field(None, env="FHIR_BASE_URL")
 
+    # HL7 ORU push (radiology triage → EHR/PACS)
+    HL7_HOST: Optional[str] = Field(None, env="HL7_HOST")
+    HL7_PORT: int = Field(2575, env="HL7_PORT")
+
+    # MedSigLIP image embeddings (Vertex + HF fallback)
+    VERTEX_MEDSIGLIP_ENDPOINT_ID: Optional[str] = Field(None, env="VERTEX_MEDSIGLIP_ENDPOINT_ID")
+    HF_MEDSIGLIP_MODEL: Optional[str] = Field("google/medsiglip-base", env="HF_MEDSIGLIP_MODEL")
+    HF_MEDSIGLIP_TOKEN: Optional[str] = Field(None, env="HF_MEDSIGLIP_TOKEN")
+
+    # Clinician auth (Google Identity / OAuth2)
+    GOOGLE_CLIENT_ID: Optional[str] = Field(None, env="GOOGLE_CLIENT_ID")
+    CLINICIAN_EMAIL_DOMAIN: Optional[str] = Field("@yourclinic.org", env="CLINICIAN_EMAIL_DOMAIN")
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

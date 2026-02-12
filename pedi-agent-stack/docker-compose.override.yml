@@ -1,0 +1,36 @@
+version: "3.8"
+services:
+  flower:
+    image: mher/flower:1.0.0
+    command: flower --broker=redis://redis:6379/0 --port=5555
+    ports:
+      - "5555:5555"
+    depends_on:
+      - redis
+    restart: "no"
+
+  pgadmin:
+    image: dpage/pgadmin4:6.23
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@local
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "8080:80"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    restart: "no"
+
+  init-seed:
+    build:
+      context: ./orchestrator
+    command: ["python", "/app/scripts/register_webhook.py"]
+    environment:
+      - ORCHESTRATOR_URL=http://orchestrator:7000
+      - CLINIC_ID=demo-clinic
+      - WEBHOOK_URL=http://host.docker.internal:9000/webhook_receiver  # dev: replace with actual receiver
+    depends_on:
+      - orchestrator
+    restart: "no"
+
+volumes:
+  pgadmin-data:
