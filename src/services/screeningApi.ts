@@ -4,6 +4,10 @@ const API_BASE_URL = import.meta.env.VITE_MEDGEMMA_API_URL ||
 /** Supabase Edge Functions base URL (e.g. https://xxx.supabase.co/functions/v1). When set, uses FormData + multipart. */
 const SUPABASE_FUNCTION_URL = import.meta.env.VITE_SUPABASE_FUNCTION_URL;
 
+/** PediScreen FastAPI backend (e.g. http://localhost:8000). When set, uses FormData + x-api-key for /api/analyze. */
+const PEDISCREEN_BACKEND_URL = import.meta.env.VITE_PEDISCREEN_BACKEND_URL;
+const API_KEY = import.meta.env.VITE_API_KEY || 'dev-example-key';
+
 export type RiskLevel = 'low' | 'medium' | 'high' | 'unknown' | 'on_track' | 'monitor' | 'refer';
 
 export type SupportingEvidence = {
@@ -74,10 +78,55 @@ export type ScreeningRequest = {
 
 /**
  * Submit screening to MedGemma API for analysis.
+ * When VITE_PEDISCREEN_BACKEND_URL is set, uses FastAPI backend (FormData + x-api-key).
  * When VITE_SUPABASE_FUNCTION_URL is set, uses Supabase Edge Functions (FormData + multipart).
  */
 export const submitScreening = async (request: ScreeningRequest): Promise<ScreeningResult> => {
   try {
+    // PediScreen FastAPI backend: use FormData + x-api-key (matches backend/app/api/analyze)
+    if (PEDISCREEN_BACKEND_URL) {
+      const form = new FormData();
+      form.append('childAge', request.childAge);
+      form.append('domain', request.domain || '');
+      form.append('observations', request.observations);
+      if (request.imageFile) {
+        form.append('image', request.imageFile, request.imageFile.name);
+      }
+
+      const headers: Record<string, string> = {};
+      if (API_KEY) headers['x-api-key'] = API_KEY;
+
+      const response = await fetch(`${PEDISCREEN_BACKEND_URL}/api/analyze`, {
+        method: 'POST',
+        headers,
+        body: form,
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.detail || data.error || `HTTP ${response.status}`);
+      }
+
+      const r = data.report || {};
+      return {
+        success: true,
+        screeningId: data.screening_id,
+        report: {
+          riskLevel: mapRiskLevel(r.riskLevel || 'unknown'),
+          summary: r.summary || '',
+          keyFindings: r.keyFindings || [],
+          recommendations: r.recommendations || [],
+          supportingEvidence: {
+            fromParentReport: (r.evidence || []).filter((e: { type: string }) => e.type === 'text').map((e: { content: string }) => e.content),
+            fromAssessmentScores: [],
+            fromVisualAnalysis: (r.evidence || []).filter((e: { type: string }) => e.type === 'image').map((e: { content: string }) => e.content),
+          },
+        },
+        timestamp: data.timestamp ? String(data.timestamp) : new Date().toISOString(),
+        confidence: r.confidence,
+      };
+    }
+
     // Supabase Edge Functions: use FormData + multipart
     if (SUPABASE_FUNCTION_URL) {
       const form = new FormData();
@@ -192,7 +241,7 @@ export const submitScreening = async (request: ScreeningRequest): Promise<Screen
       success: true,
       screeningId: data.screening_id || data.screeningId,
       report: {
-        riskLevel: mapRiskLevel(riskStrat.level || riskStrat.risk_level || 'unknown'),
+        riskLevel: mapRiskLevel(riskStrat.level || riskStrat.risk_level || structuredReport.riskLevel || 'unknown'),
         riskRationale: riskStrat.rationale || '',
         summary: structuredReport.clinical_summary || data.clinical_summary || '',
         parentFriendlyExplanation: structuredReport.parent_friendly_explanation || '',
@@ -305,9 +354,31 @@ export type ScreeningListItem = {
 };
 
 /**
- * List screenings from Supabase (when VITE_SUPABASE_FUNCTION_URL is set).
+ * List screenings from backend.
+ * PediScreen backend: /api/screenings (x-api-key required).
+ * Supabase: /list_screenings when VITE_SUPABASE_FUNCTION_URL is set.
  */
 export const listScreenings = async (params?: { limit?: number; page?: number }): Promise<{ items: ScreeningListItem[] }> => {
+  if (PEDISCREEN_BACKEND_URL) {
+    const limit = params?.limit ?? 50;
+    const skip = ((params?.page ?? 0) * limit);
+    const headers: Record<string, string> = {};
+    if (API_KEY) headers['x-api-key'] = API_KEY;
+    const res = await fetch(`${PEDISCREEN_BACKEND_URL}/api/screenings?limit=${limit}&skip=${skip}`, { headers });
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    const items = (data.items || []).map((d: Record<string, unknown>) => ({
+      id: String(d._id || d.screening_id),
+      screening_id: String(d.screening_id || d._id),
+      child_age_months: Number(d.childAge ?? 0),
+      domain: d.domain as string | null,
+      observations: d.observations as string | null,
+      image_path: d.image_path as string | null,
+      report: (d.report as Record<string, unknown>) || {},
+      created_at: d.timestamp ? new Date((d.timestamp as number) * 1000).toISOString() : '',
+    }));
+    return { items };
+  }
   if (!SUPABASE_FUNCTION_URL) {
     return { items: [] };
   }
@@ -320,9 +391,28 @@ export const listScreenings = async (params?: { limit?: number; page?: number })
 };
 
 /**
- * Get a single screening by ID from Supabase.
+ * Get a single screening by ID.
+ * PediScreen backend: /api/screenings/{id} (x-api-key required).
+ * Supabase: /get_screening when VITE_SUPABASE_FUNCTION_URL is set.
  */
 export const getScreening = async (screeningId: string): Promise<ScreeningListItem | null> => {
+  if (PEDISCREEN_BACKEND_URL) {
+    const headers: Record<string, string> = {};
+    if (API_KEY) headers['x-api-key'] = API_KEY;
+    const res = await fetch(`${PEDISCREEN_BACKEND_URL}/api/screenings/${encodeURIComponent(screeningId)}`, { headers });
+    if (!res.ok) return null;
+    const d = await res.json();
+    return {
+      id: String(d._id || d.screening_id),
+      screening_id: String(d.screening_id || d._id),
+      child_age_months: Number(d.childAge ?? 0),
+      domain: d.domain as string | null,
+      observations: d.observations as string | null,
+      image_path: d.image_path as string | null,
+      report: d.report || {},
+      created_at: d.timestamp ? new Date(d.timestamp * 1000).toISOString() : '',
+    };
+  }
   if (!SUPABASE_FUNCTION_URL) return null;
   const res = await fetch(`${SUPABASE_FUNCTION_URL}/get_screening?id=${encodeURIComponent(screeningId)}`);
   if (!res.ok) return null;
@@ -335,12 +425,15 @@ export const getScreening = async (screeningId: string): Promise<ScreeningListIt
 export const checkApiHealth = async (): Promise<{ healthy: boolean; latency?: number }> => {
   try {
     const start = performance.now();
-    const response = await fetch(`${API_BASE_URL}/health`, {
+    const healthUrl = PEDISCREEN_BACKEND_URL
+      ? `${PEDISCREEN_BACKEND_URL}/health`
+      : `${API_BASE_URL}/health`;
+    const response = await fetch(healthUrl, {
       method: 'GET',
       signal: AbortSignal.timeout(5000),
     });
     const latency = performance.now() - start;
-    
+
     return {
       healthy: response.ok,
       latency: Math.round(latency),
