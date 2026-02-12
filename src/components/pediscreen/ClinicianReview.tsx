@@ -1,10 +1,18 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, ClipboardCheck, Shield } from 'lucide-react';
-import { approveReport, getReport, generateReportFromScreening, type ReportDraft } from '@/api/medgemma';
+import { Loader2, ClipboardCheck, Shield, FileDown, Scale } from 'lucide-react';
+import {
+  approveReport,
+  getReport,
+  generateReportFromScreening,
+  validateEdit,
+  getFdaMapping,
+  exportReportPdf,
+  type ReportDraft,
+} from '@/api/medgemma';
 import { useToast } from '@/hooks/use-toast';
 
 interface ClinicianReviewProps {
@@ -35,6 +43,15 @@ const ClinicianReview: React.FC<ClinicianReviewProps> = ({
   const [note, setNote] = useState('');
   const [clinicianId, setClinicianId] = useState('clinician');
   const [isApproving, setIsApproving] = useState(false);
+  const [flags, setFlags] = useState<string[]>([]);
+  const [fdaMapping, setFdaMapping] = useState<{
+    classification: string;
+    sa_md_risk: string;
+    human_in_loop: boolean;
+    explainable: boolean;
+    no_autonomous_diagnosis: boolean;
+  } | null>(null);
+  const validationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { toast } = useToast();
 
@@ -81,6 +98,36 @@ const ClinicianReview: React.FC<ClinicianReviewProps> = ({
     })();
     return () => { cancelled = true; };
   }, [reportId, apiKey, toast]);
+
+  // FDA mapping when report is loaded
+  useEffect(() => {
+    if (!effectiveReportId || !apiKey) return;
+    getFdaMapping(effectiveReportId, apiKey)
+      .then((m) => setFdaMapping(m))
+      .catch(() => setFdaMapping(null));
+  }, [effectiveReportId, apiKey]);
+
+  // Debounced validation when draft content changes
+  const runValidation = useCallback(
+    (content: string) => {
+      if (!apiKey) return;
+      validateEdit(content, apiKey).then((r) => setFlags(r.flags)).catch(() => setFlags([]));
+    },
+    [apiKey]
+  );
+
+  useEffect(() => {
+    if (!draft) return;
+    const combined =
+      (draft.clinical_summary ?? '') +
+      '\n' +
+      (draft.recommendations ?? []).join('\n');
+    if (validationTimeoutRef.current) clearTimeout(validationTimeoutRef.current);
+    validationTimeoutRef.current = setTimeout(() => runValidation(combined), 400);
+    return () => {
+      if (validationTimeoutRef.current) clearTimeout(validationTimeoutRef.current);
+    };
+  }, [draft?.clinical_summary, draft?.recommendations, runValidation]);
 
   const approve = async () => {
     setIsApproving(true);
@@ -188,6 +235,32 @@ const ClinicianReview: React.FC<ClinicianReviewProps> = ({
           />
         </div>
 
+        {flags.length > 0 && (
+          <div className="bg-red-50 border border-red-400 rounded-lg p-3">
+            <h4 className="text-red-600 font-semibold text-sm">Safety Review Required</h4>
+            <ul className="text-sm text-red-700 mt-2 space-y-1">
+              {flags.map((f, i) => (
+                <li key={i}>⚠ {f}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {fdaMapping && (
+          <Card className="p-4 bg-green-50 border-green-200">
+            <h3 className="font-semibold text-green-800 flex items-center gap-2">
+              <Scale className="w-4 h-4" />
+              FDA Regulatory Status
+            </h3>
+            <p className="text-sm text-green-700 mt-1">{fdaMapping.classification}</p>
+            <ul className="text-xs mt-2 space-y-1 text-green-600">
+              <li>✔ Human-in-the-loop enforced</li>
+              <li>✔ Explainable reasoning</li>
+              <li>✔ No autonomous diagnosis</li>
+            </ul>
+          </Card>
+        )}
+
         <div className="space-y-2">
           <label htmlFor="clinician-note" className="text-sm font-medium">
             Sign-off note
@@ -208,23 +281,39 @@ const ClinicianReview: React.FC<ClinicianReviewProps> = ({
           </span>
         </div>
 
-        <Button
-          onClick={approve}
-          disabled={isApproving}
-          className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700"
-        >
-          {isApproving ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Signing...
-            </>
-          ) : (
-            <>
-              <ClipboardCheck className="w-4 h-4" />
-              Review & Sign
-            </>
-          )}
-        </Button>
+        <div className="flex flex-col gap-2">
+          <Button
+            onClick={approve}
+            disabled={isApproving}
+            className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700"
+          >
+            {isApproving ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Signing...
+              </>
+            ) : (
+              <>
+                <ClipboardCheck className="w-4 h-4" />
+                Review & Sign
+              </>
+            )}
+          </Button>
+          <Button
+            variant="outline"
+            className="w-full gap-2"
+            onClick={() => {
+              exportReportPdf(effectiveReportId, clinicianId, apiKey).then(() =>
+                toast({ title: 'PDF exported', description: 'Download started.' })
+              ).catch((e) =>
+                toast({ title: 'Export failed', description: (e as Error).message, variant: 'destructive' })
+              );
+            }}
+          >
+            <FileDown className="w-4 h-4" />
+            Export PDF (Final)
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

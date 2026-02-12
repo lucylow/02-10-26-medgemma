@@ -15,6 +15,7 @@ pytest-asyncio==0.21.0
 httpx==0.24.0
 # MedGemmaService: Vertex AI / Hugging Face
 google-cloud-aiplatform>=1.26.0
+google-auth>=2.0.0
 redis>=4.2.0
 # Optional: for PHI redaction (pip install spacy && python -m spacy download en_core_web_sm)
 # spacy

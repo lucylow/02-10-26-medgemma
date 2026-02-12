@@ -13,7 +13,7 @@ from fastapi.responses import Response
 from app.core.config import settings
 from app.core.logger import logger
 from app.core.security import get_api_key
-from app.security.google_auth import require_clinician
+from app.security.google_auth import require_clinician, require_clinician_or_api_key
 from app.services.db import get_db
 from app.services.edit_guard import validate_edit
 from app.services.fda_mapper import map_report_to_fda
@@ -181,7 +181,10 @@ async def patch_report(
 
 
 @router.get("/api/reports/{report_id}")
-async def get_report(report_id: str, api_key: str = Depends(get_api_key)):
+async def get_report(
+    report_id: str,
+    _auth: dict = Depends(require_clinician_or_api_key),
+):
     """Fetch a report by ID."""
     db = get_db()
     doc = await db.reports.find_one({"report_id": report_id})
