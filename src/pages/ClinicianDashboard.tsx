@@ -21,8 +21,6 @@ declare global {
   }
 }
 
-const API_BASE = import.meta.env.VITE_MEDGEMMA_API_URL ||
-  (import.meta.env.DEV ? "http://localhost:8000/api" : "https://api.pediscreen.ai");
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
 
 export default function ClinicianDashboard() {

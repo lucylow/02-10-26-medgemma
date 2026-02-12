@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { RefreshCw, Upload, AlertCircle } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { RefreshCw, Upload, AlertCircle, BarChart3, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -21,7 +21,10 @@ import {
   fetchRadiologyQueue,
   uploadRadiologyStudy,
   reviewStudy,
+  fetchRadiologyBenchmark,
+  getExplainabilityImageUrl,
   type RadiologyStudy,
+  type RadiologyBenchmark,
 } from "@/services/radiologyApi";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -43,16 +46,22 @@ function PriorityBadge({ label }: { label: string }) {
 
 export default function RadiologyQueue() {
   const [items, setItems] = useState<RadiologyStudy[]>([]);
+  const [benchmark, setBenchmark] = useState<RadiologyBenchmark | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [reviewing, setReviewing] = useState<string | null>(null);
+  const [expandedExplain, setExpandedExplain] = useState<string | null>(null);
   const { toast } = useToast();
 
   const load = async () => {
     setLoading(true);
     try {
-      const { items: list } = await fetchRadiologyQueue();
-      setItems(list || []);
+      const [queueRes, benchRes] = await Promise.all([
+        fetchRadiologyQueue(),
+        fetchRadiologyBenchmark().catch(() => null),
+      ]);
+      setItems(queueRes.items || []);
+      setBenchmark(benchRes);
     } catch (e) {
       toast({ title: "Failed to load queue", description: String(e), variant: "destructive" });
       setItems([]);
@@ -163,6 +172,22 @@ export default function RadiologyQueue() {
         </form>
       </div>
 
+      {benchmark && items.length > 0 && (
+        <div className="rounded-lg border bg-card p-4 flex items-center gap-6">
+          <BarChart3 className="w-8 h-8 text-primary" />
+          <div>
+            <h3 className="text-sm font-medium">Time-to-Read Benchmark</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Prioritized queue vs baseline (all routine):{" "}
+              <span className="font-semibold text-foreground">
+                {benchmark.reduction_percent}% reduction
+              </span>{" "}
+              ({benchmark.baseline_avg_minutes} min → {benchmark.prioritized_avg_minutes} min avg)
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="rounded-lg border bg-card overflow-hidden">
         <div className="flex items-center gap-2 px-4 py-2 bg-muted/50 border-b">
           <AlertCircle className="w-4 h-4 text-muted-foreground" />
@@ -178,25 +203,27 @@ export default function RadiologyQueue() {
               <TableHead>Patient</TableHead>
               <TableHead>Modality</TableHead>
               <TableHead>AI Summary</TableHead>
+              <TableHead className="w-20">Explain</TableHead>
               <TableHead className="text-right">Override</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                   Loading…
                 </TableCell>
               </TableRow>
             ) : items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                   No pending studies
                 </TableCell>
               </TableRow>
             ) : (
               items.map((i) => (
-                <TableRow key={i.study_id}>
+                <React.Fragment key={i.study_id}>
+                <TableRow>
                   <TableCell>
                     <PriorityBadge label={i.override_priority || i.priority_label} />
                   </TableCell>
@@ -205,6 +232,24 @@ export default function RadiologyQueue() {
                   <TableCell>{i.modality}</TableCell>
                   <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
                     {i.ai_summary || "—"}
+                  </TableCell>
+                  <TableCell>
+                    {(i as RadiologyStudy & { has_explainability?: boolean }).has_explainability ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 px-2"
+                        onClick={() =>
+                          setExpandedExplain(
+                            expandedExplain === i.study_id ? null : i.study_id
+                          )
+                        }
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">—</span>
+                    )}
                   </TableCell>
                   <TableCell className="text-right">
                     {i.status === "pending" ? (
@@ -226,6 +271,24 @@ export default function RadiologyQueue() {
                     )}
                   </TableCell>
                 </TableRow>
+                {expandedExplain === i.study_id &&
+                  (i as RadiologyStudy & { has_explainability?: boolean }).has_explainability && (
+                    <TableRow key={`${i.study_id}-explain`}>
+                      <TableCell colSpan={7} className="bg-muted/30 p-4">
+                        <div className="flex items-start gap-4">
+                          <img
+                            src={getExplainabilityImageUrl(i.study_id)}
+                            alt="Explainability heatmap"
+                            className="max-h-48 rounded border object-contain"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Grad-CAM style overlay — visual evidence for AI triage. Non-diagnostic.
+                          </p>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </React.Fragment>
               ))
             )}
           </TableBody>

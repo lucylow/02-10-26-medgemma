@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     VERTEX_LOCATION: Optional[str] = Field(None, env="VERTEX_LOCATION")
     VERTEX_TEXT_ENDPOINT_ID: Optional[str] = Field(None, env="VERTEX_TEXT_ENDPOINT_ID")
     VERTEX_VISION_ENDPOINT_ID: Optional[str] = Field(None, env="VERTEX_VISION_ENDPOINT_ID")
+    VERTEX_RADIOLOGY_ENDPOINT_ID: Optional[str] = Field(None, env="VERTEX_RADIOLOGY_ENDPOINT_ID")
     REDIS_URL: Optional[str] = Field(None, env="REDIS_URL")
     ALLOW_PHI: bool = Field(False, env="ALLOW_PHI")  # default False for privacy
 

@@ -76,6 +76,11 @@ const Index = () => {
                 <ArrowRight className="w-4 h-4" />
               </Button>
             </Link>
+            <Link to="/clinician">
+              <Button variant="ghost" size="lg" className="gap-2 text-base px-6 text-muted-foreground hover:text-foreground">
+                Clinician Dashboard
+              </Button>
+            </Link>
             <Link to="/pediscreen/learn-more">
               <Button variant="outline" size="lg" className="gap-2 text-base px-8 rounded-xl">
                 How It Works

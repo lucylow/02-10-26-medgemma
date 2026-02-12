@@ -30,8 +30,8 @@ def dicom_to_png_bytes(dicom_bytes: bytes) -> bytes:
 
     # Windowing (safe default)
     if hasattr(ds, "WindowCenter") and hasattr(ds, "WindowWidth"):
-        center = float(ds.WindowCenter)
-        width = float(ds.WindowWidth)
+        center = float(ds.WindowCenter[0] if hasattr(ds.WindowCenter, "__len__") else ds.WindowCenter)
+        width = float(ds.WindowWidth[0] if hasattr(ds.WindowWidth, "__len__") else ds.WindowWidth)
         min_val = center - width / 2
         max_val = center + width / 2
         pixel_array = np.clip(pixel_array, min_val, max_val)

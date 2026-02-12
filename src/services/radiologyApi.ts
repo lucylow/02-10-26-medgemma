@@ -25,7 +25,7 @@ export type RadiologyStudy = {
   ai_summary?: string;
   override_priority?: string;
   reviewed_by?: string;
-  /** When present, explainability heatmap available at /api/radiology/{study_id}/explainability */
+  /** When true, explainability heatmap available at /api/radiology/{study_id}/explainability */
   has_explainability?: boolean;
 };
 
@@ -81,7 +81,8 @@ export async function reviewStudy(
 }
 
 export function getExplainabilityImageUrl(studyId: string): string {
-  return `${API_BASE}/api/radiology/${studyId}/explainability`;
+  const url = `${API_BASE}/api/radiology/${studyId}/explainability`;
+  return API_KEY ? `${url}?api_key=${encodeURIComponent(API_KEY)}` : url;
 }
 
 export async function fetchRadiologyBenchmark(): Promise<RadiologyBenchmark> {

@@ -61,7 +61,7 @@ const ClinicianReview: React.FC<ClinicianReviewProps> = ({
       try {
         let res: Awaited<ReturnType<typeof getReport>>;
         try {
-          res = await getReport(reportId, apiKey);
+          res = await getReport(reportId, apiKey, authToken);
         } catch {
           // If reportId looks like screening_id (ps-xxx), try to generate report first
           if (reportId.startsWith('ps-') || reportId.includes('-')) {
@@ -97,7 +97,7 @@ const ClinicianReview: React.FC<ClinicianReviewProps> = ({
       }
     })();
     return () => { cancelled = true; };
-  }, [reportId, apiKey, toast]);
+  }, [reportId, apiKey, authToken, toast]);
 
   // FDA mapping when report is loaded
   useEffect(() => {

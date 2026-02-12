@@ -180,6 +180,21 @@ async def patch_report(
     }
 
 
+@router.get("/api/reports/drafts")
+async def list_drafts(clinician: dict = Depends(require_clinician)):
+    """List draft reports for clinician dashboard (requires Google Identity)."""
+    db = get_db()
+    cursor = db.reports.find({"status": "draft"}).sort("created_at", -1)
+    items = []
+    async for doc in cursor:
+        items.append({
+            "report_id": doc.get("report_id"),
+            "screening_id": doc.get("screening_id"),
+            "created_at": doc.get("created_at"),
+        })
+    return {"items": items}
+
+
 @router.get("/api/reports/{report_id}")
 async def get_report(
     report_id: str,
@@ -204,21 +219,6 @@ async def get_report(
         "clinician_signed_at": doc.get("clinician_signed_at"),
         "created_at": doc.get("created_at"),
     }
-
-
-@router.get("/api/reports/drafts")
-async def list_drafts(clinician: dict = Depends(require_clinician)):
-    """List draft reports for clinician dashboard (requires Google Identity)."""
-    db = get_db()
-    cursor = db.reports.find({"status": "draft"}).sort("created_at", -1)
-    items = []
-    async for doc in cursor:
-        items.append({
-            "report_id": doc.get("report_id"),
-            "screening_id": doc.get("screening_id"),
-            "created_at": doc.get("created_at"),
-        })
-    return {"items": items}
 
 
 @router.post("/api/reports/{report_id}/approve")
