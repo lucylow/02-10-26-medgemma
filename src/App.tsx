@@ -20,6 +20,7 @@ import LearnMore from "./pages/LearnMore";
 import RadiologyQueue from "./pages/RadiologyQueue";
 import TechnicalWriter from "./pages/TechnicalWriter";
 import DetailedReportEditor from "./pages/DetailedReportEditor";
+import ClinicianDashboard from "./pages/ClinicianDashboard";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +38,7 @@ const App = () => {
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/clinician" element={<ClinicianDashboard />} />
             <Route path="/pediscreen" element={<PediScreenLayout />}>
               <Route index element={<PediScreenHome />} />
               <Route path="screening" element={<ScreeningScreen />} />

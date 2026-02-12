@@ -12,7 +12,7 @@ from fastapi.responses import Response
 
 from app.core.config import settings
 from app.core.logger import logger
-from app.core.security import get_api_key
+from app.core.security import get_api_key, get_api_key_from_header_or_query
 from app.services.db import get_db
 from app.services.radiology_vision import analyze_radiology_image
 from app.services.radiology_priority import classify_priority
@@ -114,18 +114,21 @@ async def get_queue(_: str = Depends(get_api_key)):
     Excludes explainability_image binary; includes has_explainability flag.
     """
     db = get_db()
-    cursor = db.radiology_studies.find(
-        {"status": "pending"},
-        {"explainability_image": 0},
-    ).sort([("priority_label", 1), ("uploaded_at", 1)])
+    pipeline = [
+        {"$match": {"status": "pending"}},
+        {
+            "$addFields": {
+                "has_explainability": {"$cond": [{"$ne": [{"$type": "$explainability_image"}, "missing"]}, True, False]}
+            }
+        },
+        {"$project": {"explainability_image": 0}},
+        {"$sort": [("priority_label", 1), ("uploaded_at", 1)]},
+    ]
     items = []
-    async for doc in cursor:
+    async for doc in db.radiology_studies.aggregate(pipeline):
         doc["_id"] = str(doc["_id"])
         if "uploaded_at" in doc and hasattr(doc["uploaded_at"], "isoformat"):
             doc["uploaded_at"] = doc["uploaded_at"].isoformat()
-        doc["has_explainability"] = "explainability_image" in (await db.radiology_studies.find_one(
-            {"study_id": doc["study_id"]}, {"explainability_image": 1}
-        ) or {})
         items.append(doc)
 
     # Sort: stat=1, urgent=2, routine=3, then uploaded_at asc
@@ -186,7 +189,7 @@ async def review_study(
 @router.get("/api/radiology/{study_id}/explainability")
 async def get_explainability_image(
     study_id: str,
-    _: str = Depends(get_api_key),
+    _: str = Depends(get_api_key_from_header_or_query),
 ):
     """
     Return Grad-CAM style explainability overlay for a study.

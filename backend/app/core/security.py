@@ -1,10 +1,24 @@
 # backend/app/core/security.py
 import os
-from fastapi import Header, HTTPException, status, Depends
+from fastapi import Header, HTTPException, Query, status, Depends
 from app.core.config import settings
 
 # In demo, use ADMIN_TOKEN env var or default (for Infra Dashboard)
 _ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "demo-admin-token")
+
+
+async def get_api_key_from_header_or_query(
+    x_api_key: str = Header(None, alias="x-api-key"),
+    api_key: str = Query(None),
+):
+    """Accept API key from header or query (for img src, etc.)."""
+    key = x_api_key or api_key
+    if not key or key != settings.API_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or missing API Key",
+        )
+    return key
 
 
 def admin_required(authorization: str = Header(None)):

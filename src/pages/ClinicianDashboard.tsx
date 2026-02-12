@@ -76,14 +76,24 @@ export default function ClinicianDashboard() {
             },
           });
           window.google.accounts.id.prompt();
+          const el = document.getElementById("google-signin-button");
+          if (el && window.google.accounts.id.renderButton) {
+            window.google.accounts.id.renderButton(el, {
+              type: "standard",
+              theme: "outline",
+              size: "large",
+              text: "signin_with",
+            });
+          }
         }
       };
-      if (document.readyState === "complete") {
-        initGoogle();
-      } else {
-        window.addEventListener("load", initGoogle);
-        return () => window.removeEventListener("load", initGoogle);
-      }
+      const t = setInterval(() => {
+        if (window.google?.accounts?.id) {
+          clearInterval(t);
+          initGoogle();
+        }
+      }, 100);
+      return () => clearInterval(t);
     }
   }, []);
 
