@@ -111,17 +111,21 @@ async def upload_study(
 async def get_queue(_: str = Depends(get_api_key)):
     """
     Get radiology worklist sorted by priority (stat > urgent > routine), then FIFO.
+    Excludes explainability_image binary; includes has_explainability flag.
     """
     db = get_db()
-    cursor = db.radiology_studies.find({"status": "pending"}).sort(
-        [("priority_label", 1), ("uploaded_at", 1)]
-    )
-    # MongoDB doesn't sort by custom enum order; we sort in Python
+    cursor = db.radiology_studies.find(
+        {"status": "pending"},
+        {"explainability_image": 0},
+    ).sort([("priority_label", 1), ("uploaded_at", 1)])
     items = []
     async for doc in cursor:
         doc["_id"] = str(doc["_id"])
         if "uploaded_at" in doc and hasattr(doc["uploaded_at"], "isoformat"):
             doc["uploaded_at"] = doc["uploaded_at"].isoformat()
+        doc["has_explainability"] = "explainability_image" in (await db.radiology_studies.find_one(
+            {"study_id": doc["study_id"]}, {"explainability_image": 1}
+        ) or {})
         items.append(doc)
 
     # Sort: stat=1, urgent=2, routine=3, then uploaded_at asc

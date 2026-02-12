@@ -131,14 +131,33 @@ export interface ReportDraft {
 }
 
 /**
+ * List draft reports for clinician dashboard (requires Google Identity Bearer token).
+ */
+export async function listDrafts(
+  authToken: string
+): Promise<{ items: { report_id: string; screening_id?: string; created_at?: number }[] }> {
+  const res = await fetch(`${API_BASE}/reports/drafts`, {
+    headers: { Authorization: `Bearer ${authToken}` },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || err.message || 'Failed to list drafts');
+  }
+  return res.json();
+}
+
+/**
  * Get a report by ID (draft or finalized).
+ * Supports both Bearer token (clinician) and x-api-key.
  * If reportId looks like a screening_id (e.g. ps-xxx), tries by-screening first.
  */
 export async function getReport(
   reportId: string,
-  apiKey?: string
+  apiKey?: string,
+  authToken?: string
 ): Promise<{ draft_json?: ReportDraft; final_json?: ReportDraft; status: string; report_id?: string }> {
   const headers: Record<string, string> = {};
+  if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
   if (apiKey) headers['x-api-key'] = apiKey;
   // Try by-screening when id looks like screening (ps-xxx) or when direct get fails
   let res = await fetch(`${API_BASE}/reports/${reportId}`, { headers });

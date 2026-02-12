@@ -25,6 +25,14 @@ export type RadiologyStudy = {
   ai_summary?: string;
   override_priority?: string;
   reviewed_by?: string;
+  /** When present, explainability heatmap available at /api/radiology/{study_id}/explainability */
+  has_explainability?: boolean;
+};
+
+export type RadiologyBenchmark = {
+  baseline_avg_minutes: number;
+  prioritized_avg_minutes: number;
+  reduction_percent: number;
 };
 
 export async function fetchRadiologyQueue(): Promise<{ items: RadiologyStudy[] }> {
@@ -68,6 +76,16 @@ export async function reviewStudy(
     headers: headers(),
     body: form,
   });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+export function getExplainabilityImageUrl(studyId: string): string {
+  return `${API_BASE}/api/radiology/${studyId}/explainability`;
+}
+
+export async function fetchRadiologyBenchmark(): Promise<RadiologyBenchmark> {
+  const res = await fetch(`${API_BASE}/api/radiology/benchmark`, { headers: headers() });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
