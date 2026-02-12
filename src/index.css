@@ -103,3 +103,51 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+
+/* Accessibility: High contrast mode */
+.high-contrast {
+  --background: 0 0% 100%;
+  --foreground: 0 0% 0%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 0%;
+  --primary: 0 0% 0%;
+  --primary-foreground: 0 0% 100%;
+  --border: 0 0% 0%;
+  --muted: 0 0% 96%;
+  --muted-foreground: 0 0% 20%;
+}
+
+.high-contrast * {
+  border-color: hsl(0 0% 0%) !important;
+}
+
+/* Accessibility: Font size adjustments */
+.font-size-large {
+  font-size: 112.5%;
+}
+
+.font-size-large .text-sm {
+  font-size: 0.95rem;
+}
+
+.font-size-large .text-xs {
+  font-size: 0.8rem;
+}
+
+.font-size-xlarge {
+  font-size: 125%;
+}
+
+.font-size-xlarge .text-sm {
+  font-size: 1rem;
+}
+
+.font-size-xlarge .text-xs {
+  font-size: 0.875rem;
+}
+
+/* Confidence meter progress bar */
+.progress {
+  border-radius: 8px;
+  overflow: hidden;
+}

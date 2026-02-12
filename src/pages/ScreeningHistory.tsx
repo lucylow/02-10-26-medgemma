@@ -1,18 +1,38 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, FileText, Sparkles, ClipboardList, ArrowRight } from 'lucide-react';
+import { Plus, FileText, Sparkles, ClipboardList, ArrowRight, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { listScreenings, type ScreeningListItem } from '@/services/screeningApi';
+
+const formatDate = (iso: string) => {
+  const d = new Date(iso);
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
+const formatRiskLabel = (riskLevel?: string) => {
+  const map: Record<string, string> = {
+    low: 'On Track',
+    medium: 'Monitor',
+    high: 'Refer',
+    on_track: 'On Track',
+    monitor: 'Monitor',
+    refer: 'Refer',
+  };
+  return map[riskLevel?.toLowerCase() || ''] || riskLevel || '—';
+};
 
 const ScreeningHistory = () => {
-  const screenings: Array<{
-    id: string;
-    date: string;
-    childAge: string;
-    domain: string;
-    riskLevel: string;
-  }> = [];
+  const [screenings, setScreenings] = useState<ScreeningListItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    listScreenings({ limit: 50, page: 0 })
+      .then(({ items }) => setScreenings(items))
+      .catch(() => setScreenings([]))
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
@@ -25,7 +45,14 @@ const ScreeningHistory = () => {
         <p className="text-muted-foreground">View and track past developmental screenings</p>
       </motion.div>
 
-      {screenings.length === 0 ? (
+      {loading ? (
+        <Card className="border-dashed border-2 bg-gradient-to-br from-card to-muted/30">
+          <CardContent className="py-16 text-center">
+            <Loader2 className="w-12 h-12 mx-auto text-primary animate-spin mb-4" />
+            <p className="text-muted-foreground">Loading screenings...</p>
+          </CardContent>
+        </Card>
+      ) : screenings.length === 0 ? (
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -62,26 +89,34 @@ const ScreeningHistory = () => {
         <div className="space-y-4">
           {screenings.map((screening, index) => (
             <motion.div
-              key={screening.id}
+              key={screening.screening_id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
             >
-              <Card className="hover:shadow-lg transition-all duration-300 border-none shadow-md">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">{screening.date}</CardTitle>
-                    <span className="text-sm px-4 py-1.5 rounded-full bg-primary/10 text-primary font-medium">
-                      {screening.riskLevel}
-                    </span>
-                  </div>
-                  <CardDescription className="flex items-center gap-4">
-                    <span>Age: {screening.childAge} months</span>
-                    <span>•</span>
-                    <span>Domain: {screening.domain}</span>
-                  </CardDescription>
-                </CardHeader>
-              </Card>
+              <Link to="/pediscreen/results" state={{
+                screeningId: screening.screening_id,
+                report: screening.report,
+                childAge: String(screening.child_age_months),
+                domain: screening.domain,
+                confidence: screening.report?.confidence,
+              }}>
+                <Card className="hover:shadow-lg transition-all duration-300 border-none shadow-md cursor-pointer">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-lg">{formatDate(screening.created_at)}</CardTitle>
+                      <span className="text-sm px-4 py-1.5 rounded-full bg-primary/10 text-primary font-medium">
+                        {formatRiskLabel(screening.report?.riskLevel)}
+                      </span>
+                    </div>
+                    <CardDescription className="flex items-center gap-4">
+                      <span>Age: {screening.child_age_months} months</span>
+                      <span>•</span>
+                      <span>Domain: {screening.domain || '—'}</span>
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+              </Link>
             </motion.div>
           ))}
         </div>

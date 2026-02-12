@@ -2,6 +2,8 @@
 
 For **PediScreen AI**, the impact of a successful solution extends from immediate improvements in child development to long-term systemic transformation of pediatric healthcare. The impact potential is rooted in addressing a high-prevalence issue with a scalable, equitable solution.
 
+> **Competition-ready narrative:** For a concise "Current Problem vs. AI-Augmented Future" comparison and real-world evidence (Canvas Dx, mammography AI, etc.), see [Real-World Impact](real_world_impact.md).
+
 ### 📊 Impact Assessment Framework and Quantified Estimates
 The following table breaks down the anticipated impacts, the methodology for quantification, and the resulting evidence-based estimates.
 

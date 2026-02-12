@@ -135,8 +135,10 @@ const PediScreenHome = () => {
 
       {/* Features Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-        {features.map((feature, index) => (
-          <motion.div
+          {features.map((feature, index) => {
+            const Icon = feature.icon;
+            return (
+            <motion.div
             key={index}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -147,7 +149,7 @@ const PediScreenHome = () => {
                 <motion.div 
                   className={`w-14 h-14 bg-gradient-to-br ${feature.color} rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}
                 >
-                  <feature.icon className="w-7 h-7 text-primary" />
+                  <Icon className="w-7 h-7 text-primary" />
                 </motion.div>
                 <CardTitle className="text-lg">{feature.title}</CardTitle>
               </CardHeader>
@@ -158,7 +160,8 @@ const PediScreenHome = () => {
               </CardContent>
             </Card>
           </motion.div>
-        ))}
+            );
+          })}
       </div>
 
       {/* Mission & Equity Section */}

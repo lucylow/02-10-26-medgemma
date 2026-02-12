@@ -1,0 +1,29 @@
+Thank you for installing {{ include "medgemma.fullname" . }}!
+
+To access your service:
+- Run: kubectl get svc -l app.kubernetes.io/name={{ include "medgemma.fullname" . }}
+
+GPU Notes:
+- To schedule GPUs your cluster must have GPU nodes and the Kubernetes NVIDIA device plugin installed.
+- Example (GKE):
+  gcloud container node-pools create gpu-pool \
+    --accelerator type=nvidia-tesla-t4,count=1 \
+    --machine-type=n1-standard-8 \
+    --num-nodes=1 \
+    --zone=us-central1-a \
+    --cluster=YOUR_CLUSTER_NAME
+
+- Install NVIDIA device plugin (DaemonSet):
+  kubectl apply -f https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/main/nvidia-device-plugin.yml
+
+- Ensure nodes have the label used in values.yaml (e.g., accelerator=nvidia-tesla-t4):
+  kubectl label nodes <node-name> accelerator=nvidia-tesla-t4
+
+Secret management:
+- For production, prefer ExternalSecrets or cloud secret manager CSI driver. Avoid storing secrets in values.yaml.
+
+Deploy:
+- helm upgrade --install medgemma ./helm/medgemma -n medgemma --create-namespace --set image.tag=sha-abcdef
+
+CI suggestion:
+- Use GitHub Actions to build/push image and run helm upgrade (see .github/workflows/ci-cd.yml).

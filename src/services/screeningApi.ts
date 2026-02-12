@@ -1,6 +1,9 @@
 const API_BASE_URL = import.meta.env.VITE_MEDGEMMA_API_URL || 
   (import.meta.env.DEV ? 'http://localhost:5000/api' : 'https://api.pediscreen.ai/v1');
 
+/** Supabase Edge Functions base URL (e.g. https://xxx.supabase.co/functions/v1). When set, uses FormData + multipart. */
+const SUPABASE_FUNCTION_URL = import.meta.env.VITE_SUPABASE_FUNCTION_URL;
+
 export type RiskLevel = 'low' | 'medium' | 'high' | 'unknown' | 'on_track' | 'monitor' | 'refer';
 
 export type SupportingEvidence = {
@@ -70,14 +73,59 @@ export type ScreeningRequest = {
 };
 
 /**
- * Submit screening to MedGemma API for analysis
+ * Submit screening to MedGemma API for analysis.
+ * When VITE_SUPABASE_FUNCTION_URL is set, uses Supabase Edge Functions (FormData + multipart).
  */
 export const submitScreening = async (request: ScreeningRequest): Promise<ScreeningResult> => {
   try {
-    // We use JSON for the request as we've updated the backend to handle InferRequest
-    // but if images are present we might need multipart/form-data. 
-    // Let's check if the backend handles JSON with base64 for images.
-    
+    // Supabase Edge Functions: use FormData + multipart
+    if (SUPABASE_FUNCTION_URL) {
+      const form = new FormData();
+      form.append('childAge', request.childAge);
+      form.append('domain', request.domain || '');
+      form.append('observations', request.observations);
+      if (request.imageFile) {
+        form.append('image', request.imageFile, request.imageFile.name);
+      }
+
+      const response = await fetch(`${SUPABASE_FUNCTION_URL}/analyze`, {
+        method: 'POST',
+        body: form,
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.detail || data.error || `HTTP ${response.status}`);
+      }
+
+      const r = data.report || {};
+      const riskMap: Record<string, RiskLevel> = {
+        low: 'on_track',
+        medium: 'monitor',
+        high: 'refer',
+      };
+      const riskLevel = riskMap[r.riskLevel] || 'unknown';
+
+      return {
+        success: true,
+        screeningId: data.screening_id,
+        report: {
+          riskLevel,
+          summary: r.summary || '',
+          keyFindings: r.keyFindings || [],
+          recommendations: r.recommendations || [],
+          supportingEvidence: {
+            fromParentReport: (r.evidence || []).filter((e: { type: string }) => e.type === 'text').map((e: { content: string }) => e.content),
+            fromAssessmentScores: [],
+            fromVisualAnalysis: (r.evidence || []).filter((e: { type: string }) => e.type === 'image').map((e: { content: string }) => e.content),
+          },
+        },
+        timestamp: data.timestamp ? String(data.timestamp) : new Date().toISOString(),
+        confidence: r.confidence,
+      };
+    }
+
+    // MedGemma API: JSON + base64 image
     let body: any;
     let headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -244,6 +292,42 @@ function extractRecommendations(recommendations: unknown): string[] {
   
   return [];
 }
+
+export type ScreeningListItem = {
+  id: string;
+  screening_id: string;
+  child_age_months: number;
+  domain: string | null;
+  observations: string | null;
+  image_path: string | null;
+  report: { riskLevel?: string; summary?: string; keyFindings?: string[] };
+  created_at: string;
+};
+
+/**
+ * List screenings from Supabase (when VITE_SUPABASE_FUNCTION_URL is set).
+ */
+export const listScreenings = async (params?: { limit?: number; page?: number }): Promise<{ items: ScreeningListItem[] }> => {
+  if (!SUPABASE_FUNCTION_URL) {
+    return { items: [] };
+  }
+  const limit = params?.limit ?? 50;
+  const page = params?.page ?? 0;
+  const url = `${SUPABASE_FUNCTION_URL}/list_screenings?limit=${limit}&page=${page}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+};
+
+/**
+ * Get a single screening by ID from Supabase.
+ */
+export const getScreening = async (screeningId: string): Promise<ScreeningListItem | null> => {
+  if (!SUPABASE_FUNCTION_URL) return null;
+  const res = await fetch(`${SUPABASE_FUNCTION_URL}/get_screening?id=${encodeURIComponent(screeningId)}`);
+  if (!res.ok) return null;
+  return res.json();
+};
 
 /**
  * Check API health status

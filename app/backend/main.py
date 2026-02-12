@@ -4,9 +4,10 @@ PediScreen MedGemma Inference Server
 FastAPI server exposing MedGemma inference endpoints for developmental screening.
 """
 
-import os
-import uuid
 import json
+import os
+import time
+import uuid
 from datetime import datetime
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, status
 from fastapi.responses import JSONResponse

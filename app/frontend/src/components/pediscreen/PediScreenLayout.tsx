@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
-import { Baby, Home, Plus, History, ArrowLeft, Menu, Sparkles, ChevronRight, UserCircle, Settings, BookOpen } from 'lucide-react';
+import { Baby, Home, Plus, History, ArrowLeft, Menu, Sparkles, ChevronRight, UserCircle, Settings, BookOpen, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
@@ -14,6 +14,7 @@ const navItems = [
   { title: 'History', path: '/pediscreen/history', icon: History },
   { title: 'Education', path: '/pediscreen/education', icon: BookOpen },
   { title: 'Settings', path: '/pediscreen/settings', icon: Settings },
+  { title: 'Technical Writer', path: '/pediscreen/technical-writer', icon: FileText },
 ];
 
 const getBreadcrumbs = (pathname: string) => {
@@ -25,6 +26,7 @@ const getBreadcrumbs = (pathname: string) => {
   if (pathname.includes('/settings')) crumbs.push({ label: 'Settings', path: '/pediscreen/settings' });
   if (pathname.includes('/results')) crumbs.push({ label: 'Results', path: pathname });
   if (pathname.includes('/learn-more')) crumbs.push({ label: 'Architecture', path: '/pediscreen/learn-more' });
+  if (pathname.includes('/technical-writer')) crumbs.push({ label: 'Technical Writer', path: '/pediscreen/technical-writer' });
   return crumbs;
 };
 

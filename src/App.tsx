@@ -1,9 +1,11 @@
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ScreeningProvider } from "./contexts/ScreeningContext";
+import { initializeAccessibility } from "@/components/pediscreen/AccessibilityBar";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import PediScreenLayout from "./components/pediscreen/PediScreenLayout";
@@ -15,10 +17,17 @@ import Profiles from "./pages/Profiles";
 import Settings from "./pages/Settings";
 import Education from "./pages/Education";
 import LearnMore from "./pages/LearnMore";
+import RadiologyQueue from "./pages/RadiologyQueue";
+import TechnicalWriter from "./pages/TechnicalWriter";
 
 const queryClient = new QueryClient();
 
-const App = () => (
+const App = () => {
+  useEffect(() => {
+    initializeAccessibility();
+  }, []);
+
+  return (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <ScreeningProvider>
@@ -36,6 +45,8 @@ const App = () => (
               <Route path="settings" element={<Settings />} />
               <Route path="education" element={<Education />} />
               <Route path="learn-more" element={<LearnMore />} />
+              <Route path="radiology" element={<RadiologyQueue />} />
+              <Route path="technical-writer" element={<TechnicalWriter />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
@@ -43,6 +54,7 @@ const App = () => (
       </ScreeningProvider>
     </TooltipProvider>
   </QueryClientProvider>
-);
+  );
+};
 
 export default App;

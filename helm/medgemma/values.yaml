@@ -1,0 +1,104 @@
+# Default values for medgemma.
+
+replicaCount: 2
+
+image:
+  repository: gcr.io/your-project/medgemma-backend   # or use model-server/ for local build
+  tag: "latest"
+  pullPolicy: IfNotPresent
+  # If you use an imagePullSecret:
+  pullSecrets: [] # ["my-registry-secret"]
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8000
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: medgemma.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: [] # - secretName: tls-secret, hosts: [medgemma.example.com]
+
+resources:
+  # CPU/memory for each container
+  limits:
+    cpu: "1000m"
+    memory: "1Gi"
+  requests:
+    cpu: "250m"
+    memory: "512Mi"
+
+# GPU options: set enabled true to request GPU on pods
+gpu:
+  enabled: false
+  vendor: nvidia       # 'nvidia' or other vendor name you use
+  count: 1             # number of GPUs to request
+  nodeSelector:
+    accelerator: nvidia-tesla-t4  # label on GPU nodes
+  tolerations:
+    - key: "nvidia.com/gpu"
+      operator: "Exists"
+      effect: "NoSchedule"
+
+env:
+  # Environment variables passed to the container
+  - name: ENV
+    value: production
+  - name: HF_MODEL
+    value: ""
+  - name: HF_API_KEY
+    value: ""
+  - name: VERTEX_PROJECT
+    value: ""
+  - name: VERTEX_LOCATION
+    value: ""
+  - name: REDIS_URL
+    value: ""
+
+livenessProbe:
+  enabled: true
+  path: /health   # model-server uses /health; override to /healthz if your backend has it
+  port: 8000
+  initialDelaySeconds: 20
+  periodSeconds: 15
+  timeoutSeconds: 5
+
+readinessProbe:
+  enabled: true
+  path: /health   # model-server uses /health; override to /ready if your backend has it
+  port: 8000
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 3
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 60
+
+# configMap values
+config:
+  LOG_LEVEL: info
+  RETENTION_DAYS: "365"
+
+# Secrets (use ExternalSecrets for production)
+# Set existingSecret to use a secret created by ExternalSecrets (skip templated secret creation)
+existingSecret: ""   # e.g. "medgemma-external-secrets"
+secrets:
+  # These values are placeholders. Use Kubernetes Secret or ExternalSecrets provider to load them.
+  HF_API_KEY: ""
+  DB_CONN: ""
+  REDIS_URL: ""
+
+podSecurityContext: {}
+securityContext: {}
+
+nodeSelector: {}
+affinity: {}

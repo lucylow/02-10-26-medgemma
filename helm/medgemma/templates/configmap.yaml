@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "medgemma.fullname" . }}-config
+  labels:
+    {{ include "medgemma.labels" . | indent 4 }}
+data:
+{{- range $k, $v := .Values.config }}
+  {{ $k }}: {{ $v | quote }}
+{{- end }}

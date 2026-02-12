@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
-import { Baby, Home, Plus, History, ArrowLeft, Menu, Sparkles, ChevronRight, UserCircle, Settings, BookOpen } from 'lucide-react';
+import { Baby, Home, Plus, History, ArrowLeft, Menu, Sparkles, ChevronRight, UserCircle, Settings, BookOpen, Scan, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
@@ -14,6 +14,8 @@ const navItems = [
   { title: 'History', path: '/pediscreen/history', icon: History },
   { title: 'Education', path: '/pediscreen/education', icon: BookOpen },
   { title: 'Settings', path: '/pediscreen/settings', icon: Settings },
+  { title: 'Radiology', path: '/pediscreen/radiology', icon: Scan },
+  { title: 'Technical Writer', path: '/pediscreen/technical-writer', icon: FileText },
 ];
 
 const getBreadcrumbs = (pathname: string) => {
@@ -23,6 +25,8 @@ const getBreadcrumbs = (pathname: string) => {
   if (pathname.includes('/history')) crumbs.push({ label: 'History', path: '/pediscreen/history' });
   if (pathname.includes('/education')) crumbs.push({ label: 'Education', path: '/pediscreen/education' });
   if (pathname.includes('/settings')) crumbs.push({ label: 'Settings', path: '/pediscreen/settings' });
+  if (pathname.includes('/radiology')) crumbs.push({ label: 'Radiology Worklist', path: '/pediscreen/radiology' });
+  if (pathname.includes('/technical-writer')) crumbs.push({ label: 'Technical Writer', path: '/pediscreen/technical-writer' });
   if (pathname.includes('/results')) crumbs.push({ label: 'Results', path: pathname });
   if (pathname.includes('/learn-more')) crumbs.push({ label: 'Architecture', path: '/pediscreen/learn-more' });
   return crumbs;
@@ -162,7 +166,7 @@ const PediScreenLayout = () => {
         )}
 
         {/* Main Content with Page Transitions */}
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-auto flex flex-col">
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}
@@ -170,10 +174,16 @@ const PediScreenLayout = () => {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.2 }}
+              className="flex-1"
             >
               <Outlet />
             </motion.div>
           </AnimatePresence>
+          {/* FDA-aligned footer — regulatory-aware UI language */}
+          <footer className="text-xs text-muted-foreground mt-8 py-4 px-4 border-t bg-muted/20 text-center">
+            PediScreen AI uses MedGemma models for clinical decision support only.
+            Outputs require review by a qualified healthcare professional.
+          </footer>
         </main>
       </div>
     </div>

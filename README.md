@@ -8,7 +8,7 @@ PediScreen AI leverages Google's open **MedGemma** foundation model to put exper
 
 ---
 
-## 🎬 [Video Demonstration](https://link-to-your-video.com) | 📄 [Workflow & ROI](docs/workflow_efficiency.md) | 🌍 [Portability](docs/deployment_portability.md) | 🚀 [Hugging Face Trace](model/README.md) | 🧩 [Adaptability](docs/adaptability.md) | 👁️ [Pattern Detection Guide](docs/pattern_detection.md) | 🤝 [Human-in-the-Loop](docs/hitl_architecture.md) | 📴 [Offline Playbook](docs/offline_playbook.md) | ⚖️ [Legal Compliance](docs/legal_compliance.md)
+## 🎬 [Video Demonstration](https://link-to-your-video.com) | 📄 [Workflow & ROI](docs/workflow_efficiency.md) | 🌍 [Portability](docs/deployment_portability.md) | 🚀 [Hugging Face Trace](model/README.md) | 🧩 [Adaptability](docs/adaptability.md) | 👁️ [Pattern Detection Guide](docs/pattern_detection.md) | 🤝 [Human-in-the-Loop](docs/hitl_architecture.md) | 📴 [Offline Playbook](docs/offline_playbook.md) | ⚖️ [Legal Compliance](docs/legal_compliance.md) | 🎯 [Real-World Impact](docs/real_world_impact.md)
 
 ---
 
