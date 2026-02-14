@@ -6,6 +6,8 @@ from jinja2 import Template
 from typing import Dict
 from datetime import datetime
 
+from app.core.disclaimers import DISCLAIMER_DRAFT, PDF_FOOTER
+
 # Simple Jinja2 template for clinician report (HTML)
 HTML_TEMPLATE = """
 <!doctype html>
@@ -56,7 +58,10 @@ HTML_TEMPLATE = """
 
   <div class="section">
     <h3>Disclaimer</h3>
-    <div class="note">This report is an automated, draft summary produced by PediScreen AI. It requires clinician review and sign-off prior to insertion in the medical record.</div>
+    <div class="note">{{ disclaimer }}</div>
+  </div>
+  <div class="footer" style="font-size: 10px; color: #666; margin-top: 24px; padding-top: 12px; border-top: 1px solid #ddd;">
+    {{ pdf_footer }}
   </div>
 </body>
 </html>
@@ -78,6 +83,8 @@ def render_report_html(report: Dict) -> str:
         clinical_summary=report.get("clinical_summary", ""),
         key_evidence=report.get("key_evidence", []),
         recommendations=report.get("recommendations", []),
+        disclaimer=DISCLAIMER_DRAFT,
+        pdf_footer=PDF_FOOTER,
     )
 
 

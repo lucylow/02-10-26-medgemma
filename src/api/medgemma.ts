@@ -127,6 +127,7 @@ export interface ReportDraft {
   key_evidence: string[];
   recommendations: string[];
   model_evidence?: unknown[];
+  model_confidence?: { overall: number; label: string };
   meta?: { generated_at?: number; persisted?: boolean };
 }
 
@@ -276,6 +277,56 @@ export async function getFdaMapping(
     { headers }
   );
   if (!res.ok) throw new Error('FDA mapping not found');
+  return res.json();
+}
+
+/**
+ * Attach finalized PDF to EHR via SMART-on-FHIR DocumentReference.
+ * Requires clinician auth (Bearer token).
+ */
+export async function attachPdfToEhr(
+  reportId: string,
+  patientId: string,
+  fhirBaseUrl: string,
+  fhirToken: string,
+  authToken: string
+): Promise<{ success: boolean; document_reference?: unknown }> {
+  const form = new FormData();
+  form.append('report_id', reportId);
+  form.append('patient_id', patientId);
+  form.append('fhir_base_url', fhirBaseUrl);
+  form.append('fhir_token', fhirToken);
+  const res = await fetch(`${API_BASE}/ehr/attach-pdf`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${authToken}` },
+    body: form,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || err.message || 'EHR attach failed');
+  }
+  return res.json();
+}
+
+/**
+ * Verify uploaded PDF against stored hash (tamper detection).
+ */
+export async function verifyReportPdf(
+  reportId: string,
+  pdfFile: File,
+  apiKey?: string
+): Promise<{ valid: boolean }> {
+  const form = new FormData();
+  form.append('report_id', reportId);
+  form.append('uploaded_pdf', pdfFile);
+  const headers: Record<string, string> = {};
+  if (apiKey) headers['x-api-key'] = apiKey;
+  const res = await fetch(`${API_BASE}/reports/verify-pdf`, {
+    method: 'POST',
+    headers,
+    body: form,
+  });
+  if (!res.ok) throw new Error('Verification failed');
   return res.json();
 }
 

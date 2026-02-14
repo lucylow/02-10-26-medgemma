@@ -21,6 +21,8 @@ class AnalyzeResponse(BaseModel):
     screening_id: str
     report: Report
     timestamp: int
+    model_used: Optional[bool] = None
+    model_parse_ok: Optional[bool] = None
 
 class ScreeningCreate(BaseModel):
     childAge: int

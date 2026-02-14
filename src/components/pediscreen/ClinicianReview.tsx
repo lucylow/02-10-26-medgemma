@@ -13,6 +13,7 @@ import {
   exportReportPdf,
   type ReportDraft,
 } from '@/api/medgemma';
+import { DISCLAIMER_DRAFT } from '@/constants/disclaimers';
 import { useToast } from '@/hooks/use-toast';
 
 interface ClinicianReviewProps {
@@ -186,6 +187,10 @@ const ClinicianReview: React.FC<ClinicianReviewProps> = ({
   return (
     <Card className={className}>
       <CardHeader className="pb-2">
+        <div className="p-3 mb-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 text-xs">
+          <Shield className="w-4 h-4 inline mr-2 align-middle" />
+          {DISCLAIMER_DRAFT}
+        </div>
         <CardTitle className="text-lg flex items-center gap-2">
           <ClipboardCheck className="w-5 h-5 text-primary" />
           Clinician Review

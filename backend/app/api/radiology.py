@@ -12,6 +12,7 @@ from fastapi.responses import Response
 
 from app.core.config import settings
 from app.core.logger import logger
+from app.core.disclaimers import FDA_RADIOLOGY_DISCLAIMER
 from app.core.security import get_api_key, get_api_key_from_header_or_query
 from app.services.db import get_db
 from app.services.radiology_vision import analyze_radiology_image
@@ -103,7 +104,9 @@ async def upload_study(
     return {
         "study_id": study_id,
         "priority": priority,
+        "ai_summary": ai_summary,
         "note": "AI-generated triage suggestion; clinician review required",
+        "disclaimer": FDA_RADIOLOGY_DISCLAIMER,
     }
 
 
@@ -134,7 +137,10 @@ async def get_queue(_: str = Depends(get_api_key)):
     # Sort: stat=1, urgent=2, routine=3, then uploaded_at asc
     items.sort(key=lambda x: (PRIORITY_ORDER.get(x.get("priority_label", "routine"), 3), x.get("uploaded_at", "")))
 
-    return {"items": items}
+    return {
+        "items": items,
+        "disclaimer": FDA_RADIOLOGY_DISCLAIMER,
+    }
 
 
 @router.post("/api/radiology/{study_id}/review")
@@ -183,7 +189,22 @@ async def review_study(
         except Exception as e:
             logger.warning("HL7 push failed: %s", e)
 
-    return {"status": "reviewed"}
+    return {
+        "status": "reviewed",
+        "disclaimer": FDA_RADIOLOGY_DISCLAIMER,
+    }
+
+
+async def _get_explainability_bytes(study_id: str) -> bytes:
+    """Shared logic for explainability/heatmap endpoints."""
+    db = get_db()
+    doc = await db.radiology_studies.find_one(
+        {"study_id": study_id},
+        {"explainability_image": 1},
+    )
+    if not doc or not doc.get("explainability_image"):
+        raise HTTPException(status_code=404, detail="Explainability image not available")
+    return bytes(doc["explainability_image"])
 
 
 @router.get("/api/radiology/{study_id}/explainability")
@@ -195,16 +216,20 @@ async def get_explainability_image(
     Return Grad-CAM style explainability overlay for a study.
     Clinician-facing only; non-diagnostic.
     """
-    db = get_db()
-    doc = await db.radiology_studies.find_one(
-        {"study_id": study_id},
-        {"explainability_image": 1},
-    )
-    if not doc or not doc.get("explainability_image"):
-        raise HTTPException(status_code=404, detail="Explainability image not available")
+    img_bytes = await _get_explainability_bytes(study_id)
+    return Response(content=img_bytes, media_type="image/png")
 
-    img_bytes = doc["explainability_image"]
-    return Response(content=bytes(img_bytes), media_type="image/png")
+
+@router.get("/api/radiology/{study_id}/heatmap")
+async def get_heatmap(
+    study_id: str,
+    _: str = Depends(get_api_key_from_header_or_query),
+):
+    """
+    Alias for /explainability. AI visual attention heatmap; non-diagnostic.
+    """
+    img_bytes = await _get_explainability_bytes(study_id)
+    return Response(content=img_bytes, media_type="image/png")
 
 
 @router.get("/api/radiology/benchmark")

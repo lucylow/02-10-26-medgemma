@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
+import { PARENT_ONE_LINER } from '@/constants/disclaimers';
 import { Baby, Home, Plus, History, ArrowLeft, Menu, Sparkles, ChevronRight, UserCircle, Settings, BookOpen, Scan, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -181,8 +182,7 @@ const PediScreenLayout = () => {
           </AnimatePresence>
           {/* FDA-aligned footer — regulatory-aware UI language */}
           <footer className="text-xs text-muted-foreground mt-8 py-4 px-4 border-t bg-muted/20 text-center">
-            PediScreen AI uses MedGemma models for clinical decision support only.
-            Outputs require review by a qualified healthcare professional.
+            {PARENT_ONE_LINER}
           </footer>
         </main>
       </div>

@@ -26,6 +26,7 @@ import { cn } from '@/lib/utils';
 import MultimodalAnalysisPreview from '@/components/pediscreen/MultimodalAnalysisPreview';
 import ProgressiveHelp from '@/components/pediscreen/ProgressiveHelp';
 import AccessibilityBar from '@/components/pediscreen/AccessibilityBar';
+import ConsentModal, { hasStoredConsent } from '@/components/pediscreen/ConsentModal';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 const developmentalDomains = [
@@ -42,6 +43,7 @@ const ScreeningScreen = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { currentScreening, updateScreening, clearScreening } = useScreening();
+  const [consentOpen, setConsentOpen] = useState(!hasStoredConsent());
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [medGemmaDraft, setMedGemmaDraft] = useState<ReturnType<typeof mapScreeningResultToMedGemmaReport> | null>(null);
   const [lastResult, setLastResult] = useState<Awaited<ReturnType<typeof submitScreening>> | null>(null);
@@ -213,6 +215,8 @@ const ScreeningScreen = () => {
         domain: currentScreening.domain,
         imagePreview: currentScreening.imagePreview,
         confidence: lastResult.confidence,
+        modelUsed: lastResult.modelUsed,
+        modelParseOk: lastResult.modelParseOk,
       },
     });
     clearScreening();
@@ -228,6 +232,11 @@ const ScreeningScreen = () => {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8" id="screening-content">
+      <ConsentModal
+        open={consentOpen}
+        onOpenChange={setConsentOpen}
+        onConsent={() => setConsentOpen(false)}
+      />
       {/* Header with Progress */}
       <motion.div 
         className="mb-8"

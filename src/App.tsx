@@ -6,6 +6,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ScreeningProvider } from "./contexts/ScreeningContext";
 import { initializeAccessibility } from "@/components/pediscreen/AccessibilityBar";
+import { flush, dataURLToFile } from "@/services/offlineQueue";
+import { submitScreening } from "@/services/screeningApi";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import PediScreenLayout from "./components/pediscreen/PediScreenLayout";
@@ -27,6 +29,39 @@ const queryClient = new QueryClient();
 const App = () => {
   useEffect(() => {
     initializeAccessibility();
+  }, []);
+
+  useEffect(() => {
+    const handleOnline = () => {
+      const sendPayload = async (payload: {
+        childAge: string;
+        domain: string;
+        observations: string;
+        imagePreview?: string | null;
+        imageFile?: { name: string } | null;
+      }) => {
+        let imageFile: File | null = null;
+        if (payload.imagePreview) {
+          imageFile = dataURLToFile(
+            payload.imagePreview,
+            payload.imageFile?.name || "upload.jpg"
+          );
+        }
+        await submitScreening({
+          childAge: payload.childAge,
+          domain: payload.domain,
+          observations: payload.observations,
+          imageFile,
+        });
+      };
+      flush(sendPayload).then((count) => {
+        if (count > 0) {
+          console.log(`Offline queue: ${count} screening(s) uploaded`);
+        }
+      });
+    };
+    window.addEventListener("online", handleOnline);
+    return () => window.removeEventListener("online", handleOnline);
   }, []);
 
   return (

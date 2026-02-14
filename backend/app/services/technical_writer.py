@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from app.services.medgemma_service import MedGemmaService
 from app.core.config import settings
 from app.core.logger import logger
+from app.core.disclaimers import DISCLAIMER_DRAFT
 from app.schemas.report_template import ReportSection, Persona
 
 WritingMode = Literal[
@@ -205,8 +206,4 @@ Key points:
 This is a placeholder for development/demo when no model is available.]"""
 
     def _default_disclaimer(self) -> str:
-        return (
-            "This content describes a clinical decision support system intended "
-            "to assist qualified healthcare professionals. It does not provide "
-            "medical diagnosis or treatment recommendations."
-        )
+        return DISCLAIMER_DRAFT

@@ -54,6 +54,7 @@ def require_clinician(
             "email": email,
             "name": info.get("name"),
             "sub": info.get("sub"),
+            "role": "clinician",
         }
     except HTTPException:
         raise
@@ -77,7 +78,7 @@ def require_clinician_or_api_key(
     if creds and creds.credentials:
         return require_clinician(creds)  # type: ignore[arg-type]
     if api_key and api_key == settings.API_KEY:
-        return {"email": "api-key", "name": None, "sub": None}
+        return {"email": "api-key", "name": None, "sub": None, "role": "admin"}
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Bearer token or valid x-api-key required",

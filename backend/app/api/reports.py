@@ -19,6 +19,7 @@ from app.services.edit_guard import validate_edit
 from app.services.fda_mapper import map_report_to_fda
 from app.services.pdf_exporter import export_report_pdf
 from app.services.pdf_renderer import generate_pdf_bytes
+from app.services.pdf_signing import hash_pdf, embed_hash_in_pdf, PDF_HASH_PLACEHOLDER
 from app.services.report_generator import generate_report_from_screening
 
 router = APIRouter()
@@ -233,13 +234,20 @@ async def approve_report(
     recommendations: Optional[str] = Form(None),
 ):
     """
-    Clinician approves a draft report. This endpoint:
+    Clinician approves a draft report. Role-based: only clinicians can finalize.
+    This endpoint:
     - validates draft exists
     - applies optional edits (clinical_summary, recommendations) from form
     - updates report record with final_json and clinician signature metadata
     - optionally exports to FHIR/EHR using provided token
     - returns final report and any EHR response
     """
+    if clinician.get("role") not in ("clinician", "admin"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Clinician approval required",
+        )
+
     db = get_db()
     doc = await db.reports.find_one({"report_id": report_id})
     if not doc:
@@ -264,7 +272,13 @@ async def approve_report(
         "note": sign_note or "",
     }
 
-    # Persist final_json and metadata
+    # Generate PDF with hash for tamper detection
+    pdf_bytes = export_report_pdf(final_json, clinician_email, "final", pdf_hash=None)
+    content_hash = hash_pdf(pdf_bytes)
+    pdf_final = embed_hash_in_pdf(pdf_bytes, content_hash)
+    pdf_hash_stored = hash_pdf(pdf_final)
+
+    # Persist final_json, pdf_hash, and metadata
     await db.reports.update_one(
         {"report_id": report_id},
         {
@@ -273,6 +287,7 @@ async def approve_report(
                 "status": "finalized",
                 "clinician_id": clinician_email,
                 "clinician_signed_at": time.time(),
+                "pdf_hash": pdf_hash_stored,
             }
         },
     )
@@ -309,9 +324,8 @@ async def approve_report(
 
         ehr_response = post_to_fhir(final_json, fhir_token, fhir_base)
 
-    # Render PDF
-    pdf_bytes = generate_pdf_bytes(final_json)
-    pdf_b64 = base64.b64encode(pdf_bytes).decode("utf-8")
+    # Use tamper-evident PDF (already generated above)
+    pdf_b64 = base64.b64encode(pdf_final).decode("utf-8")
 
     return {
         "success": True,
@@ -339,12 +353,62 @@ async def export_pdf(
         report = report.get("draft_json", report)
     version = "final" if doc.get("status") == "finalized" else "draft"
     clinician_name = doc.get("clinician_id") or clinician
-    pdf = export_report_pdf(report, clinician_name, version)
+    pdf_hash = doc.get("pdf_hash")
+    pdf = export_report_pdf(report, clinician_name, version, pdf_hash=pdf_hash)
+    if doc.get("status") == "finalized" and not pdf_hash:
+        content_hash = hash_pdf(pdf)
+        pdf = embed_hash_in_pdf(pdf, content_hash)
+        pdf_hash_stored = hash_pdf(pdf)
+        await db.reports.update_one(
+            {"report_id": doc.get("report_id") or report_id},
+            {"$set": {"pdf_hash": pdf_hash_stored}},
+        )
     return Response(
         pdf,
         media_type="application/pdf",
         headers={"Content-Disposition": "attachment; filename=pediatric_report.pdf"},
     )
+
+
+@router.post("/api/ehr/attach-pdf")
+async def attach_pdf_to_ehr(
+    report_id: str = Form(...),
+    patient_id: str = Form(...),
+    fhir_base_url: str = Form(...),
+    fhir_token: str = Form(..., description="SMART-on-FHIR OAuth2 access token"),
+    clinician: dict = Depends(require_clinician),
+):
+    """
+    Attach finalized PDF to EHR via SMART-on-FHIR DocumentReference.
+    Requires clinician auth and a finalized report.
+    """
+    db = get_db()
+    doc = await db.reports.find_one({"report_id": report_id})
+    if not doc:
+        doc = await db.reports.find_one({"screening_id": report_id}, sort=[("created_at", -1)])
+    if not doc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="report not found")
+    if doc.get("status") != "finalized":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only finalized reports can be attached to EHR",
+        )
+
+    report = doc.get("final_json") or doc.get("draft_json") or {}
+    if isinstance(report, dict) and "draft_json" in report:
+        report = report.get("draft_json", report)
+    clinician_name = doc.get("clinician_id") or clinician.get("email", "Signed")
+    pdf = export_report_pdf(report, clinician_name, "final")
+
+    from app.services.fhir_client import FHIRClient
+
+    client = FHIRClient(fhir_base_url, fhir_token)
+    result = client.upload_document_reference(
+        patient_id=patient_id,
+        pdf_bytes=pdf,
+        title="PediScreen AI Developmental Screening",
+    )
+    return {"success": True, "document_reference": result}
 
 
 @router.get("/api/reports/regulatory/fda-map")
@@ -377,6 +441,17 @@ async def validate_edit_endpoint(
         content = " ".join(str(c) for c in content)
     flags = validate_edit(str(content))
     return {"valid": len(flags) == 0, "flags": flags}
+
+
+@router.get("/api/trajectory/{patient_id}")
+async def trajectory_view(
+    patient_id: str,
+    domain: str = "communication",
+    _auth: dict = Depends(require_clinician_or_api_key),
+):
+    """Compute developmental trajectory (improving/plateauing/concerning) from stored embeddings and risk scores."""
+    from app.services.trajectory import compute_trajectory
+    return await compute_trajectory(patient_id, domain)
 
 
 @router.get("/api/reports")

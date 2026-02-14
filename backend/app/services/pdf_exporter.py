@@ -4,9 +4,12 @@ Locked sections cannot be altered; PDF clearly labels AI-generated vs clinician-
 """
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from jinja2 import Environment, FileSystemLoader
+
+from app.core.disclaimers import DISCLAIMER_DRAFT, PDF_FOOTER
+from app.services.pdf_signing import PDF_HASH_PLACEHOLDER
 
 try:
     from weasyprint import HTML
@@ -58,12 +61,8 @@ def _build_sections(report: Dict[str, Any]) -> List[Dict[str, Any]]:
         "locked": False,
     })
 
-    # Disclaimer — locked
-    disclaimer = (
-        "This report is an automated, draft summary produced by PediScreen AI. "
-        "It requires clinician review and sign-off prior to insertion in the medical record. "
-        "This tool provides decision support only and does not make diagnoses."
-    )
+    # Disclaimer — locked (from app.core.disclaimers)
+    disclaimer = DISCLAIMER_DRAFT
     sections.append({
         "title": "Disclaimer",
         "content": disclaimer,
@@ -77,8 +76,9 @@ def export_report_pdf(
     report: Dict[str, Any],
     clinician_name: str,
     version: str = "final",
+    pdf_hash: Optional[str] = None,
 ) -> bytes:
-    """Render report to PDF with locked section labels."""
+    """Render report to PDF with locked section labels, confidence watermark, and optional hash."""
     template_dir = Path(__file__).resolve().parent.parent / "templates"
     env = Environment(loader=FileSystemLoader(str(template_dir)))
     template = env.get_template("report.html")
@@ -91,12 +91,20 @@ def export_report_pdf(
         else datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
     )
 
+    confidence = report.get("model_confidence", {})
+    confidence_label = confidence.get("label") if isinstance(confidence, dict) else None
+    # Use placeholder when no hash yet (for two-pass signing)
+    footer_hash = pdf_hash if pdf_hash else PDF_HASH_PLACEHOLDER
+
     html = template.render(
         sections=sections,
         clinician=clinician_name,
         generated_at=date_str,
         version=version,
         patient_id=report.get("patient_info", {}).get("patient_id", "—"),
+        pdf_footer=PDF_FOOTER,
+        confidence_label=confidence_label,
+        pdf_hash=footer_hash,
     )
 
     if WEASYPRINT_AVAILABLE:

@@ -2,11 +2,12 @@ import React from 'react';
 import { useLocation, Link, Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Share2, Plus, CheckCircle, AlertTriangle, AlertCircle, HelpCircle, Printer, Calendar, Lightbulb, Target, TrendingUp, Clock, Users, Eye, Sparkles, Shield, Info, ClipboardCheck, MessageSquare, ExternalLink, Stethoscope, Brain, UsersRound } from 'lucide-react';
+import { Share2, Plus, CheckCircle, AlertTriangle, AlertCircle, HelpCircle, Printer, Calendar, Lightbulb, Target, TrendingUp, Clock, Users, Eye, Sparkles, Shield, Info, ClipboardCheck, MessageSquare, ExternalLink, Stethoscope, Brain, UsersRound, ChevronDown, ChevronRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import VisualEvidenceCard from '@/components/pediscreen/VisualEvidenceCard';
 import ConfidenceIndicator from '@/components/pediscreen/ConfidenceIndicator';
 import ExplainabilityPanel from '@/components/pediscreen/ExplainabilityPanel';
@@ -21,7 +22,7 @@ type RiskLevel = 'on_track' | 'low' | 'monitor' | 'medium' | 'refer' | 'high';
 const ResultsScreen = () => {
   const location = useLocation();
   const { toast } = useToast();
-  const { screeningId, report, childAge, domain, confidence, imagePreview } = location.state || {};
+  const { screeningId, report, childAge, domain, confidence, imagePreview, modelUsed, modelParseOk } = location.state || {};
   const [activeTab, setActiveTab] = React.useState<'caregiver' | 'clinician'>('caregiver');
 
   if (!report || !screeningId) {
@@ -120,6 +121,7 @@ const ResultsScreen = () => {
 
   const profile = report.developmentalProfile || report.developmentalAnalysis;
   const evidence = report.supportingEvidence;
+  const modelEvidence = report.modelEvidence;
   const followUp = report.followUp;
   const referral = report.referralGuidance;
 
@@ -239,7 +241,14 @@ const ResultsScreen = () => {
                 </span>
                 {childAge && <span className="px-3 py-1 bg-background/80 rounded-full">Age: {childAge} months</span>}
                 {domain && <span className="px-3 py-1 bg-background/80 rounded-full">{getDomainLabel(domain)}</span>}
-                <span className="px-3 py-1 bg-background/80 rounded-full text-primary font-medium">On-Device Processing</span>
+                {modelUsed !== undefined && (
+                  <Badge variant="outline" className="text-[10px] font-normal">
+                    Model-assisted: {modelUsed ? (modelParseOk ? 'yes' : 'yes (raw)') : 'no'}
+                  </Badge>
+                )}
+                {modelUsed === undefined && (
+                  <span className="px-3 py-1 bg-background/80 rounded-full text-primary font-medium">On-Device Processing</span>
+                )}
               </div>
             </motion.div>
           </CardContent>
@@ -256,6 +265,38 @@ const ResultsScreen = () => {
         tone="reassuring"
         showActions={true}
       />
+
+      {/* Model Evidence (collapsible) - for model-assisted screenings */}
+      {modelEvidence && modelEvidence.length > 0 && (
+        <Collapsible className="group">
+          <Card className="border-dashed">
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors py-4">
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <ChevronRight className="h-4 w-4 transition-transform group-data-[state=open]:rotate-90" />
+                  See model evidence
+                </CardTitle>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Raw model output attached for human review (influence ~0.25)
+                </p>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="pt-0 pb-4">
+                <div className="space-y-2 text-sm">
+                  {modelEvidence.map((item: { type: string; content: string; influence?: number }, i: number) => (
+                    <div key={i} className="p-3 rounded-lg bg-muted/50 font-mono text-xs break-words">
+                      <span className="text-muted-foreground">{item.type}</span>
+                      {item.influence != null && <span className="text-muted-foreground ml-2">(influence: {item.influence})</span>}
+                      <pre className="mt-1 whitespace-pre-wrap">{item.content?.slice(0, 1500)}{(item.content?.length ?? 0) > 1500 ? '…' : ''}</pre>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
+      )}
 
       {/* Explainability Panel - "See the Evidence" */}
       {evidence && (

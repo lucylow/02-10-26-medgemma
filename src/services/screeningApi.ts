@@ -33,6 +33,8 @@ export type FollowUp = {
 export type ScreeningResult = {
   success: boolean;
   screeningId?: string;
+  modelUsed?: boolean;
+  modelParseOk?: boolean;
   report?: {
     riskLevel: RiskLevel;
     riskRationale?: string;
@@ -54,6 +56,7 @@ export type ScreeningResult = {
       reason?: string;
     };
     followUp?: FollowUp;
+    modelEvidence?: { type: string; content: string; influence?: number }[];
   };
   timestamp?: string;
   message?: string;
@@ -111,6 +114,8 @@ export const submitScreening = async (request: ScreeningRequest): Promise<Screen
       return {
         success: true,
         screeningId: data.screening_id,
+        modelUsed: data.model_used ?? undefined,
+        modelParseOk: data.model_parse_ok ?? undefined,
         report: {
           riskLevel: mapRiskLevel(r.riskLevel || 'unknown'),
           summary: r.summary || '',
@@ -121,6 +126,7 @@ export const submitScreening = async (request: ScreeningRequest): Promise<Screen
             fromAssessmentScores: [],
             fromVisualAnalysis: (r.evidence || []).filter((e: { type: string }) => e.type === 'image').map((e: { content: string }) => e.content),
           },
+          modelEvidence: (r.evidence || []).filter((e: { type: string }) => e.type === 'model_text' || e.type === 'model_error').map((e: { type: string; content: string; influence?: number }) => ({ type: e.type, content: e.content, influence: e.influence })),
         },
         timestamp: data.timestamp ? String(data.timestamp) : new Date().toISOString(),
         confidence: r.confidence,
@@ -158,6 +164,8 @@ export const submitScreening = async (request: ScreeningRequest): Promise<Screen
       return {
         success: true,
         screeningId: data.screening_id,
+        modelUsed: data.model_used ?? undefined,
+        modelParseOk: data.model_parse_ok ?? undefined,
         report: {
           riskLevel,
           summary: r.summary || '',
@@ -168,6 +176,7 @@ export const submitScreening = async (request: ScreeningRequest): Promise<Screen
             fromAssessmentScores: [],
             fromVisualAnalysis: (r.evidence || []).filter((e: { type: string }) => e.type === 'image').map((e: { content: string }) => e.content),
           },
+          modelEvidence: (r.evidence || []).filter((e: { type: string }) => e.type === 'model_text' || e.type === 'model_error').map((e: { type: string; content: string; influence?: number }) => ({ type: e.type, content: e.content, influence: e.influence })),
         },
         timestamp: data.timestamp ? String(data.timestamp) : new Date().toISOString(),
         confidence: r.confidence,

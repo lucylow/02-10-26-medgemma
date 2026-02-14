@@ -2,6 +2,7 @@
  * Per-domain confidence meter — attractive, mobile-friendly with tooltips.
  */
 import React from "react";
+import { MODEL_CONFIDENCE_TOOLTIP } from "@/constants/disclaimers";
 import { motion } from "framer-motion";
 import {
   Tooltip,
@@ -59,8 +60,7 @@ export default function ConfidenceMeter({
         />
       </div>
       <div className="text-xs text-muted-foreground/80 mt-1">
-        Confidence indicates how strongly the data supports this domain
-        assessment.
+        {MODEL_CONFIDENCE_TOOLTIP.replace('%pct%', `${percent}%`)}
       </div>
     </div>
   );

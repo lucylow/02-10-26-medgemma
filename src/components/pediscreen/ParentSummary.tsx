@@ -102,8 +102,7 @@ export default function ParentSummary({
         <div className="flex items-start gap-2 pt-2 text-xs text-muted-foreground bg-muted/50 rounded-lg p-3">
           <Shield className="w-4 h-4 shrink-0 mt-0.5" />
           <p>
-            You can change sharing preferences later at any time. Images are
-            optional and never shared without consent.
+            You can change sharing preferences later at any time. Images are optional and never shared without consent.
           </p>
         </div>
       </CardContent>

@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, ClipboardList, FileText } from "lucide-react";
+import { Loader2, ClipboardList, FileText, Shield } from "lucide-react";
+import { DISCLAIMER_SHORT } from "@/constants/disclaimers";
 import ClinicianReview from "@/components/pediscreen/ClinicianReview";
 import { listDrafts } from "@/api/medgemma";
 import { useToast } from "@/hooks/use-toast";
@@ -147,6 +148,10 @@ export default function ClinicianDashboard() {
 
   return (
     <div className="container max-w-3xl py-6">
+      <div className="flex items-start gap-2 p-3 mb-4 rounded-lg bg-primary/5 border border-primary/10 text-sm text-muted-foreground">
+        <Shield className="w-4 h-4 flex-shrink-0 mt-0.5" />
+        {DISCLAIMER_SHORT}
+      </div>
       <h1 className="text-xl font-semibold flex items-center gap-2 mb-4">
         <FileText className="w-5 h-5" />
         Draft Reports

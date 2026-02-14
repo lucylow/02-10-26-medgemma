@@ -112,7 +112,7 @@ async def analyze_endpoint(
             screening_id = f"ps-{int(time.time())}-{uuid.uuid4().hex[:8]}"
             result = _medgemma_report_to_response(analysis_result, age, domain, screening_id)
         else:
-            result = run_analysis(child_age_months=age, domain=domain, observations=observations, image_path=saved_path)
+            result = await run_analysis(child_age_months=age, domain=domain, observations=observations, image_path=saved_path)
     except Exception as e:
         logger.error(f"Analysis failure: {e}")
         # cleanup file if present

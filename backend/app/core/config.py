@@ -36,6 +36,9 @@ class Settings(BaseSettings):
 
     # FHIR / EHR integration (SMART on FHIR)
     FHIR_BASE_URL: Optional[str] = Field(None, env="FHIR_BASE_URL")
+    SMART_CLIENT_ID: Optional[str] = Field(None, env="SMART_CLIENT_ID")
+    SMART_CLIENT_SECRET: Optional[str] = Field(None, env="SMART_CLIENT_SECRET")
+    SMART_REDIRECT_URI: Optional[str] = Field(None, env="SMART_REDIRECT_URI")
 
     # HL7 ORU push (radiology triage → EHR/PACS)
     HL7_HOST: Optional[str] = Field(None, env="HL7_HOST")

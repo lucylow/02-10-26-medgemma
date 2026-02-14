@@ -219,9 +219,27 @@ async def generate_report_from_screening(
     if not skeleton["clinical_summary"]:
         skeleton["clinical_summary"] = report.get("summary", "Automated draft; requires clinician review.")
 
+    # Model confidence watermarking — never hide uncertainty
+    skeleton["model_confidence"] = _compute_model_confidence(skeleton)
+
     # Deduplicate evidence and recommendations
     skeleton["key_evidence"] = list(dict.fromkeys(skeleton["key_evidence"]))
     skeleton["recommendations"] = list(dict.fromkeys(skeleton["recommendations"]))
+
+    # 4b. Longitudinal trajectory (improving/plateauing/concerning) when embeddings exist
+    try:
+        from app.services.trajectory import compute_trajectory
+        patient_id = skeleton.get("patient_info", {}).get("patient_id")
+        domain = screening.get("domain", "communication")
+        if patient_id:
+            trajectory_result = await compute_trajectory(patient_id, domain)
+            skeleton["longitudinal_assessment"] = {
+                "trajectory": trajectory_result.get("trajectory", "insufficient_data"),
+                "interpretation": trajectory_result.get("interpretation", ""),
+            }
+    except Exception as e:
+        logger.warning("Trajectory analysis skipped: %s", e)
+        skeleton["longitudinal_assessment"] = {"trajectory": "insufficient_data", "interpretation": ""}
 
     # 5. Persist draft into MongoDB reports collection
     try:

@@ -1,8 +1,9 @@
 # backend/app/services/fhir_client.py
 """
-Example: post DiagnosticReport and Observations to a FHIR server.
+SMART-on-FHIR client: post DiagnosticReport, Observations, and DocumentReference to a FHIR server.
 Configure FHIR_BASE_URL and use OAuth2 (SMART on FHIR) for authentication.
 """
+import base64
 import json
 import requests
 from datetime import datetime
@@ -10,6 +11,52 @@ from typing import Dict, Any
 from app.core.logger import logger
 
 # Configure in env: FHIR_BASE_URL = "https://fhir.example.com"
+
+
+class FHIRClient:
+    """SMART-on-FHIR client for EHR integration."""
+
+    def __init__(self, fhir_base_url: str, access_token: str):
+        self.base_url = fhir_base_url.rstrip("/")
+        self.headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/fhir+json",
+        }
+
+    def upload_document_reference(
+        self,
+        patient_id: str,
+        pdf_bytes: bytes,
+        title: str = "PediScreen AI Developmental Screening",
+    ) -> Dict[str, Any]:
+        """
+        Create a DocumentReference attaching the PDF to the patient's EHR.
+        Standards-based way to attach reports per SMART-on-FHIR.
+        """
+        encoded_pdf = base64.b64encode(pdf_bytes).decode("utf-8")
+        payload = {
+            "resourceType": "DocumentReference",
+            "status": "current",
+            "type": {"text": "Pediatric Screening Report"},
+            "subject": {"reference": f"Patient/{patient_id}"},
+            "content": [
+                {
+                    "attachment": {
+                        "contentType": "application/pdf",
+                        "data": encoded_pdf,
+                        "title": title,
+                    }
+                }
+            ],
+        }
+        res = requests.post(
+            f"{self.base_url}/DocumentReference",
+            headers=self.headers,
+            json=payload,
+            timeout=30,
+        )
+        res.raise_for_status()
+        return res.json()
 
 
 def post_to_fhir(

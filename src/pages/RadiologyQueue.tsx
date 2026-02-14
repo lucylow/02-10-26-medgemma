@@ -22,10 +22,10 @@ import {
   uploadRadiologyStudy,
   reviewStudy,
   fetchRadiologyBenchmark,
-  getExplainabilityImageUrl,
   type RadiologyStudy,
   type RadiologyBenchmark,
 } from "@/services/radiologyApi";
+import ExplainabilityHeatmap from "@/components/radiology/ExplainabilityHeatmap";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -192,7 +192,7 @@ export default function RadiologyQueue() {
         <div className="flex items-center gap-2 px-4 py-2 bg-muted/50 border-b">
           <AlertCircle className="w-4 h-4 text-muted-foreground" />
           <span className="text-xs text-muted-foreground">
-            AI suggestions are not diagnoses. Override and finalize as needed.
+            AI suggestions are not diagnoses. Override and finalize as needed. Clinical decision support only — qualified clinician review required.
           </span>
         </div>
         <Table>
@@ -275,16 +275,7 @@ export default function RadiologyQueue() {
                   (i as RadiologyStudy & { has_explainability?: boolean }).has_explainability && (
                     <TableRow key={`${i.study_id}-explain`}>
                       <TableCell colSpan={7} className="bg-muted/30 p-4">
-                        <div className="flex items-start gap-4">
-                          <img
-                            src={getExplainabilityImageUrl(i.study_id)}
-                            alt="Explainability heatmap"
-                            className="max-h-48 rounded border object-contain"
-                          />
-                          <p className="text-xs text-muted-foreground">
-                            Grad-CAM style overlay — visual evidence for AI triage. Non-diagnostic.
-                          </p>
-                        </div>
+                        <ExplainabilityHeatmap studyId={i.study_id} className="mt-4" />
                       </TableCell>
                     </TableRow>
                   )}

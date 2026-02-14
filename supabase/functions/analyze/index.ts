@@ -6,12 +6,12 @@
  * Environment variables required:
  * - SUPABASE_URL
  * - SUPABASE_SERVICE_ROLE_KEY
- * - (optional) MODEL_API_URL, MODEL_API_KEY
+ * - (optional) HF_MODEL, HF_API_KEY for model-assisted analysis
  */
 
 import { serve } from "https://deno.land/std@0.203.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { simulateAnalysis } from "./analyzer.ts";
+import { analyzeWithModel } from "./analyzer.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -56,6 +56,7 @@ serve(async (req) => {
     const screeningId = `ps-${Date.now()}-${crypto.randomUUID().slice(0,8)}`;
 
     let imagePath: string | null = null;
+    let fileBytes: Uint8Array | null = null;
 
     if (file && file.size > 0) {
       // generate storage path
@@ -64,10 +65,10 @@ serve(async (req) => {
 
       // convert file to Uint8Array
       const arrayBuffer = await file.arrayBuffer();
-      const fileBytes = new Uint8Array(arrayBuffer);
+      fileBytes = new Uint8Array(arrayBuffer);
 
       // Upload to Supabase Storage (bucket: uploads)
-      const { error: upErr } = await supabase.storage.from("uploads").upload(storagePath, fileBytes, {
+      const { error: upErr } = await supabase.storage.from("uploads").upload(storagePath, fileBytes!, {
         contentType: file.type || "application/octet-stream",
         upsert: false
       });
@@ -79,23 +80,26 @@ serve(async (req) => {
       imagePath = storagePath;
     }
 
-    // Run analysis (deterministic simulation or call external model)
-    // keep this synchronous-ish and fast to respond
-    const report = await simulateAnalysis({
+    // Run analysis (deterministic baseline + optional model when HF_MODEL/HF_API_KEY set)
+    const analysisResult = await analyzeWithModel({
       childAgeMonths: childAge,
       domain,
       observations,
-      imageProvided: !!imagePath
+      imageProvided: !!imagePath,
+      imageBytes: fileBytes ?? null,
+      imageFilename: file && file.size > 0 ? (file.name ?? "upload.jpg") : null,
     });
 
-    // persist to Postgres
+    const report = analysisResult.report;
+
+    // persist to Postgres (include model provenance for audit)
     const insertRow = {
       screening_id: screeningId,
       child_age_months: childAge,
       domain,
       observations,
       image_path: imagePath,
-      report,
+      report: { ...report, model_used: analysisResult.usedModel, model_parse_ok: analysisResult.parseOk },
     };
 
     const { data, error: dbErr } = await supabase.from("screenings").insert([insertRow]).select().single();
@@ -108,12 +112,14 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "db_insert_failed", detail: dbErr.message }), { status: 500, headers: { "Content-Type": "application/json" }});
     }
 
-    // Return the structured response expected by frontend
+    // Return the structured response expected by frontend (include model provenance)
     const responsePayload = {
       success: true,
       screening_id: screeningId,
       report,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      model_used: analysisResult.usedModel,
+      model_parse_ok: analysisResult.parseOk,
     };
 
     return new Response(JSON.stringify(responsePayload), { status: 200, headers: { "Content-Type": "application/json" }});

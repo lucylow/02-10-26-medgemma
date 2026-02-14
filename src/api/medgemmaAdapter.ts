@@ -5,9 +5,7 @@
 
 import type { MedGemmaReport, MedGemmaEvidence } from './medgemma';
 import type { ScreeningResult } from '@/services/screeningApi';
-
-const DEFAULT_DISCLAIMER =
-  'PediScreen AI uses MedGemma models for clinical decision support only. Outputs require review by a qualified healthcare professional.';
+import { DISCLAIMER_DRAFT } from '@/constants/disclaimers';
 
 export function mapScreeningResultToMedGemmaReport(
   result: ScreeningResult,
@@ -23,7 +21,7 @@ export function mapScreeningResultToMedGemmaReport(
       riskAssessment: { overall: 'Unknown', domains: {} },
       evidence: [],
       recommendations: [],
-      disclaimer: DEFAULT_DISCLAIMER,
+      disclaimer: DISCLAIMER_DRAFT,
     };
   }
 

@@ -90,3 +90,32 @@ export async function fetchRadiologyBenchmark(): Promise<RadiologyBenchmark> {
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
+
+/** PACS WADO-RS ingest request */
+export type PacsIngestRequest = {
+  study_uid: string;
+  series_uid: string;
+  instance_uid: string;
+  pacs_url: string;
+  access_token: string;
+  modality?: string;
+};
+
+/** PACS ingest response */
+export type PacsIngestResponse = {
+  risk_score: number;
+  priority: string;
+  summary: string;
+  note: string;
+  disclaimer: string;
+};
+
+export async function ingestFromPacs(body: PacsIngestRequest): Promise<PacsIngestResponse> {
+  const res = await fetch(`${API_BASE}/api/radiology/pacs-ingest`, {
+    method: "POST",
+    headers: { ...headers(), "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
