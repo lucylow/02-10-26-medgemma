@@ -1,0 +1,3 @@
+{"case_id": "t1", "age_months": 24, "observations_text": "Child says few words.", "labels": {"reference_flag": "monitor"}}
+{"case_id": "t2", "age_months": 36, "observations_text": "Child on track.", "labels": {"reference_flag": "on_track"}}
+{"case_id": "t3", "age_months": 18, "observations_text": "No words yet.", "labels": {"reference_flag": "refer"}}
