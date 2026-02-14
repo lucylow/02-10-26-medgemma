@@ -6,6 +6,7 @@ from app.core.config import settings
 from app.core.logger import logger
 from app.core.security import get_api_key
 from app.services.storage import save_upload, remove_file
+from app.services.phi_redactor import redact_text
 from app.services.model_wrapper import analyze as run_analysis
 from app.services.medgemma_service import MedGemmaService
 from app.services.db import get_db
@@ -87,6 +88,10 @@ async def analyze_endpoint(
     except ValueError:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="childAge must be an integer representing months")
 
+    # PHI redaction before external model calls
+    redaction_result = redact_text(observations or "")
+    observations_clean = redaction_result["redacted_text"]
+
     saved_path = None
     image_bytes = None
     if image:
@@ -105,14 +110,14 @@ async def analyze_endpoint(
             analysis_result = await medgemma_svc.analyze_input(
                 age_months=age,
                 domain=domain,
-                observations=observations,
+                observations=observations_clean,
                 image_bytes=image_bytes,
                 image_filename=image.filename if image else None,
             )
             screening_id = f"ps-{int(time.time())}-{uuid.uuid4().hex[:8]}"
             result = _medgemma_report_to_response(analysis_result, age, domain, screening_id)
         else:
-            result = await run_analysis(child_age_months=age, domain=domain, observations=observations, image_path=saved_path)
+            result = await run_analysis(child_age_months=age, domain=domain, observations=observations_clean, image_path=saved_path)
     except Exception as e:
         logger.error(f"Analysis failure: {e}")
         # cleanup file if present
@@ -126,7 +131,7 @@ async def analyze_endpoint(
         "screening_id": result["screening_id"],
         "childAge": age,
         "domain": domain,
-        "observations": observations,
+        "observations": observations_clean,
         "image_path": saved_path,
         "report": result["report"],
         "timestamp": result.get("timestamp", int(datetime.utcnow().timestamp()))

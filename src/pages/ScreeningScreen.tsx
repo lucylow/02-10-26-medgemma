@@ -27,6 +27,7 @@ import MultimodalAnalysisPreview from '@/components/pediscreen/MultimodalAnalysi
 import ProgressiveHelp from '@/components/pediscreen/ProgressiveHelp';
 import AccessibilityBar from '@/components/pediscreen/AccessibilityBar';
 import ConsentModal, { hasStoredConsent } from '@/components/pediscreen/ConsentModal';
+import DisclaimerBanner from '@/components/pediscreen/DisclaimerBanner';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 const developmentalDomains = [
@@ -236,7 +237,10 @@ const ScreeningScreen = () => {
         open={consentOpen}
         onOpenChange={setConsentOpen}
         onConsent={() => setConsentOpen(false)}
+        screeningId={lastResult?.screeningId}
+        apiKey={import.meta.env.VITE_API_KEY}
       />
+      <DisclaimerBanner />
       {/* Header with Progress */}
       <motion.div 
         className="mb-8"

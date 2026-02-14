@@ -66,3 +66,30 @@ Children are a vulnerable population requiring special "design for safety."
 | **Privacy** | ✅ | Support for on-device inference and commitment to data minimization. |
 | **Bias** | ✅ | Documented plan for continuous bias auditing and diverse validation. |
 | **Pediatric** | ✅ | Adherence to Children & AI Design Code principles. |
+
+---
+
+## 🛠️ Software Enforcement (Implementation)
+
+The following components enforce legal protections in code:
+
+| Component | Location | Purpose |
+| :--- | :--- | :--- |
+| **LegalMiddleware** | `backend/app/core/legal_middleware.py` | Audit logging, PHI redaction flag check, disclaimer headers, policy scan on AI responses |
+| **Policy Engine** | `backend/app/services/policy_engine.py` | Detects/rewrites forbidden claim language (e.g. "diagnosis", "guarantee") |
+| **PHI Redactor** | `backend/app/services/phi_redactor.py` | Redacts SSN, DOB, email, phone before external model calls |
+| **Legal Audit** | `backend/app/services/legal_audit.py` | Persists audit entries to MongoDB or file fallback |
+| **Retention Worker** | `backend/app/services/retention.py` | Purges draft reports per RETENTION_DAYS |
+| **Consent API** | `backend/app/api/consent.py` | Records parental consent for audit trail |
+| **DisclaimerBanner** | `src/components/pediscreen/DisclaimerBanner.tsx` | Prominent CDS disclaimer on screening/report pages |
+| **ConsentModal** | `src/components/pediscreen/ConsentModal.tsx` | Parental consent with POST /api/consent |
+| **ClinicianSignOff** | `src/components/pediscreen/ClinicianSignOff.tsx` | Explicit sign-off note (auditable) |
+| **Privacy/DPA Templates** | `backend/app/templates/privacy_notice.j2`, `dpa.j2` | Jinja2 templates for legal artifacts |
+
+### Developer Checklist
+- [ ] LegalMiddleware added to FastAPI middleware stack
+- [ ] `phi_redactor.redact_text()` used before external model calls (detailed_writer, analyze)
+- [ ] `report_audit` written on create/edit/finalize/deny
+- [ ] Retention job deployed (Cloud Scheduler → `python -m app.scripts.run_retention`)
+- [ ] Unit tests: `pytest tests/test_policy_engine.py tests/test_phi_redactor.py tests/test_legal_middleware.py`
+- [ ] Replace API_KEY gating with OAuth2 for clinician actions in production

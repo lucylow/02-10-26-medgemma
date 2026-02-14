@@ -1,0 +1,24 @@
+# Data Processing Agreement (DPA) — PediScreen AI Demo
+Effective: {{ effective_date }}
+
+## 1. Parties
+- **Data Controller**: {{ controller_name }}
+- **Data Processor**: PediScreen AI (Demo)
+
+## 2. Purpose
+Processing of pediatric developmental screening data for clinical decision support, subject to parental consent and applicable privacy laws.
+
+## 3. Data Categories
+- Screening responses, child age, optional images
+- No PHI sent to external models without redaction
+
+## 4. Security Measures
+- PHI redaction before external API calls
+- Audit logging of all access and modifications
+- Retention limits enforced via automated purge
+
+## 5. Sub-processors
+AI model inference (Vertex AI / Hugging Face) — data redacted prior to transmission.
+
+## 6. Contact
+{{ contact_email }}

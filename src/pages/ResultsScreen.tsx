@@ -16,6 +16,7 @@ import VisualMilestoneTimeline from '@/components/pediscreen/VisualMilestoneTime
 import ProgressiveHelp from '@/components/pediscreen/ProgressiveHelp';
 import AccessibilityBar from '@/components/pediscreen/AccessibilityBar';
 import ClinicianReview from '@/components/pediscreen/ClinicianReview';
+import DisclaimerBanner from '@/components/pediscreen/DisclaimerBanner';
 
 type RiskLevel = 'on_track' | 'low' | 'monitor' | 'medium' | 'refer' | 'high';
 
@@ -127,6 +128,7 @@ const ResultsScreen = () => {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-6" id="results-content">
+      <DisclaimerBanner />
       {/* Report Header */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}

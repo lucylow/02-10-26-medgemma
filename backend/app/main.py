@@ -8,9 +8,13 @@ from starlette.requests import Request
 from app.core.config import settings
 from app.core.logger import logger
 from app.core.disclaimers import API_DISCLAIMER_HEADER
-from app.api import analyze, screenings, health, technical_writing, radiology, radiology_pacs, reports, medgemma_detailed, citations, infra, fhir
+from app.core.legal_middleware import LegalMiddleware
+from app.api import analyze, screenings, health, technical_writing, radiology, radiology_pacs, reports, medgemma_detailed, citations, infra, fhir, consent
 
 app = FastAPI(title=settings.APP_NAME)
+
+# Legal middleware: audit, PHI enforcement, disclaimer, policy scan (runs first)
+app.add_middleware(LegalMiddleware)
 
 
 class PediScreenDisclaimerMiddleware(BaseHTTPMiddleware):
@@ -49,6 +53,7 @@ app.include_router(medgemma_detailed.router)
 app.include_router(citations.router)
 app.include_router(infra.router)
 app.include_router(fhir.router)
+app.include_router(consent.router)
 
 @app.on_event("startup")
 async def startup_event():

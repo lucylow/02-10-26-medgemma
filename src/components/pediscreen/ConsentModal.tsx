@@ -1,8 +1,10 @@
 /**
  * Parent-facing consent modal — shown before any data collection.
  * Uses exact microcopy for legal consistency; consent stored for audit.
+ * Calls POST /api/consent when accepted for backend audit trail.
  */
 import React from 'react';
+import { postConsent } from '@/api/consentApi';
 import {
   Dialog,
   DialogContent,
@@ -27,6 +29,11 @@ export interface ConsentModalProps {
   onConsent: (opts: { images: boolean; deidentified: boolean }) => void;
   /** Show extended FAQ paragraph */
   extended?: boolean;
+  /** Optional: screening/patient IDs for consent record */
+  screeningId?: string;
+  patientId?: string;
+  /** Optional: API key for consent endpoint */
+  apiKey?: string;
 }
 
 export function hasStoredConsent(): boolean {
@@ -51,14 +58,30 @@ export default function ConsentModal({
   onOpenChange,
   onConsent,
   extended = false,
+  screeningId,
+  patientId,
+  apiKey,
 }: ConsentModalProps) {
   const [images, setImages] = React.useState(true);
   const [deidentified, setDeidentified] = React.useState(true);
 
-  const handleAccept = () => {
+  const handleAccept = async () => {
     storeConsent();
     onConsent({ images, deidentified });
     onOpenChange(false);
+    // Record consent to backend for audit trail (fire-and-forget)
+    try {
+      await postConsent({
+        screeningId,
+        patientId,
+        consentGiven: true,
+        consentScope: { storeData: true, shareWithEHR: false, deidentified, images },
+        consentMethod: 'web',
+        apiKey,
+      });
+    } catch {
+      /* non-blocking; consent stored locally */
+    }
   };
 
   return (

@@ -36,9 +36,11 @@
   {{ pdf_footer or "PediScreen AI — Draft technical report. AI-assisted content; clinician review and sign-off required prior to clinical use." }}
 </div>
 
+{% if confidence_label %}
 <div style="position: fixed; bottom: 10px; right: 10px; font-size: 10px; color: #555;">
-  {% if confidence_label %}AI Confidence: {{ confidence_label }}{% endif %}
+  AI Confidence: {{ confidence_label }}
 </div>
+{% endif %}
 
 </body>
 </html>
