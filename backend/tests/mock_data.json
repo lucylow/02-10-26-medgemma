@@ -1,0 +1,201 @@
+{
+  "_description": "Mock data artifacts for Detailed Writer + End-to-End flow (screening → PHI redaction → draft → clinician edit → finalize → PDF). All values synthetic, safe for demos/tests.",
+  "screening_row": {
+    "screening_id": "screen-0001",
+    "patient_id": "P-0001",
+    "submitted_by": "chw_alpha",
+    "child_age_months": 24,
+    "domain": "language",
+    "observations": "John Doe DOB 2019-05-14 MRN: MRN-12345 Parent email: parent.jane@example.com Phone +1 (555) 123-4567. Parent reports: 'He only says ~10 single words and points rather than using phrases.' No regressions reported.",
+    "scores": {
+      "communication": 0.30,
+      "motor": 0.85,
+      "social": 0.90,
+      "cognitive": 0.88
+    },
+    "image_path": null,
+    "created_at": "2025-02-10T12:00:00Z"
+  },
+  "phi_redaction_output": {
+    "redacted_text": "<PERSON> DOB <DATE_ISO> MRN: <MRN> Parent email: <EMAIL> Phone <PHONE>. Parent reports: 'He only says ~10 single words and points rather than using phrases.' No regressions reported.",
+    "redactions": [
+      {"kind": "PERSON", "original": "John Doe"},
+      {"kind": "DATE_ISO", "original": "2019-05-14"},
+      {"kind": "MRN", "original": "MRN-12345"},
+      {"kind": "EMAIL", "original": "parent.jane@example.com"},
+      {"kind": "PHONE", "original": "+1 (555) 123-4567"}
+    ],
+    "method": "spacy+regex"
+  },
+  "prompt_example": "You are MedGemma-Writer, a clinical technical writer assisting pediatric developmental screening documentation. Return a JSON object EXACTLY matching schema keys: clinical_summary, technical_summary, parent_summary, risk_assessment_overall, domains (array of {domain, rating, rationale, quantitative_scores}), evidence (list of brief evidence items), recommendations (list), citations (list with id/text/url). Input: patient_age_months: 24, structured_scores: {\"communication\": 0.3, \"motor\": 0.85, \"social\": 0.9, \"cognitive\": 0.88}, observations: \"<PERSON> DOB <DATE_ISO> MRN: <MRN> Parent email: <EMAIL> Phone <PHONE>. Parent reports: 'He only says ~10 single words and points rather than using phrases.' No regressions reported.\", image_summary: \"No image provided\". Return JSON ONLY.",
+  "model_raw_output": {
+    "clinical_summary": "This 24-month-old child shows signs consistent with delayed expressive language. Parent reports indicate approximately 10 single words without phrase formation. Structured screening shows the Communication domain below expected thresholds.",
+    "technical_summary": "Communication domain score 0.30 (below expected). Motor, social and cognitive domains appear within typical ranges (motor 0.85, social 0.90, cognitive 0.88). The combination of parent-reported reduced vocabulary and ASQ-3 communication score suggests targeted monitoring and referral for speech-language evaluation. Recommend short-term (4-8 weeks) in-home language stimulation plan and re-screening.",
+    "parent_summary": "Your child uses about 10 single words and is not yet combining words. This is something to watch. We recommend more shared reading and a speech-language evaluation if there is no improvement in 1-2 months.",
+    "risk_assessment_overall": "medium",
+    "domains": [
+      {"domain": "communication", "rating": "monitor", "rationale": "ASQ-3 Communication score below cutoff; parent report of limited expressive vocabulary", "quantitative_scores": {"communication": 0.3}},
+      {"domain": "motor", "rating": "typical", "rationale": "Motor score within expected range", "quantitative_scores": {"motor": 0.85}},
+      {"domain": "social", "rating": "typical", "rationale": "No social concerns reported", "quantitative_scores": {"social": 0.9}},
+      {"domain": "cognitive", "rating": "typical", "rationale": "Cognitive score typical", "quantitative_scores": {"cognitive": 0.88}}
+    ],
+    "evidence": [
+      {"id": "ev1", "type": "score", "summary": "ASQ-3 Communication: 0.30", "confidence": 0.95},
+      {"id": "ev2", "type": "text", "summary": "Parent report: ~10 single words", "confidence": 0.9}
+    ],
+    "recommendations": [
+      "Refer to speech-language pathologist for assessment",
+      "Start daily shared reading and language-stimulation activities",
+      "Re-screen communication domain in 2 months"
+    ],
+    "citations": [
+      {"id": "c1", "text": "ASQ-3 User's Guide", "url": "https://example.org/asq3"}
+    ]
+  },
+  "parsed_model_json": {
+    "clinical_summary": "This 24-month-old child shows signs consistent with delayed expressive language. Parent reports indicate approximately 10 single words without phrase formation. Structured screening shows the Communication domain below expected thresholds.",
+    "technical_summary": "Communication domain score 0.30 (below expected). Motor, social and cognitive domains appear within typical ranges (motor 0.85, social 0.90, cognitive 0.88). The combination of parent-reported reduced vocabulary and ASQ-3 communication score suggests targeted monitoring and referral for speech-language evaluation. Recommend short-term (4-8 weeks) in-home language stimulation plan and re-screening.",
+    "parent_summary": "Your child uses about 10 single words and is not yet combining words. This is something to watch. We recommend more shared reading and a speech-language evaluation if there is no improvement in 1-2 months.",
+    "risk_assessment_overall": "medium",
+    "domains": [
+      {"domain": "communication", "rating": "monitor", "rationale": "ASQ-3 Communication score below cutoff; parent report of limited expressive vocabulary", "quantitative_scores": {"communication": 0.3}},
+      {"domain": "motor", "rating": "typical", "rationale": "Motor score within expected range", "quantitative_scores": {"motor": 0.85}},
+      {"domain": "social", "rating": "typical", "rationale": "No social concerns reported", "quantitative_scores": {"social": 0.9}},
+      {"domain": "cognitive", "rating": "typical", "rationale": "Cognitive score typical", "quantitative_scores": {"cognitive": 0.88}}
+    ],
+    "evidence": [
+      {"id": "ev1", "type": "score", "summary": "ASQ-3 Communication: 0.30", "confidence": 0.95},
+      {"id": "ev2", "type": "text", "summary": "Parent report: ~10 single words", "confidence": 0.9}
+    ],
+    "recommendations": [
+      "Refer to speech-language pathologist for assessment",
+      "Start daily shared reading and language-stimulation activities",
+      "Re-screen communication domain in 2 months"
+    ],
+    "citations": [
+      {"id": "c1", "text": "ASQ-3 User's Guide", "url": "https://example.org/asq3"}
+    ]
+  },
+  "generated_draft": {
+    "report_id": "trpt-1700000000-abc12345",
+    "screening_id": "screen-0001",
+    "patient_id": "P-0001",
+    "author_id": "api_key_demo",
+    "created_at": "2025-02-10T12:00:05Z",
+    "updated_at": "2025-02-10T12:00:05Z",
+    "status": "draft",
+    "clinical_summary": "This 24-month-old child shows signs consistent with delayed expressive language. Parent reports indicate approximately 10 single words without phrase formation. Structured screening shows the Communication domain below expected thresholds.",
+    "technical_summary": "Communication domain score 0.30 (below expected). Motor, social and cognitive domains appear within typical ranges (motor 0.85, social 0.90, cognitive 0.88). The combination of parent-reported reduced vocabulary and ASQ-3 communication score suggests targeted monitoring and referral for speech-language evaluation. Recommend short-term (4-8 weeks) in-home language stimulation plan and re-screening.",
+    "parent_summary": "Your child uses about 10 single words and is not yet combining words. This is something to watch. We recommend more shared reading and a speech-language evaluation if there is no improvement in 1-2 months.",
+    "risk_assessment_overall": "medium",
+    "domains": [
+      {"domain": "communication", "rating": "monitor", "rationale": "ASQ-3 Communication score below cutoff; parent report of limited expressive vocabulary", "quantitative_scores": {"communication": 0.3}},
+      {"domain": "motor", "rating": "typical", "rationale": "Motor score within expected range", "quantitative_scores": {"motor": 0.85}},
+      {"domain": "social", "rating": "typical", "rationale": "No social concerns reported", "quantitative_scores": {"social": 0.9}},
+      {"domain": "cognitive", "rating": "typical", "rationale": "Cognitive score typical", "quantitative_scores": {"cognitive": 0.88}}
+    ],
+    "evidence": [
+      {"id": "ev-001", "type": "score", "summary": "ASQ-3 Communication: 0.30", "confidence": 0.95, "citations": [{"id": "c1", "text": "ASQ-3 User's Guide", "url": "https://example.org/asq3"}], "provenance": {"model": "baseline_rules", "prompt_hash": "abcde12345"}},
+      {"id": "ev-002", "type": "text", "summary": "Parent report: ~10 single words (redacted)", "confidence": 0.9, "provenance": {"model": "medgemma-2b", "prompt_hash": "f123456789"}}
+    ],
+    "recommendations": [
+      "Refer to speech-language pathologist for assessment",
+      "Start daily shared reading and language-stimulation activities",
+      "Re-screen communication domain in 2 months"
+    ],
+    "citations": [
+      {"id": "c1", "text": "ASQ-3 User's Guide", "url": "https://example.org/asq3"}
+    ],
+    "metadata": {
+      "prompt_hash": "f123456789",
+      "model_snippet": "Truncated model output...",
+      "redaction_method": "spacy+regex"
+    }
+  },
+  "clinician_patch_request": {
+    "clinical_summary": "Edited by clinician: I agree that communication should be monitored. Family advised for immediate speech-language referral and community resources listed.",
+    "recommendations": [
+      "Refer to speech-language pathologist for assessment",
+      "Connect family to local early intervention services",
+      "Start daily shared reading and language-stimulation activities",
+      "Re-screen communication domain in 2 months"
+    ]
+  },
+  "clinician_patch_response": {
+    "report_id": "trpt-1700000000-abc12345",
+    "status": "draft",
+    "clinical_summary": "Edited by clinician: I agree that communication should be monitored. Family advised for immediate speech-language referral and community resources listed.",
+    "recommendations": [
+      "Refer to speech-language pathologist for assessment",
+      "Connect family to local early intervention services",
+      "Start daily shared reading and language-stimulation activities",
+      "Re-screen communication domain in 2 months"
+    ],
+    "metadata": {
+      "last_edited_by": "clinician_jane",
+      "last_edited_at": "2025-02-10T12:15:00Z"
+    }
+  },
+  "approve_response": {
+    "ok": true,
+    "final": {
+      "report_id": "trpt-1700000000-abc12345",
+      "status": "finalized",
+      "clinical_summary": "Edited by clinician: I agree that communication should be monitored. Family advised for immediate speech-language referral and community resources listed.",
+      "clinician_approval": {"by": "clinician_jane", "note": "Reviewed and signed. SLP referral placed.", "at": 1700000100}
+    },
+    "pdf_base64": "JVBERi0xLjQKJcfs... (truncated base64 PDF data)"
+  },
+  "report_audit_entries": [
+    {
+      "id": 101,
+      "report_id": "trpt-1700000000-abc12345",
+      "action": "created_draft",
+      "actor": "api_key_demo",
+      "payload": {"redaction": {"method": "spacy+regex", "redactions": [{"kind": "PERSON", "original": "John Doe"}]}},
+      "created_at": "2025-02-10T12:00:10Z"
+    },
+    {
+      "id": 102,
+      "report_id": "trpt-1700000000-abc12345",
+      "action": "patched",
+      "actor": "clinician_jane",
+      "payload": {"clinical_summary": "Edited by clinician: I agree ...", "recommendations": ["..."]},
+      "created_at": "2025-02-10T12:15:05Z"
+    },
+    {
+      "id": 103,
+      "report_id": "trpt-1700000000-abc12345",
+      "action": "finalized",
+      "actor": "clinician_jane",
+      "payload": {"clinician_note": "Reviewed and signed. SLP referral placed."},
+      "created_at": "2025-02-10T12:16:00Z"
+    }
+  ],
+  "sample_pdf_base64": "JVBERi0xLjQKJeLjz9MKNCAwIG9iago8PC9UeXBlL1BhZ2UvUGFyZW50IDMgMCBSL1Jlc291cmNlcyA8PC9Gb250IDw8L0YxIDUgMCBSPj4+Pi9NZWRpYUJveFswIDAgNjEyIDc5Ml0vQ29udGVudHMgNiAwIFI+PmVuZG9iago2IDAgb2JqCjw8L0xlbmd0aCA0OD4+CnN0cmVhbQpIZWxsbywgV29ybGQhCmVuZHN0cmVhbQplbmRvYmoKNSAwIG9iago8PC9UeXBlL0ZvbnQvU3ViVHlwZS9UeXBlMQovTmFtZS9GMQovQmFzZUZvbnQvSGVsdmV0aWNhPj4KZW5kb2JqCjMgMCBvYmoKPDwvVHlwZS9QYWdlcy9LaWRzIFsgNCAwIFIgXSA+PmVuZG9iagozIDAgb2JqCjw8L1R5cGUvUGFnZXMvS2lkc1sgNCAwIFIgXS9Db3VudCAxPj4KZW5kb2JqCnhyZWYKMCA3CjAwMDAwMDAwMDAgNjU1MzUgZiAKMDAwMDAwMDAxMCAwMDAwMCBuIAowMDAwMDAwMDYxIDAwMDAwIG4gCjAwMDAwMDAxMjAgMDAwMDAgbiAKMDAwMDAwMDE4OSAwMDAwMCBuIAp0cmFpbGVyCjw8L1NpemUgNy9Sb290IDEgMCBSL0luZm8gMiAwIFIvSUQgWzxjYzlkYTQ4NzU1ZTVlZGFkZDU4ZjI3MWU0NzYzNzU0Pl0+PgpzdGFydHhyZWYKNDAyCiUlRU9G",
+  "frontend_mock_generate_response": {
+    "reportId": "trpt-1700000000-abc12345",
+    "status": "draft",
+    "clinicalSummary": "This 24-month-old child shows signs consistent with delayed expressive language...",
+    "parentSummary": "Your child uses about 10 single words...",
+    "riskAssessment": {
+      "overall": "medium",
+      "domains": {"communication": "monitor", "motor": "typical"}
+    },
+    "evidence": [
+      {"type": "score", "summary": "ASQ-3 Communication: 0.30", "confidence": 0.95},
+      {"type": "text", "summary": "Parent report: ~10 single words", "confidence": 0.9}
+    ],
+    "recommendations": ["Refer to SLP", "Daily shared reading", "Re-screen in 2 months"],
+    "disclaimer": "This is an AI-assisted draft; clinician review required."
+  },
+  "frontend_mock_finalize_response": {
+    "ok": true,
+    "final": {
+      "report_id": "trpt-1700000000-abc12345",
+      "status": "finalized",
+      "clinician_approval": {"by": "clinician_jane", "note": "Signed.", "at": 1700000100}
+    },
+    "pdf_base64": "JVBERi0xLjQKJc..."
+  }
+}

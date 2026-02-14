@@ -1,13 +1,12 @@
 # app/main.py
-import base64
 import json
 import os
 import traceback
 from typing import List, Optional
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-import numpy as np
 from .medgemma_service import MedGemmaService
+from .utils.embeddings import parse_embedding_b64
 
 # instantiate app
 app = FastAPI(title="PediScreen Model Server (MedGemma inference)")
@@ -44,14 +43,11 @@ def infer_embedding(req: InferRequest):
         if req.shape is None:
             raise HTTPException(status_code=400, detail="shape is required (e.g., [1,256])")
 
-        # decode base64 -> numpy float32 array
-        raw = base64.b64decode(req.embedding_b64)
-        emb = np.frombuffer(raw, dtype=np.float32)
-        # reshape
+        # decode base64 -> numpy float32 array (validates byte length vs shape)
         try:
-            emb = emb.reshape(tuple(req.shape))
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"shape mismatch: {e}")
+            emb = parse_embedding_b64(req.embedding_b64, req.shape)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
 
         # call model service
         result = _service.infer(precomputed_image_emb=emb,

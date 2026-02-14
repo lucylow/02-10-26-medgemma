@@ -7,11 +7,12 @@ import io
 import time
 from typing import Optional
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, File, UploadFile
 from pydantic import BaseModel
 
 from app.core.config import settings
 from app.core.logger import logger
+from app.errors import ApiError, ErrorCodes
 
 router = APIRouter(prefix="/api", tags=["embed"])
 
@@ -42,9 +43,11 @@ async def embed_image(file: UploadFile = File(...)):
     contents = await file.read()
 
     if len(contents) > MAX_UPLOAD_BYTES:
-        raise HTTPException(
+        raise ApiError(
+            ErrorCodes.PAYLOAD_TOO_LARGE,
+            f"Image exceeds max size ({MAX_UPLOAD_BYTES // (1024*1024)}MB)",
             status_code=413,
-            detail=f"Image exceeds max size ({MAX_UPLOAD_BYTES // (1024*1024)}MB)",
+            details={"max_bytes": MAX_UPLOAD_BYTES},
         )
 
     from PIL import Image
@@ -52,7 +55,11 @@ async def embed_image(file: UploadFile = File(...)):
     try:
         pil = Image.open(io.BytesIO(contents)).convert("RGB")
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Invalid image: {e}")
+        raise ApiError(
+            ErrorCodes.INVALID_IMAGE,
+            f"Invalid image: {e}",
+            status_code=400,
+        ) from e
 
     image_meta = ImageMeta(width=pil.width, height=pil.height, color_space="RGB")
 
@@ -105,9 +112,10 @@ async def embed_image(file: UploadFile = File(...)):
             logger.debug("HF MedSigLIP skipped: %s", e)
 
     if not result:
-        raise HTTPException(
+        raise ApiError(
+            ErrorCodes.SERVICE_UNAVAILABLE,
+            "No MedSigLIP backend available (configure Vertex, HF, or local transformers)",
             status_code=503,
-            detail="No MedSigLIP backend available (configure Vertex, HF, or local transformers)",
         )
 
     elapsed = time.time() - start

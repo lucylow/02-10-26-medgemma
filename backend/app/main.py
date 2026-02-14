@@ -1,7 +1,9 @@
 # backend/app/main.py
 import uvicorn
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 
@@ -10,8 +12,66 @@ from app.core.logger import logger
 from app.core.disclaimers import API_DISCLAIMER_HEADER
 from app.core.legal_middleware import LegalMiddleware
 from app.api import analyze, infer, screenings, health, technical_writing, radiology, radiology_pacs, reports, medgemma_detailed, citations, infra, fhir, consent, embed
+from app.errors import ErrorResponse, ErrorCodes
+from app.utils.error_formatter import api_error
 
 app = FastAPI(title=settings.APP_NAME)
+
+
+def _status_to_code(status_code: int) -> str:
+    """Map HTTP status to default error code."""
+    return {
+        400: ErrorCodes.INVALID_PAYLOAD,
+        401: ErrorCodes.AUTH_FAIL,
+        403: ErrorCodes.AUTH_FAIL,
+        404: ErrorCodes.NOT_FOUND,
+        422: ErrorCodes.VALIDATION_ERROR,
+        500: ErrorCodes.SAFE_ERROR,
+        503: ErrorCodes.SERVICE_UNAVAILABLE,
+    }.get(status_code, ErrorCodes.SAFE_ERROR)
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Convert Pydantic validation errors to standardized ErrorResponse."""
+    errors = exc.errors()
+    details = {"validation_errors": errors}
+    return api_error(
+        ErrorCodes.VALIDATION_ERROR,
+        "Request validation failed",
+        status_code=422,
+        details=details,
+    )
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Catch-all: convert to standardized ErrorResponse."""
+    from fastapi import HTTPException
+    from app.errors import ApiError
+
+    if isinstance(exc, ApiError):
+        return api_error(exc.code, exc.message, exc.status_code, exc.details)
+    if isinstance(exc, HTTPException):
+        detail = exc.detail
+        if isinstance(detail, dict) and "code" in detail:
+            return api_error(
+                detail.get("code", _status_to_code(exc.status_code)),
+                detail.get("message", str(detail)),
+                exc.status_code,
+                detail.get("details"),
+            )
+        return api_error(
+            _status_to_code(exc.status_code),
+            str(detail) if detail else "An error occurred",
+            exc.status_code,
+        )
+    logger.exception("Unhandled exception: %s", exc)
+    return api_error(
+        ErrorCodes.SAFE_ERROR,
+        "An unexpected error occurred",
+        status_code=500,
+    )
 
 # Legal middleware: audit, PHI enforcement, disclaimer, policy scan (runs first)
 app.add_middleware(LegalMiddleware)

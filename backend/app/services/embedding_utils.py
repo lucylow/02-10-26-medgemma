@@ -7,6 +7,8 @@ from typing import List, Tuple, Union
 
 import numpy as np
 
+from app.utils.embeddings import parse_embedding_b64
+
 
 def float32_arr_to_b64(arr: np.ndarray) -> str:
     """Encode float32 numpy array to base64 string (raw bytes, no text serialization)."""
@@ -14,10 +16,8 @@ def float32_arr_to_b64(arr: np.ndarray) -> str:
 
 
 def b64_to_float32_arr(b64: str, shape: List[int]) -> np.ndarray:
-    """Decode base64 string to float32 numpy array with given shape."""
-    raw = base64.b64decode(b64)
-    arr = np.frombuffer(raw, dtype=np.float32)
-    return arr.reshape(shape)
+    """Decode base64 string to float32 numpy array with given shape. Validates byte length."""
+    return parse_embedding_b64(b64, shape)
 
 
 def normalize_l2(arr: np.ndarray, axis: int = -1) -> np.ndarray:

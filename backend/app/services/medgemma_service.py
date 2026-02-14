@@ -10,7 +10,6 @@ import hashlib
 import json
 import logging
 import re
-import struct
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -276,12 +275,10 @@ class MedGemmaService:
         """
         t0 = time.perf_counter()
         try:
-            raw = base64.b64decode(embedding_b64)
-            n_floats = len(raw) // 4
-            emb = list(struct.unpack(f"{n_floats}f", raw))
-            if shape and len(shape) >= 2 and shape[0] * shape[1] != n_floats:
-                logger.warning("Embedding shape %s does not match byte length", shape)
-        except Exception as e:
+            from app.utils.embeddings import parse_embedding_b64
+            emb_arr = parse_embedding_b64(embedding_b64, shape or [1, 256])
+            emb = emb_arr.tolist()
+        except ValueError as e:
             logger.exception("Embedding decode failed: %s", e)
             raise ValueError(f"Invalid embedding_b64 or shape: {e}") from e
 

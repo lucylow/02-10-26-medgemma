@@ -1,10 +1,11 @@
 # backend/app/api/analyze.py
 import time
 import uuid
-from fastapi import APIRouter, File, UploadFile, Form, Depends, HTTPException, status, BackgroundTasks
+from fastapi import APIRouter, File, UploadFile, Form, Depends, BackgroundTasks
 from app.core.config import settings
 from app.core.logger import logger
 from app.core.security import get_api_key
+from app.errors import ApiError, ErrorCodes
 from app.services.storage import save_upload, remove_file
 from app.services.phi_redactor import redact_text
 from app.services.model_wrapper import analyze as run_analysis
@@ -89,7 +90,12 @@ async def analyze_endpoint(
     try:
         age = int(childAge)
     except ValueError:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="childAge must be an integer representing months")
+        raise ApiError(
+            ErrorCodes.INVALID_PAYLOAD,
+            "childAge must be an integer representing months",
+            status_code=400,
+            details={"field": "childAge", "expected": "integer"},
+        )
 
     # PHI redaction before external model calls
     redaction_result = redact_text(observations or "")
@@ -126,7 +132,12 @@ async def analyze_endpoint(
         # cleanup file if present
         if saved_path:
             remove_file(saved_path)
-        raise HTTPException(status_code=500, detail="analysis_failed")
+        raise ApiError(
+            ErrorCodes.ANALYSIS_FAILED,
+            "Analysis failed",
+            status_code=500,
+            details={"error": str(e)} if settings.DEBUG else None,
+        ) from e
 
     # Save screening record in DB for persistence (fire-and-forget via background task)
     if is_cloudsql_enabled():

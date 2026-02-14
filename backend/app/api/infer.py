@@ -5,15 +5,24 @@ Accepts embedding_b64 + metadata; raw images never leave device.
 """
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 
 from app.core.config import settings
 from app.core.logger import logger
 from app.core.security import get_api_key
+from app.errors import ApiError, ErrorCodes, ErrorResponse
 from app.services.medgemma_service import MedGemmaService
 
 router = APIRouter(prefix="/api", tags=["MedGemma Inference"])
+
+# OpenAPI error responses
+_infer_responses = {
+    400: {"model": ErrorResponse, "description": "Invalid payload or embedding (EMBEDDING_PARSE_ERROR)"},
+    422: {"model": ErrorResponse, "description": "Validation error (VALIDATION_ERROR)"},
+    500: {"model": ErrorResponse, "description": "Inference failed (INFERENCE_FAILED)"},
+    503: {"model": ErrorResponse, "description": "Model not configured (MODEL_LOAD_FAIL)"},
+}
 
 _medgemma_svc = None
 
@@ -51,7 +60,7 @@ class InferRequest(BaseModel):
     user_id_pseudonym: Optional[str] = Field(None, description="Pseudonymized user ID")
 
 
-@router.post("/infer")
+@router.post("/infer", responses=_infer_responses)
 async def infer_endpoint(
     req: InferRequest,
     api_key: str = Depends(get_api_key),
@@ -63,9 +72,10 @@ async def infer_endpoint(
     """
     svc = _get_medgemma_svc()
     if not svc:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="MedGemma not configured (HF_MODEL+HF_API_KEY or Vertex required)",
+        raise ApiError(
+            ErrorCodes.MODEL_LOAD_FAIL,
+            "MedGemma not configured (HF_MODEL+HF_API_KEY or Vertex required)",
+            status_code=503,
         )
     try:
         result = await svc.infer_with_precomputed_embedding(
@@ -80,10 +90,17 @@ async def infer_endpoint(
         )
         return result
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
+        raise ApiError(
+            ErrorCodes.EMBEDDING_PARSE_ERROR,
+            str(e),
+            status_code=400,
+            details={"hint": "Check embedding_b64 and shape match expected format"},
+        ) from e
     except Exception as e:
         logger.exception("Infer failed: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="inference_failed",
+        raise ApiError(
+            ErrorCodes.INFERENCE_FAILED,
+            "Model inference failed",
+            status_code=500,
+            details={"error": str(e)} if settings.DEBUG else None,
         ) from e
