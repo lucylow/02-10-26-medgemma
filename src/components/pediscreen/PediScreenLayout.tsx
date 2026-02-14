@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import { PARENT_ONE_LINER } from '@/constants/disclaimers';
-import { Baby, Home, Plus, History, ArrowLeft, Menu, Sparkles, ChevronRight, UserCircle, Settings, BookOpen, Scan, FileText } from 'lucide-react';
+import { Baby, Home, Plus, History, ArrowLeft, Menu, Sparkles, ChevronRight, UserCircle, Settings, BookOpen, Scan, FileText, FlaskConical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
@@ -17,6 +17,7 @@ const navItems = [
   { title: 'Settings', path: '/pediscreen/settings', icon: Settings },
   { title: 'Radiology', path: '/pediscreen/radiology', icon: Scan },
   { title: 'Technical Writer', path: '/pediscreen/technical-writer', icon: FileText },
+  { title: 'End2End Demo', path: '/pediscreen/end2end-demo', icon: FlaskConical },
 ];
 
 const getBreadcrumbs = (pathname: string) => {
@@ -28,6 +29,7 @@ const getBreadcrumbs = (pathname: string) => {
   if (pathname.includes('/settings')) crumbs.push({ label: 'Settings', path: '/pediscreen/settings' });
   if (pathname.includes('/radiology')) crumbs.push({ label: 'Radiology Worklist', path: '/pediscreen/radiology' });
   if (pathname.includes('/technical-writer')) crumbs.push({ label: 'Technical Writer', path: '/pediscreen/technical-writer' });
+  if (pathname.includes('/end2end-demo')) crumbs.push({ label: 'End2End Demo', path: '/pediscreen/end2end-demo' });
   if (pathname.includes('/results')) crumbs.push({ label: 'Results', path: pathname });
   if (pathname.includes('/learn-more')) crumbs.push({ label: 'Architecture', path: '/pediscreen/learn-more' });
   return crumbs;

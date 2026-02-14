@@ -24,6 +24,7 @@ import RadiologyQueue from "./pages/RadiologyQueue";
 import TechnicalWriter from "./pages/TechnicalWriter";
 import DetailedReportEditor from "./pages/DetailedReportEditor";
 import ClinicianDashboard from "./pages/ClinicianDashboard";
+import EndToEndDemo from "./pages/EndToEndDemo";
 
 const queryClient = new QueryClient();
 
@@ -84,6 +85,7 @@ const App = () => {
               <Route path="learn-more" element={<LearnMore />} />
               <Route path="radiology" element={<RadiologyQueue />} />
               <Route path="technical-writer" element={<TechnicalWriter />} />
+              <Route path="end2end-demo" element={<EndToEndDemo />} />
               <Route path="report/:reportId" element={<DetailedReportEditor />} />
             </Route>
             <Route path="*" element={<NotFound />} />

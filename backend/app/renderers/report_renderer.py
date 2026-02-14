@@ -52,3 +52,8 @@ def render_markdown(report: Any) -> str:
     """Render TechnicalReport to Markdown."""
     md_tpl = env.get_template("technical_report.md.j2")
     return md_tpl.render(report=_report_to_dict(report))
+
+
+def generate_pdf_bytes(report: Any) -> bytes:
+    """Alias for render_pdf for compatibility with end2end flow."""
+    return render_pdf(report)
