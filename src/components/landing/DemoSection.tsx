@@ -1,0 +1,484 @@
+import { useState } from "react";
+import { motion } from "framer-motion";
+import {
+  Keyboard,
+  Image,
+  Cog,
+  BarChart3,
+  Lightbulb,
+  Shield,
+  CloudUpload,
+  Search,
+  CheckCircle,
+  AlertTriangle,
+  Camera,
+  Eye,
+  Heart,
+  Info,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { toast } from "sonner";
+
+const modelSteps = [
+  { icon: Keyboard, label: "Text Input" },
+  { icon: Image, label: "Image Analysis" },
+  { icon: Cog, label: "MedGemma Inference" },
+  { icon: BarChart3, label: "Risk Assessment" },
+  { icon: Lightbulb, label: "Recommendations" },
+];
+
+const recommendationsData = {
+  medium: [
+    { strong: "Formal screening:", text: "Complete ASQ-3 or M-CHAT-R for comprehensive assessment" },
+    { strong: "Language-rich environment:", text: "Increase interactive reading and narrate daily activities" },
+    { strong: "Professional consultation:", text: "Schedule evaluation within 1-2 months" },
+    { strong: "Follow-up:", text: "Rescreen in 4-6 weeks to monitor progress" },
+  ],
+  low: [
+    { strong: "Continue monitoring:", text: "Track milestones using CDC's 'Learn the Signs. Act Early.' materials" },
+    { strong: "Engage in play:", text: "Provide age-appropriate activities for language, motor, and social skills" },
+    { strong: "Routine check-ups:", text: "Continue regular well-child visits for ongoing surveillance" },
+    { strong: "Parent education:", text: "Access evidence-based resources on child development" },
+  ],
+};
+
+// Emotional support messages based on risk level
+const supportMessages = {
+  medium: {
+    title: "We're here to support you 💙",
+    message: "Some areas may benefit from a little extra attention. Early awareness means you can help more effectively.",
+  },
+  low: {
+    title: "Your child is doing great! 🌟",
+    message: "Development appears healthy. Keep doing what you're doing — your engagement matters!",
+  },
+};
+
+export function DemoSection() {
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  const [activeStep, setActiveStep] = useState(-1);
+  const [age, setAge] = useState("24");
+  const [riskLevel, setRiskLevel] = useState<"low" | "medium">("medium");
+  const [confidence, setConfidence] = useState(0.78);
+  const [observation, setObservation] = useState(
+    "My 2-year-old says only about 10 words and doesn't seem to combine them. He points to things he wants but doesn't use words. He understands simple instructions like \"come here\" or \"give me the ball.\""
+  );
+
+  const handleUploadClick = () => {
+    toast.info("In the full application, this would open your device camera or gallery to capture visual evidence. For this demo, visual analysis is simulated.", {
+      duration: 4000,
+    });
+  };
+
+  const handleAnalyze = () => {
+    setIsAnalyzing(true);
+    setShowResults(false);
+    setActiveStep(0);
+
+    // Animate through steps
+    const stepInterval = setInterval(() => {
+      setActiveStep((prev) => {
+        if (prev >= modelSteps.length - 1) {
+          clearInterval(stepInterval);
+          return prev;
+        }
+        return prev + 1;
+      });
+    }, 350);
+
+    // Determine risk level and confidence based on input
+    const hasDelayIndicators = observation.toLowerCase().includes("only about 10 words") || 
+                               observation.toLowerCase().includes("doesn't combine");
+    const newRiskLevel = age === "24" && hasDelayIndicators ? "medium" : "low";
+    const newConfidence = hasDelayIndicators ? 0.82 : 0.91;
+    
+    setTimeout(() => {
+      setIsAnalyzing(false);
+      setShowResults(true);
+      setRiskLevel(newRiskLevel);
+      setConfidence(newConfidence);
+      setActiveStep(-1);
+    }, 2000);
+  };
+
+  // Confidence level indicator config
+  const getConfidenceConfig = (conf: number) => {
+    if (conf >= 0.85) return { label: 'High Confidence', color: 'text-emerald-500', bg: 'bg-emerald-500' };
+    if (conf >= 0.65) return { label: 'Moderate Confidence', color: 'text-amber-500', bg: 'bg-amber-500' };
+    return { label: 'Lower Confidence', color: 'text-orange-500', bg: 'bg-orange-500' };
+  };
+
+  const confidenceConfig = getConfidenceConfig(confidence);
+
+  return (
+    <section id="demo" className="py-20 md:py-28 bg-muted/50">
+      <div className="container">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="text-center mb-12"
+        >
+          <h2 className="section-title">Interactive Screening Demo</h2>
+          <p className="text-muted-foreground max-w-2xl mx-auto mt-8">
+            Experience how PediScreen AI works in practice. This simulation shows how 
+            MedGemma processes multimodal inputs to provide developmental insights.
+          </p>
+        </motion.div>
+
+        <Tabs defaultValue="screening" className="max-w-5xl mx-auto">
+          <TabsList className="grid w-full grid-cols-3 mb-8 bg-card">
+            <TabsTrigger value="screening">Developmental Screening</TabsTrigger>
+            <TabsTrigger value="visual">Visual Analysis</TabsTrigger>
+            <TabsTrigger value="workflow">CHW Workflow</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="screening">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="bg-card rounded-2xl p-6 md:p-10 card-shadow"
+            >
+              <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
+                {/* Input Section */}
+                <div className="space-y-6">
+                  <h3 className="font-heading text-xl font-semibold">
+                    Child Information & Observations
+                  </h3>
+
+                  <div className="space-y-2">
+                    <Label>Child's Age</Label>
+                    <Select value={age} onValueChange={setAge}>
+                      <SelectTrigger className="bg-background">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-card border border-border z-50">
+                        <SelectItem value="18">18 months</SelectItem>
+                        <SelectItem value="24">24 months</SelectItem>
+                        <SelectItem value="36">36 months</SelectItem>
+                        <SelectItem value="48">48 months</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Developmental Domain</Label>
+                    <Select defaultValue="language">
+                      <SelectTrigger className="bg-background">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-card border border-border z-50">
+                        <SelectItem value="language">Language & Communication</SelectItem>
+                        <SelectItem value="motor">Motor Skills</SelectItem>
+                        <SelectItem value="social">Social & Emotional</SelectItem>
+                        <SelectItem value="cognitive">Cognitive Skills</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Parent's Observations</Label>
+                    <Textarea
+                      value={observation}
+                      onChange={(e) => setObservation(e.target.value)}
+                      placeholder="Describe your child's behavior..."
+                      className="min-h-[120px] bg-background"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Visual Evidence (Optional)</Label>
+                    <div 
+                      onClick={handleUploadClick}
+                      className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group"
+                    >
+                      <div className="relative">
+                        <CloudUpload className="h-10 w-10 text-muted-foreground mx-auto mb-3 group-hover:scale-110 transition-transform" />
+                        <Camera className="h-4 w-4 text-primary absolute -right-1 -bottom-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                      <p className="text-muted-foreground">
+                        Drag & drop or click to upload
+                      </p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        e.g., child's drawing, block tower, play activity
+                      </p>
+                    </div>
+                  </div>
+
+                  <Button
+                    onClick={handleAnalyze}
+                    disabled={isAnalyzing}
+                    className="w-full gap-2"
+                  >
+                    {isAnalyzing ? (
+                      <>
+                        <div className="h-4 w-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                        Analyzing...
+                      </>
+                    ) : (
+                      <>
+                        <Search className="h-4 w-4" />
+                        Analyze with MedGemma
+                      </>
+                    )}
+                  </Button>
+
+                  {/* Model Flow Visualization */}
+                  <div className="bg-muted rounded-xl p-6 mt-6">
+                    <h4 className="font-heading text-sm font-semibold mb-4 flex items-center gap-2">
+                      <Cog className={`h-4 w-4 ${isAnalyzing ? 'animate-spin' : ''}`} />
+                      On-Device MedGemma Processing
+                    </h4>
+                    <div className="flex justify-between relative">
+                      <div className="absolute top-6 left-[10%] right-[10%] h-0.5 bg-border" />
+                      {/* Animated progress line */}
+                      <div 
+                        className="absolute top-6 left-[10%] h-0.5 bg-primary transition-all duration-300"
+                        style={{ width: activeStep >= 0 ? `${(activeStep / (modelSteps.length - 1)) * 80}%` : '0%' }}
+                      />
+                      {modelSteps.map((step, index) => (
+                        <div key={step.label} className="flex flex-col items-center z-10">
+                          <div 
+                            className={`w-12 h-12 bg-card rounded-full flex items-center justify-center shadow-md mb-2 transition-all duration-300 ${
+                              index <= activeStep ? 'ring-2 ring-primary scale-110' : ''
+                            }`}
+                          >
+                            <step.icon className={`h-5 w-5 transition-colors duration-300 ${
+                              index <= activeStep ? 'text-primary' : 'text-muted-foreground'
+                            }`} />
+                          </div>
+                          <span className={`text-xs text-center transition-colors duration-300 ${
+                            index <= activeStep ? 'text-primary font-medium' : 'text-muted-foreground'
+                          }`}>
+                            {step.label}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-2 mt-4 text-sm text-muted-foreground">
+                      <Shield className="h-4 w-4 text-success" />
+                      <span>
+                        <strong>Privacy First:</strong> All processing happens locally on the device.
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Output Section */}
+                <div className="lg:border-l lg:pl-12 border-border">
+                  <h3 className="font-heading text-xl font-semibold mb-6">
+                    MedGemma Analysis Results
+                  </h3>
+
+                  {!showResults ? (
+                    <div className="h-64 bg-muted rounded-xl flex items-center justify-center">
+                      <div className="text-center text-muted-foreground">
+                        <BarChart3 className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                        <p>Click "Analyze with MedGemma" to see results</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="space-y-6"
+                    >
+                      {/* Risk Indicator with Confidence */}
+                      <div className={`rounded-xl p-4 ${
+                        riskLevel === "medium" ? "bg-warning/10" : "bg-success/10"
+                      }`}>
+                        <div className="flex items-start gap-3">
+                          {riskLevel === "medium" ? (
+                            <AlertTriangle className="h-6 w-6 text-warning shrink-0 mt-0.5" />
+                          ) : (
+                            <CheckCircle className="h-6 w-6 text-success shrink-0 mt-0.5" />
+                          )}
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-foreground">
+                              {riskLevel === "medium" ? "Monitor - Some Concerns" : "On Track - Developing Well"}
+                            </h4>
+                            <p className="text-sm text-muted-foreground mb-3">
+                              Based on analysis of developmental markers for {age}-month-old child
+                            </p>
+                            
+                            {/* Confidence Indicator */}
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="inline-flex items-center gap-2 cursor-help">
+                                    <Info className={`h-4 w-4 ${confidenceConfig.color}`} />
+                                    <span className={`text-xs font-medium ${confidenceConfig.color}`}>
+                                      {confidenceConfig.label}
+                                    </span>
+                                    <div className="w-20 h-1.5 bg-muted rounded-full overflow-hidden">
+                                      <motion.div
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${confidence * 100}%` }}
+                                        transition={{ duration: 0.8, ease: 'easeOut' }}
+                                        className={`h-full rounded-full ${confidenceConfig.bg}`}
+                                      />
+                                    </div>
+                                    <span className={`text-xs font-bold ${confidenceConfig.color}`}>
+                                      {Math.round(confidence * 100)}%
+                                    </span>
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                  <p className="text-sm">
+                                    {confidence >= 0.85 
+                                      ? "Strong evidence supports this assessment."
+                                      : "Reasonably supported. Additional information may help confirm."}
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Emotional Support Message */}
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.2 }}
+                        className={`rounded-xl p-4 border-2 ${
+                          riskLevel === "medium" 
+                            ? "bg-gradient-to-br from-amber-50 to-orange-50 border-amber-100" 
+                            : "bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-100"
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <Heart className={`h-5 w-5 shrink-0 mt-0.5 ${
+                            riskLevel === "medium" ? "text-amber-500" : "text-emerald-500"
+                          }`} />
+                          <div>
+                            <h4 className="font-semibold text-foreground text-sm">
+                              {supportMessages[riskLevel].title}
+                            </h4>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {supportMessages[riskLevel].message}
+                            </p>
+                          </div>
+                        </div>
+                      </motion.div>
+
+                      {/* Clinical Interpretation */}
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <h4 className="font-heading text-sm font-semibold">
+                            Clinical Interpretation
+                          </h4>
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-1">
+                            <Eye className="h-3 w-3" />
+                            XAI
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          The reported language development for a 24-month-old shows potential 
+                          delays. While receptive language (understanding) appears within expected 
+                          range, expressive vocabulary is below the typical 50+ words expected at 
+                          this age.
+                        </p>
+                      </div>
+
+                      {/* Developmental Markers */}
+                      <div>
+                        <h4 className="font-heading text-sm font-semibold mb-2">
+                          Key Developmental Markers Checked
+                        </h4>
+                        <ul className="space-y-2 text-sm text-muted-foreground">
+                          <li className="flex items-start gap-2">
+                            <CheckCircle className={`h-4 w-4 shrink-0 mt-0.5 ${riskLevel === "medium" ? "text-warning" : "text-success"}`} />
+                            Vocabulary size (~10 words, expected: 50+ at {age} months)
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <CheckCircle className={`h-4 w-4 shrink-0 mt-0.5 ${riskLevel === "medium" ? "text-warning" : "text-success"}`} />
+                            Word combinations ({riskLevel === "medium" ? "none" : "emerging"}, expected: emerging at 18-24 months)
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <CheckCircle className="h-4 w-4 text-success shrink-0 mt-0.5" />
+                            Following simple instructions (yes, expected: yes)
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <CheckCircle className="h-4 w-4 text-success shrink-0 mt-0.5" />
+                            Pointing to communicate (yes, expected: established)
+                          </li>
+                        </ul>
+                      </div>
+
+                      {/* Recommendations */}
+                      <div className="bg-primary/5 rounded-xl p-4">
+                        <h4 className="font-heading text-sm font-semibold mb-3">
+                          Recommended Next Steps
+                        </h4>
+                        <ul className="space-y-2 text-sm text-muted-foreground">
+                          {recommendationsData[riskLevel].map((rec, idx) => (
+                            <motion.li 
+                              key={idx}
+                              initial={{ opacity: 0, x: -10 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: idx * 0.1 }}
+                            >
+                              <strong>{rec.strong}</strong> {rec.text}
+                            </motion.li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      <p className="text-xs text-muted-foreground bg-muted rounded-lg p-3">
+                        <strong>Note:</strong> This is a screening tool, not a diagnostic assessment. 
+                        Always consult with a healthcare provider for formal evaluation.
+                      </p>
+                    </motion.div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </TabsContent>
+
+          <TabsContent value="visual">
+            <div className="bg-card rounded-2xl p-10 card-shadow text-center">
+              <h3 className="font-heading text-xl font-semibold mb-4">
+                MedGemma Visual Analysis Demo
+              </h3>
+              <p className="text-muted-foreground">
+                See how MedGemma's multimodal capabilities analyze visual developmental evidence.
+              </p>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="workflow">
+            <div className="bg-card rounded-2xl p-10 card-shadow text-center">
+              <h3 className="font-heading text-xl font-semibold mb-4">
+                Community Health Worker Workflow
+              </h3>
+              <p className="text-muted-foreground">
+                Explore how CHWs use PediScreen AI in field settings with limited connectivity.
+              </p>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </section>
+  );
+}

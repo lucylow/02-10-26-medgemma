@@ -47,8 +47,8 @@ const queryClient = new QueryClient();
 
 const appRoutes = createRoutesFromElements(
   <>
+    <Route path="/" element={<Index />} />
     <Route element={<MainLayout />}>
-      <Route path="/" element={<Index />} />
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/cases" element={<ProtectedRoute><CasesIndex /></ProtectedRoute>} />
       <Route path="/cases/:id" element={<ProtectedRoute><CaseDetail /></ProtectedRoute>} />
