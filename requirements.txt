@@ -1,0 +1,17 @@
+# Core API & server
+fastapi==0.95.2
+uvicorn[standard]==0.20.0
+transformers==4.40.0
+torch>=2.0.0
+numpy>=1.24.0,<2.0
+pydantic==1.10.9
+aiofiles==23.1.0
+python-multipart==0.0.6
+loguru==0.7.0
+peft==0.4.0
+# faiss-cpu==1.7.4  # Optional: for explainability. Use faiss-gpu if GPU available. Fallback: numpy cosine.
+opencv-python-headless==4.8.0
+python-dotenv==1.0.0
+gunicorn==20.1.0
+Pillow==10.0.0
+requests>=2.28.0

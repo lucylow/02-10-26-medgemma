@@ -1,0 +1,1 @@
+# MedSigLIP embedding server package

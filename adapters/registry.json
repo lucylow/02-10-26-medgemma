@@ -1,0 +1,15 @@
+{
+  "adapters": [
+    {
+      "adapter_id": "pediscreen_v1",
+      "base_model": "google/medgemma-2b-it",
+      "hf_repo": "hf://.../pediscreen_v1",
+      "commit_sha": "",
+      "metrics": {
+        "sensitivity": 0.82,
+        "specificity": 0.75
+      },
+      "notes": "Trained on deidentified dataset X, augmented..."
+    }
+  ]
+}

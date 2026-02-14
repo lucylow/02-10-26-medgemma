@@ -110,6 +110,60 @@ pediscreen-ai/
 
 ## 🚀 Getting Started (5-Minute Demo)
 
+### Quick Setup (Unified API)
+
+```bash
+python -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -r requirements.txt -r requirements-dev.txt
+export EMBED_MODE=dummy
+export DUMMY_MEDGEMMA=1
+uvicorn backend.api:app --reload --port 8000
+```
+
+Then run the end-to-end demo:
+
+```bash
+# Fallback/dummy mode (CI-friendly, no model download)
+./scripts/run_demo.sh --ci
+
+# Real mode (requires GPU and model access)
+REAL_MODE=true EMBED_MODE=real ./scripts/run_demo.sh
+```
+
+Or run adapter load demo:
+
+```bash
+python scripts/load_and_infer.py --mock
+```
+
+### Configuration (env vars)
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `EMBED_MODE` | `real` | `real` \| `dummy` \| `distill` — use `dummy` for CI |
+| `DUMMY_MEDGEMMA` | `0` | Set `1` to skip MedGemma load (CI) |
+| `USE_DUMMY` | `0` | Set `1` for embed dummy mode |
+| `MEDGEMMA_BASE` | `google/medgemma-2b-it` | Base model ID |
+| `ADAPTER_PATH` | `./adapters/pediscreen_lora` | LoRA adapter (local or HF path) |
+| `MEDSIGLIP_MODEL` | `google/medsiglip-base` | Embedding model |
+
+**GPU vs CPU:** For real inference, a GPU is recommended. Set `CUDA_VISIBLE_DEVICES=0` to use a specific GPU. CPU fallback works but may be slow or OOM on large models.
+
+### Run Tests
+
+```bash
+pip install -r requirements-dev.txt
+pytest -q
+```
+
+### Run with Docker
+
+```bash
+docker compose up --build
+# Test: http://localhost:8000/health
+```
+
 ### 1. Backend (Model Server)
 The backend uses FastAPI to serve the fine-tuned MedGemma model.
 ```bash

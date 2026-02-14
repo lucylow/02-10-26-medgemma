@@ -1,0 +1,20 @@
+version: "3.8"
+
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - EMBED_MODE=${EMBED_MODE:-dummy}
+      - DUMMY_MEDGEMMA=${DUMMY_MEDGEMMA:-1}
+      - MEDGEMMA_BASE=${MEDGEMMA_BASE:-google/medgemma-2b-it}
+      - ADAPTER_PATH=${ADAPTER_PATH:-./adapters/pediscreen_lora}
+    volumes:
+      - ./data:/app/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    # Optional: for Celery/RQ worker queue

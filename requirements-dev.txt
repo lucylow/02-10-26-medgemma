@@ -1,0 +1,9 @@
+# Test & lint
+pytest
+pytest-asyncio
+httpx
+black
+isort
+flake8
+pre-commit
+mypy
