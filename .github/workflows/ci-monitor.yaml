@@ -1,0 +1,57 @@
+# CI for modular validation and monitoring
+# Runs validation suite, smoke tests for CLI
+name: CI Monitor
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  schedule:
+    - cron: "0 2 * * *"  # Nightly
+
+jobs:
+  validation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install pedi_screen
+        run: |
+          pip install -e .
+          pip install typer
+
+      - name: Run validation suite
+        run: |
+          pedi validate run-suite --output ./validation_reports --test-data ./data/validation_set
+        continue-on-error: true
+
+      - name: Upload validation reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: validation-reports
+          path: validation_reports/
+
+  cli-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install and smoke test CLI
+        run: |
+          pip install -e .
+          pedi --help
+          pedi monitor status
+          pedi validate run-suite --help
+          pedi workflow sync

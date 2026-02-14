@@ -13,13 +13,15 @@ import ExplainabilityPanel from '@/components/pediscreen/ExplainabilityPanel';
 import EmotionalSupportBanner from '@/components/pediscreen/EmotionalSupportBanner';
 import VisualMilestoneTimeline from '@/components/pediscreen/VisualMilestoneTimeline';
 import EHRExportButton from '@/components/pediscreen/EHRExportButton';
+import InferenceFeedbackForm from '@/components/pediscreen/InferenceFeedbackForm';
+import FeedbackList from '@/components/pediscreen/FeedbackList';
 
 type RiskLevel = 'on_track' | 'low' | 'monitor' | 'medium' | 'refer' | 'high';
 
 const ResultsScreen = () => {
   const location = useLocation();
   const { toast } = useToast();
-  const { screeningId, report, childAge, domain, confidence, imagePreview } = location.state || {};
+  const { screeningId, inferenceId, feedbackAllowed, report, childAge, domain, confidence, imagePreview } = location.state || {};
 
   if (!report || !screeningId) {
     return <Navigate to="/pediscreen" replace />;
@@ -677,6 +679,24 @@ const ResultsScreen = () => {
         </motion.div>
       )}
 
+      {/* Clinician Feedback Form & History (Pages 5, 7, 14) */}
+      {activeTab === 'clinician' && feedbackAllowed && inferenceId && (
+        <motion.div
+          className="space-y-4"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          <InferenceFeedbackForm
+            inferenceId={inferenceId}
+            caseId={screeningId}
+            aiRisk={report?.riskLevel}
+            aiSummary={report?.summary}
+          />
+          <FeedbackList inferenceId={inferenceId} caseId={screeningId} />
+        </motion.div>
+      )}
+
       {/* Action Buttons */}
       <motion.div 
         className="flex flex-col gap-4"
@@ -709,8 +729,8 @@ const ResultsScreen = () => {
         )}
 
         <div className={cn("grid grid-cols-1 gap-3", activeTab === 'clinician' ? "sm:grid-cols-4" : "sm:grid-cols-3")}>
-          {activeTab === 'clinician' && (
-            <EHRExportButton
+        {activeTab === 'clinician' && (
+          <EHRExportButton
               caseId={screeningId}
               screeningId={screeningId}
               className="gap-2 h-12 rounded-xl"

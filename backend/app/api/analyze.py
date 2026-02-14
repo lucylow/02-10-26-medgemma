@@ -14,6 +14,7 @@ from app.models.schemas import AnalyzeResponse
 from app.schemas.health_data import ScreeningInput
 from app.services.db import get_db
 from app.services.db_cloudsql import is_cloudsql_enabled, insert_screening_record as cloudsql_insert_screening
+from app.services.feedback_store import insert_inference
 from app.services.medgemma_service import MedGemmaService
 from app.services.model_wrapper import analyze as run_analysis
 from app.services.phi_redactor import redact_text
@@ -47,7 +48,9 @@ def _get_medgemma_svc() -> Optional[MedGemmaService]:
     return _medgemma_svc
 
 
-def _medgemma_report_to_response(analysis_result: dict, age: int, domain: str, screening_id: str) -> dict:
+def _medgemma_report_to_response(
+    analysis_result: dict, age: int, domain: str, screening_id: str, inference_id: str | None = None
+) -> dict:
     """Map MedGemmaService output to AnalyzeResponse schema."""
     report = analysis_result["report"]
     summary = report.get("clinical_summary") or {
@@ -60,7 +63,7 @@ def _medgemma_report_to_response(analysis_result: dict, age: int, domain: str, s
         for kf in report.get("keyFindings", [])
     ]
     provenance = analysis_result.get("provenance", {})
-    return {
+    result = {
         "success": True,
         "screening_id": screening_id,
         "report": {
@@ -79,6 +82,12 @@ def _medgemma_report_to_response(analysis_result: dict, age: int, domain: str, s
         },
         "timestamp": int(time.time()),
     }
+    # Page 4: Hook inference response with feedback UI flag
+    if inference_id:
+        result["inference_id"] = inference_id
+        result["feedback_allowed"] = True
+        result["feedback_url"] = f"/api/feedback/inference/{inference_id}"
+    return result
 
 
 @router.post("/api/analyze", response_model=AnalyzeResponse, status_code=200, dependencies=[Depends(get_api_key)])
@@ -127,9 +136,33 @@ async def analyze_endpoint(
                 image_filename=image.filename if image else None,
             )
             screening_id = f"ps-{int(time.time())}-{uuid.uuid4().hex[:8]}"
-            result = _medgemma_report_to_response(analysis_result, age, domain, screening_id)
+            inference_id = str(uuid.uuid4())
+            prov = analysis_result.get("provenance", {})
+            insert_inference(
+                inference_id=inference_id,
+                case_id=screening_id,
+                screening_id=screening_id,
+                input_hash=prov.get("input_hash") or prov.get("prompt_hash"),
+                result_summary=str(analysis_result.get("report", {}).get("clinical_summary", ""))[:500],
+                result_risk=analysis_result.get("report", {}).get("riskLevel"),
+            )
+            result = _medgemma_report_to_response(analysis_result, age, domain, screening_id, inference_id)
         else:
             result = await run_analysis(child_age_months=age, domain=domain, observations=observations_clean, image_path=saved_path)
+            screening_id = result.get("screening_id", f"ps-{int(time.time())}-{uuid.uuid4().hex[:8]}")
+            inference_id = str(uuid.uuid4())
+            rep = result.get("report", {})
+            insert_inference(
+                inference_id=inference_id,
+                case_id=screening_id,
+                screening_id=screening_id,
+                input_hash=None,
+                result_summary=str(rep.get("clinical_summary", rep.get("summary", "")))[:500],
+                result_risk=rep.get("riskLevel"),
+            )
+            result["inference_id"] = inference_id
+            result["feedback_allowed"] = True
+            result["feedback_url"] = f"/api/feedback/inference/{inference_id}"
     except Exception as e:
         logger.error(f"Analysis failure: {e}")
         # cleanup file if present
@@ -215,7 +248,17 @@ async def screening_endpoint(
                 image_filename=None,
             )
             screening_id = f"ps-{int(time.time())}-{uuid.uuid4().hex[:8]}"
-            result = _medgemma_report_to_response(analysis_result, age, domain, screening_id)
+            inference_id = str(uuid.uuid4())
+            prov = analysis_result.get("provenance", {})
+            insert_inference(
+                inference_id=inference_id,
+                case_id=screening_id,
+                screening_id=screening_id,
+                input_hash=prov.get("input_hash") or prov.get("prompt_hash"),
+                result_summary=str(analysis_result.get("report", {}).get("clinical_summary", ""))[:500],
+                result_risk=analysis_result.get("report", {}).get("riskLevel"),
+            )
+            result = _medgemma_report_to_response(analysis_result, age, domain, screening_id, inference_id)
         else:
             result = await run_analysis(
                 child_age_months=age,
@@ -224,6 +267,19 @@ async def screening_endpoint(
                 image_path=None,
             )
             screening_id = result.get("screening_id", f"ps-{int(time.time())}-{uuid.uuid4().hex[:8]}")
+            inference_id = str(uuid.uuid4())
+            rep = result.get("report", {})
+            insert_inference(
+                inference_id=inference_id,
+                case_id=screening_id,
+                screening_id=screening_id,
+                input_hash=None,
+                result_summary=str(rep.get("clinical_summary", rep.get("summary", "")))[:500],
+                result_risk=rep.get("riskLevel"),
+            )
+            result["inference_id"] = inference_id
+            result["feedback_allowed"] = True
+            result["feedback_url"] = f"/api/feedback/inference/{inference_id}"
     except Exception as e:
         logger.error(f"Screening analysis failure: {e}")
         raise ApiError(

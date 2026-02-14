@@ -1,0 +1,33 @@
+# Grafana/Superset dashboard template: Metrics Overview
+# PediScreen AI — KPI dashboard for inference and feedback
+
+title: PediScreen Metrics Overview
+description: Real-time KPIs for inference, confidence, and clinician feedback
+
+panels:
+  - name: Inference Count
+    type: stat
+    query: SELECT count(*) FROM inference_events WHERE timestamp > now() - interval '24 hours'
+    unit: count
+
+  - name: Avg Inference Time (ms)
+    type: stat
+    query: SELECT avg(inference_time_ms) FROM inference_events WHERE timestamp > now() - interval '24 hours'
+    unit: ms
+
+  - name: Mean Confidence
+    type: gauge
+    query: SELECT avg(confidence) FROM inference_events WHERE timestamp > now() - interval '24 hours'
+    min: 0
+    max: 1
+
+  - name: Risk Distribution
+    type: pie
+    query: SELECT risk, count(*) FROM inference_events WHERE timestamp > now() - interval '24 hours' GROUP BY risk
+
+  - name: Clinician Override Rate
+    type: stat
+    query: |
+      SELECT (SELECT count(*) FROM feedback_events WHERE feedback_type = 'correction')::float /
+             NULLIF((SELECT count(*) FROM inference_events), 0) as override_rate
+    unit: percent

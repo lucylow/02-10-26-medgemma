@@ -1,0 +1,24 @@
+# PediScreen AI — Inference configuration
+# Modules read this independently via config loader
+
+model:
+  base_model_id: "google/medgemma-2b-it"
+  lora_adapter_path: null  # GCS path or local dir
+  adapter_id: null
+
+inference:
+  temperature: 0.0
+  max_new_tokens: 512
+  emb_version: "medsiglip-v1"
+
+# Vertex AI (optional)
+vertex:
+  project: null
+  location: null
+  text_endpoint_id: null
+  vision_endpoint_id: null
+
+# Hugging Face (optional)
+huggingface:
+  model: null
+  api_key: null

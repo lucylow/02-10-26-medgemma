@@ -109,6 +109,9 @@ const ScreeningScreen = () => {
         navigate('/pediscreen/results', { 
           state: { 
             screeningId: result.screeningId,
+            inferenceId: result.inferenceId,
+            feedbackAllowed: result.feedbackAllowed ?? true,
+            feedbackUrl: result.feedbackUrl,
             report: result.report,
             childAge: currentScreening.childAge,
             domain: currentScreening.domain,

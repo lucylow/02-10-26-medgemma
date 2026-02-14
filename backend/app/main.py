@@ -29,6 +29,7 @@ from app.api import (
     schemas_api,
     data_quality,
     interoperability,
+    feedback,
 )
 from app.errors import ErrorResponse, ErrorCodes
 from app.utils.error_formatter import api_error
@@ -137,6 +138,7 @@ app.include_router(embed.router)
 app.include_router(schemas_api.router)
 app.include_router(data_quality.router)
 app.include_router(interoperability.router)
+app.include_router(feedback.router)
 
 @app.on_event("startup")
 async def startup_event():

@@ -9,11 +9,14 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 
+import uuid
+
 from app.core.config import settings
 from app.core.logger import logger
 from app.core.security import get_api_key
 from app.errors import ApiError, ErrorCodes, ErrorResponse
 from app.services.medgemma_service import MedGemmaService
+from app.services.feedback_store import insert_inference
 
 router = APIRouter(prefix="/api", tags=["MedGemma Inference"])
 
@@ -118,6 +121,28 @@ async def infer_endpoint(
             )
         except Exception as audit_err:
             logger.warning("Audit log write failed: %s", audit_err)
+        # Page 4: Hook inference response with feedback UI flag
+        inference_id = str(uuid.uuid4())
+        prov = result.get("provenance", {})
+        res = result.get("result", {})
+        try:
+            insert_inference(
+                inference_id=inference_id,
+                case_id=req.case_id,
+                screening_id=None,
+                input_hash=prov.get("input_hash"),
+                result_summary=(
+                    " ".join(res.get("summary", []))[:500]
+                    if isinstance(res.get("summary"), list)
+                    else str(res.get("summary", ""))[:500]
+                ),
+                result_risk=res.get("risk"),
+            )
+        except Exception as e:
+            logger.warning("Failed to insert inference for feedback: %s", e)
+        result["inference_id"] = inference_id
+        result["feedback_allowed"] = True
+        result["feedback_url"] = f"/api/feedback/inference/{inference_id}"
         return result
     except ValueError as e:
         raise ApiError(

@@ -87,9 +87,18 @@ pediscreen-ai/
 │   ├── backend/           # FastAPI service for MedGemma, Gemma 3, MedSigLIP
 │   └── frontend/          # React Native / Web interface
 │
+├── pedi_screen/           # Modular CLI & packages (monitoring, validation, workflow)
+│   ├── cli.py             # pedi infer | monitor | validate | workflow
+│   ├── medgemma_core/     # Inference engine, model loader, explainability
+│   ├── validation/        # Benchmark tests, bias audit
+│   ├── monitoring/        # Metrics, aggregator, alerting
+│   ├── clinical_workflow/ # FHIR connector, patient state
+│   └── feedback/          # Clinician feedback service
+│
+├── configs/               # inference.yaml, monitor.yaml, alerts.json
 ├── data/
 │   ├── processing/        # Scripts for synthetic data generation
-│   └── validation_set/    # Sample data for evaluation
+│   └── validation_set/    # Sample data for evaluation (benchmark.json, bias_audit.json)
 │
 ├── docs/
 │   ├── workflow_efficiency.md    # ROI, time-savings, and workflow diagrams
@@ -155,6 +164,17 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 cd backend
 pytest -q
 ```
+
+### Modular CLI (pedi)
+```bash
+pip install -e .
+pedi --help
+pedi validate run-suite --output ./validation_reports
+pedi monitor status
+pedi monitor alerts
+pedi workflow sync
+```
+See [docs/architecture.md](docs/architecture.md) and [docs/developer_guide.md](docs/developer_guide.md) for the modular architecture.
 
 ### Inference API (POST /api/infer)
 ```bash

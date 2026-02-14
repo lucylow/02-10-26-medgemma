@@ -1,0 +1,26 @@
+# Grafana/Superset dashboard template: Validation Reports
+# PediScreen AI — validation suite metrics
+
+title: Validation Reports
+description: Sensitivity, specificity, PPV, NPV by modality; bias audit
+
+panels:
+  - name: Benchmark Summary
+    type: table
+    columns: [modality, sensitivity, specificity, ppv, npv, n]
+    source: validation_summary.json
+
+  - name: Sensitivity by Modality
+    type: bar
+    x: modality
+    y: sensitivity
+
+  - name: Bias Audit - Subgroup Performance
+    type: table
+    columns: [subgroup, sensitivity, specificity, n]
+    source: bias_audit.json
+
+  - name: Sensitivity Disparity
+    type: stat
+    metric: sensitivity_disparity
+    description: Max sensitivity difference across demographic subgroups

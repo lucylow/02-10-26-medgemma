@@ -26,6 +26,9 @@ export type FollowUp = {
 export type ScreeningResult = {
   success: boolean;
   screeningId?: string;
+  inferenceId?: string;
+  feedbackAllowed?: boolean;
+  feedbackUrl?: string;
   report?: {
     riskLevel: RiskLevel;
     riskRationale?: string;
@@ -143,6 +146,9 @@ export const submitScreening = async (request: ScreeningRequest): Promise<Screen
     return {
       success: true,
       screeningId: data.screening_id || data.screeningId,
+      inferenceId: data.inference_id,
+      feedbackAllowed: data.feedback_allowed ?? true,
+      feedbackUrl: data.feedback_url,
       report: {
         riskLevel: mapRiskLevel(riskStrat.level || riskStrat.risk_level || 'unknown'),
         riskRationale: riskStrat.rationale || '',
@@ -296,6 +302,8 @@ export const simulateLocalAnalysis = (screeningData: {
       resolve({
         success: true,
         screeningId: `local_${Date.now()}`,
+        inferenceId: `local-inf-${Date.now()}`,
+        feedbackAllowed: true,
         report: {
           riskLevel: randomRisk,
           riskRationale: randomRisk === 'on_track' 

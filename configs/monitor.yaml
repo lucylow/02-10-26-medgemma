@@ -1,0 +1,20 @@
+# PediScreen AI — Monitoring configuration
+# Telemetry exporters, retention
+
+telemetry:
+  exporters:
+    - type: local
+      path: "./monitoring_events.jsonl"
+    # - type: cloud
+    #   project: your-gcp-project
+    # - type: statsd
+    #   host: localhost
+    #   port: 8125
+
+retention:
+  events_max: 100000
+  rotate_days: 7
+
+metrics:
+  inference_time_buckets: [100, 500, 1000, 5000, 30000]
+  confidence_buckets: [0.25, 0.5, 0.75, 1.0]

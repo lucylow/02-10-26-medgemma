@@ -1,0 +1,10 @@
+{
+  "confidence_min": 0.5,
+  "override_rate_max": 0.3,
+  "inference_time_max_ms": 30000,
+  "drift_detection": {
+    "enabled": false,
+    "window_size": 1000,
+    "threshold_std": 2.0
+  }
+}
