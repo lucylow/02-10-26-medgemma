@@ -1,0 +1,17 @@
+# Evaluation config (runbook Page 6, 9)
+embedding_checks:
+  stability_cosine_threshold: 0.9
+  embedding_auc_baseline: 0.5
+
+evaluate_model:
+  sensitivity_target: 0.80
+  specificity_target: 0.70
+  ece_max: 0.15
+
+slices:
+  age_bands:
+    - "0-12"
+    - "13-24"
+    - "25-36"
+    - "37-60"
+  # sex, language, socio_economic_proxy when available

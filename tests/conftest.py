@@ -9,6 +9,7 @@ def pytest_configure(config):
     os.environ.setdefault("USE_DUMMY", "1")
     os.environ.setdefault("REAL_MODE", "false")
     os.environ.setdefault("EMBED_MODE", "dummy")
+    os.environ.setdefault("DUMMY_MEDGEMMA", "1")
 
 
 def _ensure_drawing_fixture():
