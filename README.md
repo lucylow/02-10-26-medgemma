@@ -110,15 +110,39 @@ pediscreen-ai/
 
 ## 🚀 Getting Started (5-Minute Demo)
 
+### Quick Start (Docker)
+```bash
+cd backend
+docker-compose up -d
+# Backend: http://localhost:8000
+# Run tests: docker-compose run backend pytest -q
+```
+
 ### 1. Backend (Model Server)
 The backend uses FastAPI to serve the fine-tuned MedGemma model.
 ```bash
-cd app/backend
+cd backend
 python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-uvicorn app.main:app --host 0.0.0.0 --port 5000
+uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
+
+### Run Tests
+```bash
+cd backend
+pytest -q
+```
+
+### Inference API (POST /api/infer)
+```bash
+curl -X POST http://localhost:8000/api/infer \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: dev-example-key" \
+  -d '{"case_id":"test-1","age_months":24,"observations":"Parent reports few words","embedding_b64":"<base64-float32-bytes>","shape":[1,256]}'
+```
+Note: `embedding_b64` must be base64-encoded float32 bytes; length must match `prod(shape)*4`.
+See [docs/api.md](docs/api.md) for full contract and embedding format.
 
 ### 2. Frontend (Web/Mobile)
 The frontend is a React-based web app (scaffolded for high-fidelity prototyping).
