@@ -1,0 +1,56 @@
+# PediScreen AI — EHR Vendor Configurations
+# Load dynamically based on FHIR_BASE_URL or explicit vendor selection.
+
+epic_r4:
+  name: "Epic R4"
+  fhir_version: "R4"
+  base_url_pattern: "https://fhir.epic.com/interconnect-fhir-oauth/api/FHIR/R4"
+  smart_config_url: "https://fhir.epic.com/interconnect-fhir-oauth/api/FHIR/R4/.well-known/smart-configuration"
+  required_scopes:
+    - "launch"
+    - "openid"
+    - "fhirUser"
+    - "patient/*.read"
+    - "patient/Observation.write"
+    - "patient/DiagnosticReport.write"
+    - "patient/DocumentReference.write"
+
+cerner_millennium:
+  name: "Cerner Millennium"
+  fhir_version: "R4"
+  base_url_pattern: "https://fhir-ehr-code.cerner.com/r4/ecard"
+  smart_config_url: "https://fhir-ehr-code.cerner.com/r4/ecard/.well-known/smart-configuration"
+  required_scopes:
+    - "launch"
+    - "openid"
+    - "fhirUser"
+    - "patient/*.read"
+    - "patient/*.write"
+
+allscripts:
+  name: "Allscripts"
+  fhir_version: "R4"
+  base_url_pattern: "https://fhir.fhir.open.allscripts.com/fhirserver"
+  required_scopes:
+    - "launch"
+    - "openid"
+    - "fhirUser"
+    - "patient/*.read"
+
+smart_sandbox:
+  name: "SMART Health IT Sandbox"
+  fhir_version: "R4"
+  base_url_pattern: "https://launch.smarthealthit.org/v/r4/fhir"
+  smart_config_url: "https://launch.smarthealthit.org/v/r4/fhir/.well-known/smart-configuration"
+  required_scopes:
+    - "launch"
+    - "openid"
+    - "fhirUser"
+    - "patient/*.read"
+    - "patient/*.write"
+
+hapi_sandbox:
+  name: "HAPI FHIR Sandbox (Docker)"
+  fhir_version: "R4"
+  base_url_pattern: "http://localhost:8080/fhir"
+  required_scopes: []

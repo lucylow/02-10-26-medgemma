@@ -49,13 +49,15 @@ async def fhir_callback(request: Request):
     if not iss:
         return {"error": "missing_iss", "detail": "FHIR issuer URL required (iss param or FHIR_BASE_URL)"}
 
+    state = request.query_params.get("state")
+
     try:
         smart = SMARTClient(
             client_id=CLIENT_ID,
             redirect_uri=REDIRECT_URI,
             client_secret=settings.SMART_CLIENT_SECRET,
         )
-        token = smart.exchange_code(iss, code)
+        token = smart.exchange_code(iss, code, state=state)
         # In production: store token in secure session or DB, keyed by user/session
         return {
             "access_token": token.get("access_token"),

@@ -1,0 +1,19 @@
+# PediScreen AI — FHIR Interoperability Configuration
+# Copy to interop/fhir_config.local.yml and override for your environment.
+
+fhir_server_base: "https://sandbox.fhirserver.com/r4"
+# SMART Sandbox: https://launch.smarthealthit.org/v/r4/fhir
+# HAPI FHIR: http://localhost:8080/fhir
+
+client_id: "YOUR_CLIENT_ID"
+client_secret: "YOUR_CLIENT_SECRET"
+redirect_uri: "http://localhost:8000/api/fhir/callback"
+
+# FHIR version
+fhir_version: "R4"
+
+# PKCE (recommended for public clients)
+pkce_enabled: true
+
+# Scopes for SMART launch
+scopes: "launch openid fhirUser patient/*.read patient/Observation.write patient/DiagnosticReport.write patient/DocumentReference.write"

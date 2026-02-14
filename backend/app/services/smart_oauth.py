@@ -1,13 +1,40 @@
 """
 SMART-on-FHIR OAuth2 client for EHR launch (Epic, Cerner, SMART Sandbox).
 Implements the full SMART launch flow per HL7 SMART App Launch spec.
+Supports PKCE (code_challenge/code_verifier) for public clients.
 """
+import hashlib
+import secrets
+import base64
 import requests
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Tuple
 from urllib.parse import urlencode
 
 from app.core.config import settings
 from app.core.logger import logger
+
+# In-memory PKCE store (state -> verifier). Use Redis/DB in production.
+_pkce_store: Dict[str, str] = {}
+
+
+def generate_pkce() -> Tuple[str, str]:
+    """Generate PKCE code_verifier and code_challenge (S256)."""
+    verifier = base64.urlsafe_b64encode(secrets.token_bytes(32)).rstrip(b"=").decode("ascii")
+    challenge = base64.urlsafe_b64encode(
+        hashlib.sha256(verifier.encode()).digest()
+    ).rstrip(b"=").decode("ascii")
+    return challenge, verifier
+
+
+def store_pkce_verifier(state: str, verifier: str) -> None:
+    """Store code_verifier for later token exchange."""
+    _pkce_store[state] = verifier
+
+
+def get_pkce_verifier(state: str) -> Optional[str]:
+    """Retrieve and clear code_verifier for state."""
+    verifier = _pkce_store.pop(state, None)
+    return verifier
 
 
 def get_token_url(iss: str) -> str:
@@ -51,11 +78,13 @@ class SMARTClient:
         launch: str,
         scope: str = "launch openid fhirUser patient/*.read",
         state: Optional[str] = None,
+        use_pkce: bool = True,
     ) -> str:
         """
         Build authorization URL for SMART launch.
         iss: FHIR server base URL (issuer)
         launch: Opaque launch context ID from EHR
+        use_pkce: Add code_challenge for PKCE (recommended for public clients)
         """
         config = _fetch_smart_configuration(iss)
         auth_endpoint = (
@@ -64,6 +93,7 @@ class SMARTClient:
             else f"{iss.rstrip('/')}/oauth2/authorize"
         )
 
+        state = state or secrets.token_urlsafe(16)
         params = {
             "response_type": "code",
             "client_id": self.client_id,
@@ -71,9 +101,13 @@ class SMARTClient:
             "scope": scope,
             "aud": iss.rstrip("/"),
             "launch": launch,
+            "state": state,
         }
-        if state:
-            params["state"] = state
+        if use_pkce:
+            challenge, verifier = generate_pkce()
+            store_pkce_verifier(state, verifier)
+            params["code_challenge"] = challenge
+            params["code_challenge_method"] = "S256"
 
         return f"{auth_endpoint}?{urlencode(params)}"
 
@@ -82,10 +116,12 @@ class SMARTClient:
         iss: str,
         code: str,
         redirect_uri: Optional[str] = None,
+        state: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Exchange authorization code for access token.
         Returns token response with access_token, patient, fhirUser, etc.
+        If state provided and PKCE verifier stored, adds code_verifier.
         """
         config = _fetch_smart_configuration(iss)
         token_url = (
@@ -102,6 +138,10 @@ class SMARTClient:
         }
         if self.client_secret:
             data["client_secret"] = self.client_secret
+        if state:
+            verifier = get_pkce_verifier(state)
+            if verifier:
+                data["code_verifier"] = verifier
 
         res = requests.post(
             token_url,

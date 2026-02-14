@@ -32,6 +32,10 @@ cryptography>=41.0.0
 # WeasyPrint: requires system libs (Docker: libpango, libgdk-pixbuf, libcairo)
 weasyprint>=60.0
 
+# FHIR interoperability (interop/)
+fhirclient>=4.1.0
+fhir.resources>=7.0.0
+
 # Optional (only if you will run MedGemma locally / HF):
 # transformers==4.38.0
 # torch==2.1.0

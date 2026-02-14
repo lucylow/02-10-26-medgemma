@@ -12,6 +12,7 @@ import ConfidenceIndicator from '@/components/pediscreen/ConfidenceIndicator';
 import ExplainabilityPanel from '@/components/pediscreen/ExplainabilityPanel';
 import EmotionalSupportBanner from '@/components/pediscreen/EmotionalSupportBanner';
 import VisualMilestoneTimeline from '@/components/pediscreen/VisualMilestoneTimeline';
+import EHRExportButton from '@/components/pediscreen/EHRExportButton';
 
 type RiskLevel = 'on_track' | 'low' | 'monitor' | 'medium' | 'refer' | 'high';
 
@@ -707,7 +708,16 @@ const ResultsScreen = () => {
           </Card>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className={cn("grid grid-cols-1 gap-3", activeTab === 'clinician' ? "sm:grid-cols-4" : "sm:grid-cols-3")}>
+          {activeTab === 'clinician' && (
+            <EHRExportButton
+              caseId={screeningId}
+              screeningId={screeningId}
+              className="gap-2 h-12 rounded-xl"
+              onSuccess={() => toast({ title: 'Exported', description: 'FHIR bundle exported successfully.' })}
+              onError={(err) => toast({ title: 'Export failed', description: err.message, variant: 'destructive' })}
+            />
+          )}
           <Button
             variant="outline"
             className="gap-2 h-12 rounded-xl"
