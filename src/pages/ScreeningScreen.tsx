@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Camera, Upload, X, Loader2, Shield, Brain, CheckCircle2, Circle, Eye, Sparkles, Scan, Info, Mic, MicOff, Pencil, ImageIcon } from 'lucide-react';
+import { Camera, Upload, X, Loader2, Shield, Brain, CheckCircle2, Circle, Eye, Sparkles, Scan, Info, Mic, MicOff, Pencil, ImageIcon, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -27,6 +27,8 @@ import MultimodalAnalysisPreview from '@/components/pediscreen/MultimodalAnalysi
 import ProgressiveHelp from '@/components/pediscreen/ProgressiveHelp';
 import AccessibilityBar from '@/components/pediscreen/AccessibilityBar';
 import ConsentModal, { hasStoredConsent } from '@/components/pediscreen/ConsentModal';
+import ImageUploadConsentModal, { hasImageConsentPreference, getStoredUploadPreference } from '@/components/pediscreen/ImageUploadConsentModal';
+import CapturePreviewStep from '@/components/pediscreen/CapturePreviewStep';
 import DisclaimerBanner from '@/components/pediscreen/DisclaimerBanner';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
@@ -45,6 +47,11 @@ const ScreeningScreen = () => {
   const { toast } = useToast();
   const { currentScreening, updateScreening, clearScreening } = useScreening();
   const [consentOpen, setConsentOpen] = useState(!hasStoredConsent());
+  const [imageConsentOpen, setImageConsentOpen] = useState(false);
+  const [imagePendingInputId, setImagePendingInputId] = useState<string | null>(null);
+  const [imagePendingPreview, setImagePendingPreview] = useState<string | null>(null);
+  const [imagePendingFile, setImagePendingFile] = useState<File | null>(null);
+  const [uploadPreference, setUploadPreference] = useState<"embeddings_only" | "raw_image">(getStoredUploadPreference());
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [medGemmaDraft, setMedGemmaDraft] = useState<ReturnType<typeof mapScreeningResultToMedGemmaReport> | null>(null);
   const [lastResult, setLastResult] = useState<Awaited<ReturnType<typeof submitScreening>> | null>(null);
@@ -53,6 +60,7 @@ const ScreeningScreen = () => {
   const [voiceSupported, setVoiceSupported] = useState(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
   const imageTabInputRef = useRef<HTMLInputElement>(null);
 
   React.useEffect(() => {
@@ -109,6 +117,24 @@ const ScreeningScreen = () => {
 
   const progress = getProgress();
 
+  const openImageInput = (inputId: string) => {
+    if (!hasImageConsentPreference()) {
+      setImagePendingInputId(inputId);
+      setImageConsentOpen(true);
+    } else {
+      document.getElementById(inputId)?.click();
+    }
+  };
+
+  const handleImageConsent = (pref: "embeddings_only" | "raw_image") => {
+    setUploadPreference(pref);
+    setImageConsentOpen(false);
+    if (imagePendingInputId) {
+      document.getElementById(imagePendingInputId)?.click();
+      setImagePendingInputId(null);
+    }
+  };
+
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -120,23 +146,37 @@ const ScreeningScreen = () => {
         });
         return;
       }
-      
       const reader = new FileReader();
       reader.onloadend = () => {
-        updateScreening({ 
-          imageFile: file, 
-          imagePreview: reader.result as string 
-        });
+        setImagePendingPreview(reader.result as string);
+        setImagePendingFile(file);
       };
       reader.readAsDataURL(file);
     }
+    event.target.value = '';
+  };
+
+  const confirmImage = () => {
+    if (imagePendingFile && imagePendingPreview) {
+      updateScreening({ imageFile: imagePendingFile, imagePreview: imagePendingPreview });
+      setImagePendingPreview(null);
+      setImagePendingFile(null);
+    }
+  };
+
+  const retakeImage = () => {
+    setImagePendingPreview(null);
+    setImagePendingFile(null);
+    fileInputRef.current?.value && (fileInputRef.current.value = '');
+    imageTabInputRef.current?.value && (imageTabInputRef.current.value = '');
   };
 
   const removeImage = () => {
     updateScreening({ imageFile: null, imagePreview: null });
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+    setImagePendingPreview(null);
+    setImagePendingFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (imageTabInputRef.current) imageTabInputRef.current.value = '';
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -239,6 +279,11 @@ const ScreeningScreen = () => {
         onConsent={() => setConsentOpen(false)}
         screeningId={lastResult?.screeningId}
         apiKey={import.meta.env.VITE_API_KEY}
+      />
+      <ImageUploadConsentModal
+        open={imageConsentOpen}
+        onOpenChange={(open) => { setImageConsentOpen(open); if (!open) setImagePendingInputId(null); }}
+        onConsent={handleImageConsent}
       />
       <DisclaimerBanner />
       {/* Header with Progress */}
@@ -479,17 +524,26 @@ const ScreeningScreen = () => {
 
                 <TabsContent value="image" className="mt-4">
                   <div className="space-y-4">
+                    <input
+                      ref={imageTabInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageSelect}
+                      className="hidden"
+                      id="image-tab-input"
+                    />
+                    {imagePendingPreview ? (
+                      <CapturePreviewStep
+                        imagePreview={imagePendingPreview}
+                        useEmbeddingsOnly={uploadPreference === "embeddings_only"}
+                        onRetake={retakeImage}
+                        onUseImage={confirmImage}
+                      />
+                    ) : (
                     <div
                       className="border-2 border-dashed border-primary/20 rounded-2xl p-8 text-center hover:border-primary/40 transition-colors cursor-pointer bg-muted/30"
-                      onClick={() => imageTabInputRef.current?.click()}
+                      onClick={() => openImageInput('image-tab-input')}
                     >
-                      <input
-                        ref={imageTabInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageSelect}
-                        className="hidden"
-                      />
                       {currentScreening.imagePreview ? (
                         <div className="relative">
                           <img src={currentScreening.imagePreview} alt="Preview" className="max-h-48 mx-auto rounded-lg" />
@@ -511,6 +565,7 @@ const ScreeningScreen = () => {
                         </>
                       )}
                     </div>
+                    )}
                     <p className="text-xs text-muted-foreground">
                       Photo supplements your screening. Add observations in Voice or Text tab.
                     </p>
@@ -604,7 +659,21 @@ const ScreeningScreen = () => {
             </CardHeader>
             <CardContent className="pt-6 space-y-4">
               <AnimatePresence mode="wait">
-                {currentScreening.imagePreview ? (
+                {imagePendingPreview ? (
+                  <motion.div
+                    key="preview-step"
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                  >
+                    <CapturePreviewStep
+                      imagePreview={imagePendingPreview}
+                      useEmbeddingsOnly={uploadPreference === "embeddings_only"}
+                      onRetake={retakeImage}
+                      onUseImage={confirmImage}
+                    />
+                  </motion.div>
+                ) : currentScreening.imagePreview ? (
                   <motion.div 
                     key="preview"
                     initial={{ opacity: 0, scale: 0.9 }}
@@ -612,7 +681,6 @@ const ScreeningScreen = () => {
                     exit={{ opacity: 0, scale: 0.9 }}
                     className="space-y-4"
                   >
-                    {/* Enhanced multimodal preview */}
                     <div className="relative">
                       <MultimodalAnalysisPreview
                         imagePreview={currentScreening.imagePreview}
@@ -625,6 +693,7 @@ const ScreeningScreen = () => {
                         size="sm"
                         className="absolute top-2 right-2 gap-1.5 rounded-full shadow-lg"
                         onClick={removeImage}
+                        aria-label="Remove image"
                       >
                         <X className="w-4 h-4" />
                         Remove
@@ -662,6 +731,7 @@ const ScreeningScreen = () => {
                         id="camera-input"
                       />
                       <input
+                        ref={galleryInputRef}
                         type="file"
                         accept="image/*"
                         onChange={handleImageSelect}
@@ -669,12 +739,19 @@ const ScreeningScreen = () => {
                         id="gallery-input"
                       />
                       
+                      <div className="flex items-center justify-center gap-2 mb-3">
+                        <Lock className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground" title="Embeddings-first by default">
+                          Embeddings-first by default
+                        </span>
+                      </div>
                       <div className="flex flex-col sm:flex-row gap-3 justify-center">
                         <Button
                           type="button"
                           variant="outline"
                           className="gap-2 h-12 rounded-xl hover:bg-primary/5 hover:border-primary/30"
-                          onClick={() => document.getElementById('camera-input')?.click()}
+                          onClick={() => openImageInput('camera-input')}
+                          aria-label="Take photo"
                         >
                           <Camera className="w-5 h-5 text-primary" />
                           Take photo
@@ -683,7 +760,8 @@ const ScreeningScreen = () => {
                           type="button"
                           variant="outline"
                           className="gap-2 h-12 rounded-xl hover:bg-primary/5 hover:border-primary/30"
-                          onClick={() => document.getElementById('gallery-input')?.click()}
+                          onClick={() => openImageInput('gallery-input')}
+                          aria-label="Choose from gallery"
                         >
                           <Upload className="w-5 h-5 text-primary" />
                           Choose from gallery

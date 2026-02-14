@@ -1,0 +1,87 @@
+# Role-Based Access Control (RBAC) Policy
+# PediScreen AI - Least Privilege Model
+# Roles are ordered from highest to lowest privilege
+
+version: "1.0"
+
+roles:
+  system_admin:
+    description: Full system administration; infrastructure and adapter management
+    permissions:
+      - create_case
+      - read_case
+      - infer_case
+      - view_raw_image
+      - finalize_report
+      - export_audit_logs
+      - manage_adapter
+      - manage_infra
+      - manage_secrets
+
+  security_admin:
+    description: Security operations; audit export, secrets rotation
+    permissions:
+      - read_case
+      - export_audit_logs
+      - manage_secrets
+      - approve_raw_image_access
+      - approve_audit_export
+
+  clinician:
+    description: Licensed clinician; full case access, sign-off, raw image with consent
+    permissions:
+      - create_case
+      - read_case
+      - infer_case
+      - view_raw_image
+      - finalize_report
+      - clinician_signoff
+
+  chworker:
+    description: Community health worker; create/read cases, run inference, no sign-off
+    permissions:
+      - create_case
+      - read_case
+      - infer_case
+
+  parent:
+    description: Parent/caregiver; create case, view own results
+    permissions:
+      - create_case
+      - read_own_case
+
+  auditor:
+    description: Read-only audit access; cannot modify data
+    permissions:
+      - read_audit_logs
+      - export_audit_logs
+      - view_evidence_metadata
+
+  researcher:
+    description: De-identified data access only; no PHI
+    permissions:
+      - read_deidentified_aggregates
+
+# Path to permission mapping (for middleware)
+path_permissions:
+  "/api/sync_case": infer_case
+  "/api/analyze": infer_case
+  "/analyze": infer_case
+  "/infer": infer_case
+  "/api/medblip/analyze": infer_case
+  "/api/communication": infer_case
+  "/v1/process_case": infer_case
+  "/api/sign-off": clinician_signoff
+  "/api/results/{screening_id}": read_case
+  "/admin/update_adapter": manage_adapter
+  "/admin/audit/search": read_audit_logs
+  "/admin/audit/export": export_audit_logs
+  "/api/consent": create_case
+  "/api/reports/generate": infer_case
+  "/api/reports/{report_id}/approve": finalize_report
+  "/api/radiology/upload": create_case
+  "/api/radiology/{study_id}/review": view_raw_image
+  "/api/screenings": read_case
+  "/api/screenings/{screening_id}": read_case
+  "/api/infra/deployments": manage_infra
+  "/api/infra/secrets": manage_secrets

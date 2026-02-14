@@ -3,7 +3,14 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, ClipboardCheck, Shield, FileDown, Scale, Activity } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Loader2, ClipboardCheck, Shield, FileDown, Scale, Activity, AlertCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   approveReport,
@@ -44,6 +51,8 @@ const ClinicianReview: React.FC<ClinicianReviewProps> = ({
   const [loading, setLoading] = useState(true);
   const [note, setNote] = useState('');
   const [clinicianId, setClinicianId] = useState('clinician');
+  const [overrideRisk, setOverrideRisk] = useState<string>('');
+  const [clinicianRationale, setClinicianRationale] = useState('');
   const [isApproving, setIsApproving] = useState(false);
   const [flags, setFlags] = useState<string[]>([]);
   const [fdaMapping, setFdaMapping] = useState<{
@@ -143,6 +152,8 @@ const ClinicianReview: React.FC<ClinicianReviewProps> = ({
           apiKey,
           clinicalSummary: draft.clinical_summary,
           recommendations: draft.recommendations ?? [],
+          overrideRisk: overrideRisk || undefined,
+          clinicianRationale: clinicianRationale || undefined,
         }
       );
       toast({
@@ -272,6 +283,45 @@ const ClinicianReview: React.FC<ClinicianReviewProps> = ({
             </ul>
           </Card>
         )}
+
+        <div className="space-y-2 p-4 rounded-lg border border-amber-200 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-800">
+          <h4 className="text-sm font-semibold flex items-center gap-2 text-amber-800 dark:text-amber-200">
+            <AlertCircle className="w-4 h-4" />
+            Clinician Override (optional)
+          </h4>
+          <p className="text-xs text-muted-foreground mb-2">
+            If you disagree with the AI risk assessment, override and provide rationale for audit.
+          </p>
+          <div className="space-y-2">
+            <label htmlFor="override-risk" className="text-sm font-medium">
+              Override risk level
+            </label>
+            <Select value={overrideRisk} onValueChange={setOverrideRisk}>
+              <SelectTrigger id="override-risk">
+                <SelectValue placeholder="Keep AI assessment" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Keep AI assessment</SelectItem>
+                <SelectItem value="low">Low</SelectItem>
+                <SelectItem value="monitor">Monitor</SelectItem>
+                <SelectItem value="high">High</SelectItem>
+                <SelectItem value="refer">Refer</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2 mt-2">
+            <label htmlFor="clinician-rationale" className="text-sm font-medium">
+              Clinician rationale
+            </label>
+            <Textarea
+              id="clinician-rationale"
+              className="min-h-[60px]"
+              placeholder="If overriding, explain your clinical reasoning..."
+              value={clinicianRationale}
+              onChange={(e) => setClinicianRationale(e.target.value)}
+            />
+          </div>
+        </div>
 
         <div className="space-y-2">
           <label htmlFor="clinician-note" className="text-sm font-medium">

@@ -69,3 +69,40 @@ jobs:
           pip install pip-audit
           pip-audit -r backend/requirements.txt
         continue-on-error: true
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install audit deps
+        run: pip install pydantic PyYAML
+
+      - name: Run detect-secrets (if available)
+        run: |
+          pip install detect-secrets 2>/dev/null || true
+          detect-secrets scan --exclude-files '\.lock$|\.min\.js$' 2>/dev/null || echo "detect-secrets not installed, skipping"
+        continue-on-error: true
+
+      - name: Run Bandit (SAST)
+        run: |
+          pip install bandit
+          bandit -r app/backend backend/app -ll 2>/dev/null || echo "Bandit completed"
+        continue-on-error: true
+
+      - name: Check audit integrity
+        run: |
+          python scripts/check_audit_integrity.py
+
+      - name: Verify audit chain
+        run: python scripts/verify_audit_chain.py --fixtures compliance/fixtures/audit_sample.json
+
+      - name: Run audit tests
+        run: |
+          pip install pytest
+          PYTHONPATH=. python -m pytest app/backend/tests/test_audit.py -v

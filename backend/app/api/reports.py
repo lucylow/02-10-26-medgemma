@@ -239,6 +239,8 @@ async def approve_report(
     fhir_token: Optional[str] = Form(None),
     clinical_summary: Optional[str] = Form(None),
     recommendations: Optional[str] = Form(None),
+    override_risk: Optional[str] = Form(None),
+    clinician_rationale: Optional[str] = Form(None),
 ):
     """
     Clinician approves a draft report. Role-based: only clinicians can finalize.
@@ -278,6 +280,14 @@ async def approve_report(
         "signed_at": int(time.time()),
         "note": sign_note or "",
     }
+    # Clinician override & rationale (Page 9: accountability)
+    if override_risk or clinician_rationale:
+        final_json["clinician_override"] = {
+            "override_risk": override_risk,
+            "rationale": clinician_rationale or "",
+        }
+        if override_risk:
+            final_json["riskLevel"] = override_risk
 
     # Generate PDF with hash for tamper detection
     pdf_bytes = export_report_pdf(final_json, clinician_email, "final", pdf_hash=None)
@@ -305,14 +315,20 @@ async def approve_report(
         {"$set": update_payload},
     )
 
-    # Audit log
+    # Audit log (include clinician_override for accountability)
     try:
+        audit_payload = {"sign_note": sign_note}
+        if override_risk or clinician_rationale:
+            audit_payload["clinician_override"] = {
+                "override_risk": override_risk,
+                "rationale": clinician_rationale or "",
+            }
         await db.report_audit.insert_one(
             {
                 "report_id": report_id,
                 "action": "signed",
                 "actor": clinician_email,
-                "payload": {"sign_note": sign_note},
+                "payload": audit_payload,
                 "created_at": time.time(),
             }
         )

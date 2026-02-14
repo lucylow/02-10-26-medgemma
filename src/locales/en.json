@@ -1,0 +1,21 @@
+{
+  "app": {
+    "title": "PediScreen AI",
+    "subtitle": "Quick Screening"
+  },
+  "home": {
+    "start": "Start screening",
+    "clinician": "Clinician Dashboard",
+    "settings": "Settings"
+  },
+  "capture": {
+    "photo": "Capture Photo",
+    "upload": "Upload Drawing",
+    "voice": "Record Voice"
+  },
+  "results": {
+    "share": "Share",
+    "savePdf": "Save PDF",
+    "referral": "Request Referral"
+  }
+}

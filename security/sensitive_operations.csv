@@ -1,0 +1,23 @@
+operation,path,actor_roles_allowed,data_involved,sensitivity_level,audit_required
+sync_case,POST /api/sync_case,clinician chworker system_admin,PHI observations age case_id,PHI,Y
+analyze,POST /api/analyze POST /analyze,clinician chworker parent system_admin,PHI observations age images embeddings,PHI,Y
+infer,POST /infer,clinician chworker parent system_admin,PHI observations age images embeddings,PHI,Y
+medblip_analyze,POST /api/medblip/analyze,clinician chworker system_admin,PHI raw images,PHI,Y
+communication,POST /api/communication,clinician chworker system_admin,PHI clinical_summary,PHI,Y
+process_case,POST /v1/process_case,clinician chworker system_admin,PHI case payload,PHI,Y
+sign_off,POST /api/sign-off,clinician,PHI screening_id clinician_id edits,PHI,Y
+get_results,GET /api/results/{screening_id},clinician chworker parent auditor,PHI screening results,PHI,Y
+update_adapter,POST /admin/update_adapter,system_admin security_admin,adapter source config,LOW,Y
+consent,POST /api/consent,clinician chworker parent,consent_id raw_consent,PII,Y
+finalize_report,POST /api/reports/{report_id}/approve,clinician,PHI report content,PHI,Y
+generate_report,POST /api/reports/generate,clinician chworker,PHI screening data,PHI,Y
+view_raw_image,GET /api/radiology/{study_id} raw_image_accessed,clinician security_admin,PHI raw images,PHI,Y
+export_audit_logs,GET /admin/audit/search POST /admin/audit/export,auditor security_admin,audit log metadata,LOW,Y
+data_quality,GET /api/data-quality/{case_id} POST /api/data-quality/validate,clinician chworker,PHI case data,PHI,Y
+screenings_list,GET /api/screenings,clinician chworker auditor,PHI screening metadata,PHI,Y
+screenings_detail,GET /api/screenings/{screening_id},clinician chworker,PHI full screening,PHI,Y
+radiology_upload,POST /api/radiology/upload,clinician,PHI images,PHI,Y
+radiology_review,POST /api/radiology/{study_id}/review,clinician,PHI study results,PHI,Y
+fhir_launch,GET /api/fhir/launch GET /smart/launch,clinician,PHI EHR context,PHI,Y
+infra_deployments,GET /api/infra/deployments POST /api/infra/deployments/*/scale,system_admin,infra config,LOW,Y
+infra_secrets,GET /api/infra/secrets/* POST /api/infra/secrets/*/rotate,security_admin system_admin,secrets,LOW,Y

@@ -9,6 +9,7 @@ import os
 import time
 import uuid
 from datetime import datetime
+from typing import Optional
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -37,6 +38,9 @@ from .utils.privacy import decrypt_embedding
 from .adapter_manager import ensure_adapter
 from .job_store import write_job, read_job
 from .tasks import run_medgemma_pipeline
+from .audit import audit_logger
+from .audit.schema import AuditRequestMeta, AuditResponseMeta
+from .audit.redaction import hash_sensitive, hash_serialized
 
 # Configuration from environment
 MODEL_NAME = os.getenv("MEDGEMMA_MODEL_NAME", "google/medgemma-2b-it")
@@ -203,7 +207,7 @@ async def medblip_analyze(req: InferRequest):
 @app.post("/api/sync_case", response_model=InferResponse)
 @app.post("/api/analyze", response_model=InferResponse)
 @app.post("/analyze", response_model=InferResponse)
-async def analyze(req: InferRequest):
+async def analyze(req: InferRequest, request: Request):
     """
     Analyze developmental screening data.
     
@@ -397,7 +401,58 @@ async def analyze(req: InferRequest):
         
         # Persist to "DB"
         screening_db[screening_id] = response
-        
+
+        # --- Tamper-evident audit log (no raw PHI) ---
+        try:
+            prompt_text = medgemma_service.build_prompt(
+                age_months=req.age_months,
+                observations=req.observations,
+                domain=req.domain,
+                questionnaire_scores=req.questionnaire_scores.dict() if req.questionnaire_scores else None,
+                visual_evidence=visual_evidence_desc,
+            )
+            input_for_hash = {
+                "age_months": req.age_months,
+                "domain": req.domain,
+                "obs_hash": hash_sensitive(req.observations or ""),
+                "obs_length": len(req.observations or ""),
+            }
+            request_meta = AuditRequestMeta(
+                prompt_hash=hash_sensitive(prompt_text),
+                input_hash=hash_serialized(input_for_hash),
+                adapter_id=result.get("adapter_path") or ADAPTER_SOURCE or "default",
+                model_id=MODEL_NAME,
+                input_meta={"age_months": req.age_months, "obs_length": len(req.observations or "")},
+            )
+            ev_refs = parsed.get("supporting_evidence", {}) or {}
+            ev_list = ev_refs.get("from_visual_analysis", []) or []
+            if isinstance(ev_list, list):
+                explainability_refs = [str(x) for x in ev_list[:5]]
+            else:
+                explainability_refs = []
+            response_meta = AuditResponseMeta(
+                summary_hash=hash_sensitive(parsed.get("clinical_summary", "") or ""),
+                risk=mapped_risk,
+                confidence=parsed.get("risk_stratification", {}).get("confidence"),
+                explainability_refs=explainability_refs,
+                inference_id=screening_id,
+            )
+            client_ip = request.client.host if request.client else None
+            request_id = request.headers.get("x-request-id") or str(uuid.uuid4())
+            audit_logger(
+                event_type="inference_run",
+                actor_id="system",
+                actor_role="api",
+                resource_id=screening_id,
+                request_meta=request_meta,
+                response_meta=response_meta,
+                outcome="queued_for_review",
+                client_ip=client_ip,
+                request_id=request_id,
+            )
+        except Exception as e:
+            logger.warning("Audit log write failed (non-fatal): {}", e)
+
         return response
         
     except HTTPException:
@@ -413,9 +468,9 @@ async def analyze(req: InferRequest):
 
 
 @app.post("/infer", response_model=InferResponse)
-async def infer_legacy(req: InferRequest):
+async def infer_legacy(req: InferRequest, request: Request):
     """Legacy inference endpoint - redirects to /analyze"""
-    return await analyze(req)
+    return await analyze(req, request)
 
 
 @app.post("/api/communication", response_model=CommunicationResponse)
@@ -523,7 +578,7 @@ async def get_job_status(job_id: str):
     )
 
 @app.post("/api/sign-off", response_model=InferResponse)
-async def sign_off(req: ClinicalSignOffRequest):
+async def sign_off(req: ClinicalSignOffRequest, request: Request):
     """
     Clinician sign-off endpoint. 
     Enforces HITL by transitioning state from REQUIRES_REVIEW to SIGNED_OFF.
@@ -558,6 +613,22 @@ async def sign_off(req: ClinicalSignOffRequest):
     
     screening.status = JobStatus.SIGNED_OFF
     screening.audit_log.append(audit_entry)
+
+    # Tamper-evident audit log
+    try:
+        from .audit import audit_logger
+        audit_logger(
+            event_type="clinical_signoff",
+            actor_id=req.clinician_id,
+            actor_role="clinician",
+            resource_id=req.screening_id,
+            outcome="signed_off",
+            client_ip=request.client.host if request.client else None,
+            request_id=request.headers.get("x-request-id") or str(uuid.uuid4()),
+            resource_type="screening",
+        )
+    except Exception as e:
+        logger.warning("Audit log write failed (non-fatal): {}", e)
     
     # Update Job Store if it's an async job
     write_job(req.screening_id, {"status": JobStatus.SIGNED_OFF, "updated_at": time.time()})
@@ -600,6 +671,63 @@ async def update_adapter(
         "status": "adapter update queued",
         "source": body.adapter_source
     }
+
+
+# --- Admin Audit Endpoints (Page 15) ---
+@app.get("/admin/audit/search")
+async def audit_search(
+    event_type: Optional[str] = None,
+    actor_id: Optional[str] = None,
+    resource_id: Optional[str] = None,
+    limit: int = 100,
+    offset: int = 0,
+):
+    """
+    Search audit logs. Requires auditor or security_admin role.
+    In production, enforce via require_permission("read_audit_logs").
+    """
+    try:
+        from .audit.logger import get_audit_store
+        entries = get_audit_store()
+        if event_type:
+            entries = [e for e in entries if e.get("event_type") == event_type]
+        if actor_id:
+            entries = [e for e in entries if e.get("actor_id") == actor_id]
+        if resource_id:
+            entries = [e for e in entries if e.get("resource_id") == resource_id]
+        page = entries[offset : offset + limit]
+        return {"total": len(entries), "entries": page}
+    except ImportError:
+        return {"total": 0, "entries": []}
+
+
+@app.post("/admin/audit/export")
+async def audit_export_request(request: Request):
+    """
+    Request audit log export. Creates audit_export_request entry.
+    Requires auditor role; export may need security_admin approval for PHI.
+    """
+    try:
+        from .audit import audit_logger
+        from .audit.logger import get_audit_store
+        client_ip = request.client.host if request.client else None
+        request_id = request.headers.get("x-request-id") or str(uuid.uuid4())
+        audit_logger(
+            event_type="audit_export_request",
+            actor_id="auditor",
+            actor_role="auditor",
+            outcome="export_requested",
+            client_ip=client_ip,
+            request_id=request_id,
+        )
+        entries = get_audit_store()
+        return {
+            "status": "export_requested",
+            "total_entries": len(entries),
+            "message": "Export job created; download available via signed URL (implement in production)",
+        }
+    except ImportError:
+        return {"status": "error", "message": "Audit module not available"}
 
 
 if __name__ == "__main__":

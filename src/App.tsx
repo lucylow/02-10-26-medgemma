@@ -41,6 +41,7 @@ import DetailedReportEditor from "./pages/DetailedReportEditor";
 import ClinicianDashboard from "./pages/ClinicianDashboard";
 import EndToEndDemo from "./pages/EndToEndDemo";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import { ThemeProvider } from "./theme";
 
 const queryClient = new QueryClient();
 
@@ -120,17 +121,19 @@ const App = ({ router: customRouter }: AppProps = {}) => {
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <SupabaseAuthProvider>
-        <TooltipProvider>
-          <ScreeningProvider>
-            <Toaster />
-            <Sonner />
-            <RouterProvider router={router} />
-          </ScreeningProvider>
-        </TooltipProvider>
-      </SupabaseAuthProvider>
-    </QueryClientProvider>
+    <ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <SupabaseAuthProvider>
+          <TooltipProvider>
+            <ScreeningProvider>
+              <Toaster />
+              <Sonner />
+              <RouterProvider router={router} />
+            </ScreeningProvider>
+          </TooltipProvider>
+        </SupabaseAuthProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 };
 

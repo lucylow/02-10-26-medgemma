@@ -270,6 +270,8 @@ export async function approveReport(
     apiKey?: string;
     clinicalSummary?: string;
     recommendations?: string[];
+    overrideRisk?: string;
+    clinicianRationale?: string;
   }
 ): Promise<{ success: boolean; final_report?: ReportDraft; pdf_base64?: string }> {
   const params: Record<string, string> = {
@@ -280,6 +282,8 @@ export async function approveReport(
   if (options?.fhirToken) params.fhir_token = options.fhirToken;
   if (options?.clinicalSummary != null) params.clinical_summary = options.clinicalSummary;
   if (options?.recommendations != null) params.recommendations = options.recommendations.join('\n');
+  if (options?.overrideRisk) params.override_risk = options.overrideRisk;
+  if (options?.clinicianRationale) params.clinician_rationale = options.clinicianRationale;
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/x-www-form-urlencoded',

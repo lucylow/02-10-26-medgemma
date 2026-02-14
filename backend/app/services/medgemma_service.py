@@ -9,6 +9,7 @@ import base64
 import hashlib
 import json
 import logging
+import os
 import re
 import time
 from typing import Any, Dict, List, Optional, Tuple
@@ -36,6 +37,22 @@ except Exception:
 logger = logging.getLogger("medgemma.service")
 
 # Canonical prompt template per PediScreen design spec (Section 5.1)
+# Explainable prompts add reasoning_chain and evidence for trust/accountability
+def _load_explainable_prompt() -> Optional[str]:
+    """Load explainable prompt template if available."""
+    try:
+        import json
+        prompts_path = os.path.join(os.path.dirname(__file__), "..", "..", "prompts", "explainable_prompts.json")
+        if os.path.exists(prompts_path):
+            with open(prompts_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            lines = data.get("pedi_infer_prompt", [])
+            if lines:
+                return "\n".join(lines)
+    except Exception:
+        pass
+    return None
+
 CANONICAL_PROMPT_TEMPLATE = """[METADATA]
 Child age (months): {age_months}
 Context: {context_text}
@@ -48,13 +65,18 @@ You are a clinical decision support assistant. Based on the child's age and the 
 1) a short clinical summary (2-4 bullet points),
 2) risk level ("low", "monitor", "high", "refer"),
 3) three clear, parent-friendly recommendations (one phrased for the parent),
-4) an explanation of what features were most relevant.
+4) a detailed reasoning chain (step by step),
+5) evidence backing each step,
+6) confidence score (0.0 to 1.0).
 
 Do NOT provide a diagnosis. Return JSON only in this exact format:
 ===BEGIN_OUTPUT===
 {{
   "summary": ["...","..."],
   "risk": "monitor",
+  "reasoning_chain": ["step 1", "step 2", "..."],
+  "evidence": [{{"type":"text","description":"...","reference_ids":[]}}],
+  "confidence": 0.72,
   "recommendations": ["...","...","..."],
   "parent_text": "...",
   "explain": "..."
@@ -286,9 +308,22 @@ class MedGemmaService:
 
         if not self.allow_phi and self._detect_phi(observations):
             baseline = self._baseline_analysis(age_months, "", observations, "Embedding provided")
+            summary_list = baseline.get("keyFindings", []) or [
+                s for s in str(baseline.get("clinical_summary", "")).split("\n") if s.strip()
+            ]
             return {
                 "case_id": case_id,
-                "result": baseline,
+                "result": {
+                    "summary": summary_list,
+                    "risk": baseline.get("riskLevel", "monitor"),
+                    "recommendations": baseline.get("recommendations", []),
+                    "parent_text": "",
+                    "explain": "PHI detected; inference blocked.",
+                    "confidence": baseline.get("confidence", 0.5),
+                    "evidence": [],
+                    "reasoning_chain": ["PHI detected in input; baseline analysis only."],
+                    "model_provenance": {"note": "phi_blocked", "input_hash": input_hash},
+                },
                 "provenance": {"note": "phi_blocked", "input_hash": input_hash},
                 "inference_time_ms": int((time.perf_counter() - t0) * 1000),
             }
@@ -332,8 +367,25 @@ class MedGemmaService:
             for ev in model_parsed.get("evidence", []):
                 txt = ev.get("text", ev) if isinstance(ev, dict) else str(ev)
                 final_report["keyFindings"].append(txt)
+            if model_parsed.get("confidence") is not None:
+                final_report["confidence"] = float(model_parsed["confidence"])
         else:
             final_report["clinical_summary"] = final_report.get("clinical_summary") or "Automated draft (no model)."
+
+        # Evidence capture: FAISS nearest neighbors + model evidence
+        evidence_items: List[Any] = []
+        try:
+            from app.services.evidence_capture import get_nearest_neighbor_evidence, extract_evidence_from_model_output
+            emb_arr = parse_embedding_b64(embedding_b64, shape or [1, 256])
+            nn_evidence = get_nearest_neighbor_evidence(emb_arr, k=5, dim=emb_arr.shape[-1])
+            evidence_items = extract_evidence_from_model_output(model_parsed or {}, nn_evidence)
+        except Exception as e:
+            logger.debug("Evidence capture skipped: %s", e)
+            try:
+                from app.services.evidence_capture import extract_evidence_from_model_output
+                evidence_items = extract_evidence_from_model_output(model_parsed or {}, [])
+            except Exception:
+                evidence_items = []
 
         inference_time_ms = int((time.perf_counter() - t0) * 1000)
         provenance = {
@@ -349,10 +401,45 @@ class MedGemmaService:
             "used_vertex": used_vertex,
         }
 
+        # Build explainable response (InferenceExplainable schema)
+        summary_list = model_parsed.get("summary_list", []) if model_parsed else []
+        if not summary_list and final_report.get("clinical_summary"):
+            summary_list = [s.strip() for s in str(final_report["clinical_summary"]).split("\n") if s.strip()]
+
+        model_provenance = {
+            "adapter_id": str(self.adapter_id or ""),
+            "model_id": self.base_model_id,
+            "prompt_hash": phash,
+            "input_hash": input_hash,
+            "emb_version": emb_version,
+        }
+
+        # Convert evidence to dict format for JSON response
+        evidence_dicts = []
+        for e in evidence_items:
+            if hasattr(e, "type"):
+                evidence_dicts.append({
+                    "type": e.type,
+                    "description": e.description,
+                    "reference_ids": getattr(e, "reference_ids", []),
+                    "influence": getattr(e, "influence", None),
+                })
+            elif isinstance(e, dict):
+                evidence_dicts.append({
+                    "type": e.get("type", "text"),
+                    "description": (e.get("text") or e.get("description", str(e)))[:500],
+                    "reference_ids": e.get("reference_ids", []),
+                    "influence": e.get("influence"),
+                })
+
+        reasoning_chain = (model_parsed or {}).get("reasoning_chain", [])
+        if not reasoning_chain and (model_parsed or {}).get("explain"):
+            reasoning_chain = [str(model_parsed.get("explain", ""))]
+
         return {
             "case_id": case_id,
             "result": {
-                "summary": final_report.get("clinical_summary", ""),
+                "summary": summary_list,
                 "risk": final_report.get("riskLevel", "monitor"),
                 "recommendations": final_report.get("recommendations", []),
                 "parent_text": model_parsed.get("plain_language_summary", "") if model_parsed else "",
@@ -360,6 +447,9 @@ class MedGemmaService:
                 "confidence": final_report.get("confidence", 0.5),
                 "adapter_id": self.adapter_id,
                 "model_id": self.base_model_id,
+                "evidence": evidence_dicts,
+                "reasoning_chain": reasoning_chain,
+                "model_provenance": model_provenance,
             },
             "provenance": provenance,
             "inference_time_ms": inference_time_ms,
@@ -659,19 +749,28 @@ class MedGemmaService:
             return {"clinical_summary": text[:4000], "evidence": [], "recommendations": []}
 
     def _normalize_parsed_output(self, parsed: Dict[str, Any]) -> Dict[str, Any]:
-        """Map canonical schema (summary, risk, parent_text, explain) to internal format."""
+        """Map canonical schema (summary, risk, parent_text, explain, reasoning_chain) to internal format."""
         out: Dict[str, Any] = {}
         if "summary" in parsed:
+            summ = parsed["summary"]
             out["clinical_summary"] = (
-                "\n".join(parsed["summary"]) if isinstance(parsed["summary"], list)
-                else str(parsed["summary"])
+                "\n".join(summ) if isinstance(summ, list) else str(summ)
             )
+            out["summary_list"] = summ if isinstance(summ, list) else [str(summ)]
         if "risk" in parsed:
             out["risk_assessment"] = {"overall": parsed["risk"]}
         if "parent_text" in parsed:
             out["plain_language_summary"] = parsed["parent_text"]
         if "recommendations" in parsed:
             out["recommendations"] = parsed["recommendations"]
+        if "reasoning_chain" in parsed:
+            out["reasoning_chain"] = (
+                parsed["reasoning_chain"]
+                if isinstance(parsed["reasoning_chain"], list)
+                else [str(parsed["reasoning_chain"])]
+            )
+        if "confidence" in parsed:
+            out["confidence"] = float(parsed["confidence"])
         if "explain" in parsed:
             out.setdefault("evidence", []).append({"type": "explain", "text": parsed["explain"]})
         # Merge with any other keys

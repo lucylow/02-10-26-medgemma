@@ -2,8 +2,9 @@
 """
 Privacy-first inference endpoint for precomputed embeddings (design spec Section 16.1).
 Accepts embedding_b64 + metadata; raw images never leave device.
+Returns structured InferenceExplainable for AI explainability & trust.
 """
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
@@ -68,7 +69,7 @@ async def infer_endpoint(
     """
     Run MedGemma inference with precomputed image embedding.
     Privacy-first: raw images never leave device; client sends L2-normalized embedding only.
-    Returns structured result with full provenance (adapter_id, base_model_id, input_hash, inference_time_ms).
+    Returns structured result with full provenance and explainability (reasoning_chain, evidence, confidence).
     """
     svc = _get_medgemma_svc()
     if not svc:
@@ -88,6 +89,35 @@ async def infer_endpoint(
             consent_id=req.consent_id,
             user_id_pseudonym=req.user_id_pseudonym,
         )
+        # Audit log for explainability & accountability (Page 10)
+        try:
+            from app.services.audit import write_audit
+            prov = result.get("provenance", {})
+            res = result.get("result", {})
+            write_audit(
+                action="inference_run",
+                actor=req.user_id_pseudonym or api_key[:8] + "..." if api_key else "api",
+                target=req.case_id,
+                payload={
+                    "event_type": "inference_run",
+                    "inference_id": prov.get("input_hash", ""),
+                    "case_id": req.case_id,
+                    "risk": res.get("risk") or res.get("riskLevel"),
+                    "confidence": res.get("confidence"),
+                    "reasoning_chain_hashes": [
+                        str(hash(s)) for s in res.get("reasoning_chain", [])
+                    ][:10],
+                    "adapter_id": prov.get("adapter_id"),
+                    "model_id": prov.get("base_model_id", prov.get("model_id")),
+                    "evidence_refs": [
+                        e.get("reference_ids", []) if isinstance(e, dict) else []
+                        for e in res.get("evidence", [])
+                    ],
+                    "inference_time_ms": result.get("inference_time_ms"),
+                },
+            )
+        except Exception as audit_err:
+            logger.warning("Audit log write failed: %s", audit_err)
         return result
     except ValueError as e:
         raise ApiError(

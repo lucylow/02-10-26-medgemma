@@ -17,4 +17,4 @@ sentencepiece==0.1.99
 pillow==10.1.0
 celery==5.3.6
 redis==5.0.1
-hmac==20101010
+PyYAML>=6.0

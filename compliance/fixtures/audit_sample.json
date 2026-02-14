@@ -1,0 +1,29 @@
+[
+  {
+    "event_id": "a1b2c3d4-e5f6-7890-abcd-ef1111111111",
+    "event_type": "inference_run",
+    "actor_id": "clinician-demo-1",
+    "actor_role": "clinician",
+    "resource_type": "case",
+    "resource_id": "case-001",
+    "timestamp": "2026-02-14T10:00:00.000Z",
+    "request": {
+      "prompt_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "input_hash": "a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456",
+      "adapter_id": "pediscreen_v1",
+      "model_id": "google/medgemma-2b-it",
+      "input_meta": {"age_months": 24, "obs_length": 32}
+    },
+    "response": {
+      "summary_hash": "f1e2d3c4b5a6978890a1b2c3d4e5f6789012345678901234567890abcdef12",
+      "risk": "monitor",
+      "confidence": 0.72,
+      "explainability_refs": ["nn:case-001-123"]
+    },
+    "outcome": "queued_for_review",
+    "client_ip": "192.168.1.1",
+    "request_id": "trace-abc-123",
+    "prev_hmac": null,
+    "hmac": "PLACEHOLDER_WILL_BE_COMPUTED"
+  }
+]

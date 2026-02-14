@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,8 +20,19 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { isAnalyticsOptedIn, setAnalyticsOptIn } from '@/analytics';
 
 const Settings = () => {
+  const [analyticsOptIn, setAnalyticsOptInState] = useState(false);
+  useEffect(() => {
+    setAnalyticsOptInState(isAnalyticsOptedIn());
+  }, []);
+
+  const handleAnalyticsChange = (checked: boolean) => {
+    setAnalyticsOptIn(checked);
+    setAnalyticsOptInState(checked);
+  };
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       <motion.div
@@ -134,6 +145,14 @@ const Settings = () => {
                 <CardDescription>Manage your data and how it's stored.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label className="text-base">Analytics (opt-in)</Label>
+                    <p className="text-sm text-muted-foreground">Allow anonymous usage analytics to improve the product. GDPR-compliant; you can change this anytime.</p>
+                  </div>
+                  <Switch checked={analyticsOptIn} onCheckedChange={handleAnalyticsChange} />
+                </div>
+                <Separator />
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label className="text-base">Local Data Encryption</Label>
