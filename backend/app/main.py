@@ -9,7 +9,7 @@ from app.core.config import settings
 from app.core.logger import logger
 from app.core.disclaimers import API_DISCLAIMER_HEADER
 from app.core.legal_middleware import LegalMiddleware
-from app.api import analyze, screenings, health, technical_writing, radiology, radiology_pacs, reports, medgemma_detailed, citations, infra, fhir, consent
+from app.api import analyze, infer, screenings, health, technical_writing, radiology, radiology_pacs, reports, medgemma_detailed, citations, infra, fhir, consent, embed
 
 app = FastAPI(title=settings.APP_NAME)
 
@@ -43,6 +43,7 @@ app.add_middleware(
 
 # include routers
 app.include_router(analyze.router)
+app.include_router(infer.router)
 app.include_router(screenings.router)
 app.include_router(health.router)
 app.include_router(technical_writing.router)
@@ -54,6 +55,7 @@ app.include_router(citations.router)
 app.include_router(infra.router)
 app.include_router(fhir.router)
 app.include_router(consent.router)
+app.include_router(embed.router)
 
 @app.on_event("startup")
 async def startup_event():

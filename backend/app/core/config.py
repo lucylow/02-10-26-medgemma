@@ -44,7 +44,12 @@ class Settings(BaseSettings):
     HL7_HOST: Optional[str] = Field(None, env="HL7_HOST")
     HL7_PORT: int = Field(2575, env="HL7_PORT")
 
-    # MedSigLIP image embeddings (Vertex + HF fallback)
+    # LoRA adapter provenance (GCS path or local dir for traceability)
+    LORA_ADAPTER_PATH: Optional[str] = Field(None, env="LORA_ADAPTER_PATH")
+    BASE_MODEL_ID: str = Field("google/medgemma-2b-it", env="BASE_MODEL_ID")
+
+    # MedSigLIP image embeddings (Local -> Vertex -> HF fallback chain)
+    MEDSIGLIP_ENABLE_LOCAL: bool = Field(True, env="MEDSIGLIP_ENABLE_LOCAL")  # Local transformers when available
     VERTEX_MEDSIGLIP_ENDPOINT_ID: Optional[str] = Field(None, env="VERTEX_MEDSIGLIP_ENDPOINT_ID")
     HF_MEDSIGLIP_MODEL: Optional[str] = Field("google/medsiglip-base", env="HF_MEDSIGLIP_MODEL")
     HF_MEDSIGLIP_TOKEN: Optional[str] = Field(None, env="HF_MEDSIGLIP_TOKEN")

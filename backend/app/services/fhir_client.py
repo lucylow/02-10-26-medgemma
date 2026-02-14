@@ -1,13 +1,13 @@
 # backend/app/services/fhir_client.py
 """
-SMART-on-FHIR client: post DiagnosticReport, Observations, and DocumentReference to a FHIR server.
+SMART-on-FHIR client: post DiagnosticReport, Observations, DocumentReference, and Provenance to a FHIR server.
 Configure FHIR_BASE_URL and use OAuth2 (SMART on FHIR) for authentication.
 """
 import base64
 import json
 import requests
 from datetime import datetime
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from app.core.logger import logger
 
 # Configure in env: FHIR_BASE_URL = "https://fhir.example.com"
@@ -28,10 +28,12 @@ class FHIRClient:
         patient_id: str,
         pdf_bytes: bytes,
         title: str = "PediScreen AI Developmental Screening",
+        practitioner_ref: Optional[str] = None,
+        attach_provenance: bool = True,
     ) -> Dict[str, Any]:
         """
         Create a DocumentReference attaching the PDF to the patient's EHR.
-        Standards-based way to attach reports per SMART-on-FHIR.
+        Optionally attaches FHIR Provenance for FDA-grade audit trail.
         """
         encoded_pdf = base64.b64encode(pdf_bytes).decode("utf-8")
         payload = {
@@ -56,7 +58,33 @@ class FHIRClient:
             timeout=30,
         )
         res.raise_for_status()
-        return res.json()
+        doc = res.json()
+        doc_id = doc.get("id")
+
+        # Attach Provenance for audit trail (who, what, when)
+        if attach_provenance and doc_id and practitioner_ref:
+            try:
+                from app.services.fhir_provenance import build_provenance_for_document
+
+                prov = build_provenance_for_document(
+                    document_reference_id=doc_id,
+                    practitioner_ref=practitioner_ref,
+                    activity="author",
+                )
+                prov_res = requests.post(
+                    f"{self.base_url}/Provenance",
+                    headers=self.headers,
+                    json=prov,
+                    timeout=30,
+                )
+                if prov_res.status_code in (200, 201):
+                    doc["provenance"] = prov_res.json()
+                else:
+                    logger.warning("Provenance post failed: %s %s", prov_res.status_code, prov_res.text)
+            except Exception as e:
+                logger.warning("Provenance attach failed: %s", e)
+
+        return doc
 
 
 def post_to_fhir(

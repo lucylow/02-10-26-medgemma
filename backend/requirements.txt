@@ -13,6 +13,10 @@ loguru==0.7.0
 pytest==7.4.0
 pytest-asyncio==0.21.0
 httpx==0.24.0
+# Cloud SQL (for Cloud Run deployment)
+sqlalchemy==2.0.20
+cloud-sql-python-connector[pg8000]==0.8.0
+pg8000==1.28.6
 # MedGemmaService: Vertex AI / Hugging Face
 google-cloud-aiplatform>=1.26.0
 google-auth>=2.0.0
@@ -22,6 +26,8 @@ redis>=4.2.0
 # en-core-web-sm
 # Report generation (PDF/HTML)
 Jinja2>=3.1.0
+# PDF PKI signing
+cryptography>=41.0.0
 # WeasyPrint: requires system libs (Docker: libpango, libgdk-pixbuf, libcairo)
 weasyprint>=60.0
 

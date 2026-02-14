@@ -62,6 +62,6 @@ export function mapScreeningResultToMedGemmaReport(
     },
     evidence,
     recommendations: report.recommendations || [],
-    disclaimer: DEFAULT_DISCLAIMER,
+    disclaimer: DISCLAIMER_DRAFT,
   };
 }

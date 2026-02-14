@@ -8,28 +8,43 @@ This document describes the end-to-end implementation for:
 ## 1. MedSigLIP Image Embeddings
 
 ### Backend services
-- **`backend/app/services/medsiglip_vertex.py`** — Vertex AI MedSigLIP embedding (recommended, HIPAA-friendly)
-- **`backend/app/services/medsiglip_hf.py`** — Hugging Face fallback when Vertex unavailable
-- **`backend/app/services/embedding_store.py`** — Persists embeddings to MongoDB `image_embeddings` collection
+- **`backend/app/services/medsiglip_local.py`** — Local transformers (privacy-first, no external calls)
+- **`backend/app/services/medsiglip_vertex.py`** — Vertex AI MedSigLIP (HIPAA-friendly)
+- **`backend/app/services/medsiglip_hf.py`** — Hugging Face fallback
+- **`backend/app/services/embedding_utils.py`** — Canonical encode/decode (base64 float32, L2-normalized)
+- **`backend/app/services/embedding_store.py`** — Persists embeddings (supports list or embedding_b64+shape)
+
+### Standalone embed server
+- **`server/embed_server.py`** — Production-grade FastAPI server with health, image_meta, request limits
+- Run: `uvicorn server.embed_server:app --host 0.0.0.0 --port 5000`
 
 ### Configuration (`.env`)
 ```env
+# Local-first (default: enabled; requires transformers+torch for local inference)
+MEDSIGLIP_ENABLE_LOCAL=1
+
 VERTEX_PROJECT=your-gcp-project
 VERTEX_LOCATION=us-central1
 VERTEX_MEDSIGLIP_ENDPOINT_ID=your-endpoint-id
-# Or use VERTEX_VISION_ENDPOINT_ID if same endpoint
 
 HF_MEDSIGLIP_MODEL=google/medsiglip-base
 HF_MEDSIGLIP_TOKEN=hf_xxx
-# Or HF_API_KEY as fallback
 ```
 
-### Flow
+### Flow (Local → Vertex → HF chain)
 When generating a report with an image, the report generator:
-1. Tries Vertex MedSigLIP first
-2. Falls back to HF Inference API if Vertex fails
-3. Stores embedding in `image_embeddings` for longitudinal analysis
-4. Attaches visual summary to `model_evidence`
+1. Tries **local MedSigLIP** first (privacy-first, no external calls)
+2. Falls back to **Vertex AI** if local unavailable
+3. Falls back to **Hugging Face** if Vertex fails
+4. Stores embedding in `image_embeddings` for longitudinal analysis
+5. Attaches visual summary to `model_evidence`
+
+### API endpoints
+| Endpoint | Purpose |
+|----------|---------|
+| `POST /api/embed` | Compute embedding from image (backend) |
+| `POST /embed` | Compute embedding (standalone embed server) |
+| `POST /api/infer` | Privacy-first inference with precomputed embedding |
 
 ### Postgres (optional)
 If using Postgres instead of MongoDB, run:

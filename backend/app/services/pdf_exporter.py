@@ -77,6 +77,8 @@ def export_report_pdf(
     clinician_name: str,
     version: str = "final",
     pdf_hash: Optional[str] = None,
+    pdf_signature: Optional[str] = None,
+    signing_cert: Optional[str] = None,
 ) -> bytes:
     """Render report to PDF with locked section labels, confidence watermark, and optional hash."""
     template_dir = Path(__file__).resolve().parent.parent / "templates"
@@ -105,6 +107,8 @@ def export_report_pdf(
         pdf_footer=PDF_FOOTER,
         confidence_label=confidence_label,
         pdf_hash=footer_hash,
+        pdf_signature=pdf_signature,
+        signing_cert=signing_cert,
     )
 
     if WEASYPRINT_AVAILABLE:

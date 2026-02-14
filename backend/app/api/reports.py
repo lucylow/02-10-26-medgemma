@@ -15,6 +15,7 @@ from app.core.logger import logger
 from app.core.security import get_api_key
 from app.security.google_auth import require_clinician, require_clinician_or_api_key
 from app.services.db import get_db
+from app.services.db_cloudsql import is_cloudsql_enabled, fetch_screening_by_id as cloudsql_fetch_screening
 from app.services.edit_guard import validate_edit
 from app.services.fda_mapper import map_report_to_fda
 from app.services.pdf_exporter import export_report_pdf
@@ -46,6 +47,8 @@ def _get_medgemma_svc():
                 "VERTEX_VISION_ENDPOINT_ID": settings.VERTEX_VISION_ENDPOINT_ID,
                 "REDIS_URL": settings.REDIS_URL,
                 "ALLOW_PHI": settings.ALLOW_PHI,
+                "LORA_ADAPTER_PATH": getattr(settings, "LORA_ADAPTER_PATH", None),
+                "BASE_MODEL_ID": getattr(settings, "BASE_MODEL_ID", "google/medgemma-2b-it"),
             }
         )
     return _medgemma_svc
@@ -61,16 +64,20 @@ async def generate_report_endpoint(
     if not screening_id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="screening_id required")
 
-    db = get_db()
-    doc = await db.screenings.find_one({"screening_id": screening_id})
+    if is_cloudsql_enabled():
+        doc = cloudsql_fetch_screening(screening_id)
+    else:
+        db = get_db()
+        doc = await db.screenings.find_one({"screening_id": screening_id})
     if not doc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="screening not found")
 
-    # Map MongoDB doc to screening dict (childAge vs child_age_months)
+    # Map doc to screening dict (Cloud SQL: child_age_months; MongoDB: childAge)
+    child_age = doc.get("child_age_months") or doc.get("childAge")
     screening = {
         "screening_id": doc.get("screening_id"),
-        "childAge": doc.get("childAge"),
-        "child_age_months": doc.get("childAge"),
+        "childAge": child_age,
+        "child_age_months": child_age,
         "domain": doc.get("domain", ""),
         "observations": doc.get("observations", ""),
         "scores": doc.get("report", {}),
@@ -278,18 +285,24 @@ async def approve_report(
     pdf_final = embed_hash_in_pdf(pdf_bytes, content_hash)
     pdf_hash_stored = hash_pdf(pdf_final)
 
-    # Persist final_json, pdf_hash, and metadata
+    # PKI digital signature if configured (PDF_SIGNING_PRIVATE_KEY_*)
+    from app.services.pdf_pki import sign_pdf_if_configured
+    pdf_signature, signing_cert = sign_pdf_if_configured(pdf_final)
+
+    # Persist final_json, pdf_hash, signature, and metadata
+    update_payload = {
+        "final_json": final_json,
+        "status": "finalized",
+        "clinician_id": clinician_email,
+        "clinician_signed_at": time.time(),
+        "pdf_hash": pdf_hash_stored,
+    }
+    if pdf_signature:
+        update_payload["pdf_signature"] = pdf_signature
+        update_payload["signing_cert"] = signing_cert
     await db.reports.update_one(
         {"report_id": report_id},
-        {
-            "$set": {
-                "final_json": final_json,
-                "status": "finalized",
-                "clinician_id": clinician_email,
-                "clinician_signed_at": time.time(),
-                "pdf_hash": pdf_hash_stored,
-            }
-        },
+        {"$set": update_payload},
     )
 
     # Audit log
@@ -354,7 +367,14 @@ async def export_pdf(
     version = "final" if doc.get("status") == "finalized" else "draft"
     clinician_name = doc.get("clinician_id") or clinician
     pdf_hash = doc.get("pdf_hash")
-    pdf = export_report_pdf(report, clinician_name, version, pdf_hash=pdf_hash)
+    pdf_signature = doc.get("pdf_signature")
+    signing_cert = doc.get("signing_cert")
+    pdf = export_report_pdf(
+        report, clinician_name, version,
+        pdf_hash=pdf_hash,
+        pdf_signature=pdf_signature,
+        signing_cert=signing_cert,
+    )
     if doc.get("status") == "finalized" and not pdf_hash:
         content_hash = hash_pdf(pdf)
         pdf = embed_hash_in_pdf(pdf, content_hash)
@@ -376,10 +396,12 @@ async def attach_pdf_to_ehr(
     patient_id: str = Form(...),
     fhir_base_url: str = Form(...),
     fhir_token: str = Form(..., description="SMART-on-FHIR OAuth2 access token"),
+    practitioner_ref: Optional[str] = Form(None, description="Practitioner reference for Provenance (e.g. Practitioner/123)"),
     clinician: dict = Depends(require_clinician),
 ):
     """
     Attach finalized PDF to EHR via SMART-on-FHIR DocumentReference.
+    Attaches FHIR Provenance for FDA-grade audit trail (who, what, when).
     Requires clinician auth and a finalized report.
     """
     db = get_db()
@@ -399,7 +421,14 @@ async def attach_pdf_to_ehr(
         report = report.get("draft_json", report)
     clinician_name = doc.get("clinician_id") or clinician.get("email", "Signed")
     pdf_hash = doc.get("pdf_hash")
-    pdf = export_report_pdf(report, clinician_name, "final", pdf_hash=pdf_hash)
+    pdf_signature = doc.get("pdf_signature")
+    signing_cert = doc.get("signing_cert")
+    pdf = export_report_pdf(
+        report, clinician_name, "final",
+        pdf_hash=pdf_hash,
+        pdf_signature=pdf_signature,
+        signing_cert=signing_cert,
+    )
 
     from app.services.fhir_client import FHIRClient
 
@@ -408,6 +437,8 @@ async def attach_pdf_to_ehr(
         patient_id=patient_id,
         pdf_bytes=pdf,
         title="PediScreen AI Developmental Screening",
+        practitioner_ref=practitioner_ref,
+        attach_provenance=bool(practitioner_ref),
     )
     return {"success": True, "document_reference": result}
 

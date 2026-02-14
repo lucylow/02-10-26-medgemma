@@ -33,6 +33,11 @@
   <span style="color: #555; font-size: 10px;">AI Confidence: {{ confidence_label }}</span><br/>
   {% endif %}
   Document Hash (SHA-256): {{ pdf_hash }}<br/>
+  {% if pdf_signature %}
+  Digitally signed by PediScreen AI<br/>
+  Signature ID: {{ pdf_signature[:16] }}…<br/>
+  {% if signing_cert %}({{ signing_cert }}){% endif %}
+  {% endif %}
   {{ pdf_footer or "PediScreen AI — Draft technical report. AI-assisted content; clinician review and sign-off required prior to clinical use." }}
 </div>
 

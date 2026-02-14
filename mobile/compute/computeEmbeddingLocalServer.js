@@ -31,5 +31,7 @@ export async function computeEmbeddingLocalServer(imageUri) {
   return {
     embeddingB64: data.embedding_b64,
     shape: data.shape || [1, 256],
+    embVersion: data.emb_version || 'medsiglip-v1',
+    imageMeta: data.image_meta,
   };
 }

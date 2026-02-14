@@ -1,10 +1,11 @@
 /**
  * MedGemma API Client — typed, multimodal-ready orchestration
  * Frontend orchestrates MedGemma via backend; never runs model directly.
+ * Supports privacy-first embedding-based inference (design spec Section 16.1).
  */
 
-const API_BASE = import.meta.env.VITE_MEDGEMMA_API_URL || 
-  (import.meta.env.DEV ? 'http://localhost:5000/api' : 'https://api.pediscreen.ai/v1');
+const API_BASE = import.meta.env.VITE_MEDGEMMA_API_URL ||
+  (import.meta.env.DEV ? 'http://localhost:8000/api' : 'https://api.pediscreen.ai/v1');
 
 export interface MedGemmaPatientInfo {
   patientId: string;
@@ -42,6 +43,67 @@ export interface MedGemmaReport {
     interpretation: string;
   };
   disclaimer: string;
+}
+
+/** Inference result from embedding-based endpoint (privacy-first) */
+export interface InferResult {
+  case_id: string;
+  result: {
+    summary: string;
+    risk: string;
+    recommendations: string[];
+    parent_text: string;
+    explain: string;
+    confidence: number;
+    adapter_id?: string;
+    model_id?: string;
+  };
+  provenance: {
+    case_id: string;
+    base_model_id?: string;
+    adapter_id?: string;
+    input_hash?: string;
+    inference_time_ms?: number;
+  };
+  inference_time_ms: number;
+}
+
+/**
+ * Privacy-first inference with precomputed embedding (design spec 4.3, 16.1).
+ * Raw images never leave device; client sends L2-normalized embedding only.
+ */
+export async function inferWithEmbedding(params: {
+  case_id: string;
+  age_months: number;
+  observations: string;
+  embedding_b64: string;
+  shape?: number[];
+  emb_version?: string;
+  consent_id?: string;
+  user_id_pseudonym?: string;
+  apiKey?: string;
+}): Promise<InferResult> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (params.apiKey) headers['x-api-key'] = params.apiKey;
+  const res = await fetch(`${API_BASE}/infer`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      case_id: params.case_id,
+      age_months: params.age_months,
+      observations: params.observations,
+      embedding_b64: params.embedding_b64,
+      shape: params.shape ?? [1, 256],
+      emb_version: params.emb_version ?? 'medsiglip-v1',
+      consent_id: params.consent_id,
+      user_id_pseudonym: params.user_id_pseudonym,
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || err.message || 'Inference failed');
+  }
+  return res.json();
 }
 
 /**

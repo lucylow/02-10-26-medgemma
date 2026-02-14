@@ -10,9 +10,9 @@ from app.services.phi_redactor import redact_text
 from app.services.model_wrapper import analyze as run_analysis
 from app.services.medgemma_service import MedGemmaService
 from app.services.db import get_db
+from app.services.db_cloudsql import is_cloudsql_enabled, insert_screening_record as cloudsql_insert_screening
 from app.models.schemas import AnalyzeResponse
 from typing import Optional
-from bson import ObjectId
 from datetime import datetime
 
 router = APIRouter()
@@ -36,6 +36,9 @@ def _get_medgemma_svc() -> Optional[MedGemmaService]:
             "VERTEX_VISION_ENDPOINT_ID": settings.VERTEX_VISION_ENDPOINT_ID,
             "REDIS_URL": settings.REDIS_URL,
             "ALLOW_PHI": settings.ALLOW_PHI,
+            "MEDSIGLIP_ENABLE_LOCAL": getattr(settings, "MEDSIGLIP_ENABLE_LOCAL", True),
+            "LORA_ADAPTER_PATH": getattr(settings, "LORA_ADAPTER_PATH", None),
+            "BASE_MODEL_ID": getattr(settings, "BASE_MODEL_ID", "google/medgemma-2b-it"),
         })
     return _medgemma_svc
 
@@ -126,22 +129,39 @@ async def analyze_endpoint(
         raise HTTPException(status_code=500, detail="analysis_failed")
 
     # Save screening record in DB for persistence (fire-and-forget via background task)
-    db = get_db()
-    screening_doc = {
-        "screening_id": result["screening_id"],
-        "childAge": age,
-        "domain": domain,
-        "observations": observations_clean,
-        "image_path": saved_path,
-        "report": result["report"],
-        "timestamp": result.get("timestamp", int(datetime.utcnow().timestamp()))
-    }
-    async def _save_doc(doc):
-        try:
-            await db.screenings.insert_one(doc)
-        except Exception as e:
-            logger.error(f"Failed to save screening doc: {e}")
-    background_tasks.add_task(_save_doc, screening_doc)
+    if is_cloudsql_enabled():
+        # Cloud SQL (Cloud Run): sync insert via background task
+        def _save_cloudsql():
+            try:
+                cloudsql_insert_screening(
+                    screening_id=result["screening_id"],
+                    child_age_months=age,
+                    domain=domain,
+                    observations=observations_clean,
+                    image_path=saved_path,
+                    report=result["report"],
+                )
+            except Exception as e:
+                logger.error(f"Failed to save screening to Cloud SQL: {e}")
+        background_tasks.add_task(_save_cloudsql)
+    else:
+        # MongoDB (local dev)
+        db = get_db()
+        screening_doc = {
+            "screening_id": result["screening_id"],
+            "childAge": age,
+            "domain": domain,
+            "observations": observations_clean,
+            "image_path": saved_path,
+            "report": result["report"],
+            "timestamp": result.get("timestamp", int(datetime.utcnow().timestamp()))
+        }
+        async def _save_doc(doc):
+            try:
+                await db.screenings.insert_one(doc)
+            except Exception as e:
+                logger.error(f"Failed to save screening doc: {e}")
+        background_tasks.add_task(_save_doc, screening_doc)
 
     # schedule removing the image from local disk after a short lifetime (privacy)
     if saved_path:

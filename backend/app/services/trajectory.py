@@ -78,11 +78,14 @@ async def compute_trajectory(
 
     report_ids = [r["report_id"] for r in report_docs]
 
-    # Fetch embeddings for these reports
+    # Fetch embeddings for these reports (supports list or embedding_b64+shape)
+    from app.services.embedding_store import _embedding_from_doc
+
     report_id_to_emb = {}
     async for emb in db.image_embeddings.find({"report_id": {"$in": report_ids}}):
-        if emb.get("embedding"):
-            report_id_to_emb[emb["report_id"]] = emb["embedding"]
+        vec = _embedding_from_doc(emb)
+        if vec:
+            report_id_to_emb[emb["report_id"]] = vec
 
     # Build aligned lists: only include reports that have embeddings, ordered by created_at
     embeddings = []

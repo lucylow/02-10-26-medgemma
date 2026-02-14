@@ -148,18 +148,31 @@ async def generate_report_from_screening(
             "influence": 0.3,
         })
 
-    # 3b. MedSigLIP image embeddings + longitudinal storage (Vertex or HF fallback)
+    # 3b. MedSigLIP image embeddings + longitudinal storage (Local -> Vertex -> HF chain)
     if image_bytes:
         try:
-            from app.services.medsiglip_vertex import get_medsiglip_embedding
             from app.services.embedding_store import store_embedding
+            from app.core.config import settings
 
             vis = None
-            try:
-                import asyncio
-                vis = await asyncio.to_thread(get_medsiglip_embedding, image_bytes)
-            except Exception as e:
-                logger.warning("MedSigLIP Vertex failed: %s", e)
+            # 1. Local (transformers/torch) - privacy-first, no external calls
+            if settings.MEDSIGLIP_ENABLE_LOCAL:
+                try:
+                    from app.services.medsiglip_local import get_medsiglip_embedding_local
+                    import asyncio
+                    vis = await asyncio.to_thread(get_medsiglip_embedding_local, image_bytes)
+                except Exception as e:
+                    logger.debug("MedSigLIP local skipped: %s", e)
+            # 2. Vertex AI
+            if not vis:
+                try:
+                    from app.services.medsiglip_vertex import get_medsiglip_embedding
+                    import asyncio
+                    vis = await asyncio.to_thread(get_medsiglip_embedding, image_bytes)
+                except Exception as e:
+                    logger.warning("MedSigLIP Vertex failed: %s", e)
+            # 3. Hugging Face fallback
+            if not vis:
                 try:
                     from app.services.medsiglip_hf import get_medsiglip_embedding_hf
                     vis = await get_medsiglip_embedding_hf(image_bytes)

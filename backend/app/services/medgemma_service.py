@@ -1,10 +1,17 @@
 # backend/app/services/medgemma_service.py
+"""
+MedGemma integration for PediScreen AI — multimodal clinical reasoning engine.
+Implements canonical prompt template, structured output parsing, provenance tracking,
+and privacy-first embedding-based inference per design spec.
+"""
 import asyncio
 import base64
 import hashlib
 import json
 import logging
 import re
+import struct
+import time
 from typing import Any, Dict, List, Optional, Tuple
 
 import httpx
@@ -29,6 +36,36 @@ except Exception:
 
 logger = logging.getLogger("medgemma.service")
 
+# Canonical prompt template per PediScreen design spec (Section 5.1)
+CANONICAL_PROMPT_TEMPLATE = """[METADATA]
+Child age (months): {age_months}
+Context: {context_text}
+
+[IMAGE_EMBEDDING]
+{embedding_note}
+
+Task:
+You are a clinical decision support assistant. Based on the child's age and the observations below, produce:
+1) a short clinical summary (2-4 bullet points),
+2) risk level ("low", "monitor", "high", "refer"),
+3) three clear, parent-friendly recommendations (one phrased for the parent),
+4) an explanation of what features were most relevant.
+
+Do NOT provide a diagnosis. Return JSON only in this exact format:
+===BEGIN_OUTPUT===
+{{
+  "summary": ["...","..."],
+  "risk": "monitor",
+  "recommendations": ["...","...","..."],
+  "parent_text": "...",
+  "explain": "..."
+}}
+===END_OUTPUT===
+
+Observations:
+{observations_text}
+"""
+
 
 def prompt_hash(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
@@ -49,11 +86,15 @@ class MedGemmaService:
           - VERTEX_PROJECT, VERTEX_LOCATION, VERTEX_TEXT_ENDPOINT_ID, VERTEX_VISION_ENDPOINT_ID
           - REDIS_URL (optional)
           - ALLOW_PHI (bool) -- default False
+          - LORA_ADAPTER_PATH (str) -- GCS path or local dir for traceability
+          - BASE_MODEL_ID (str) -- e.g. google/medgemma-2b-it
         """
         self.cfg = config
         self.hf_model = config.get("HF_MODEL")
         self.hf_api_key = config.get("HF_API_KEY")
         self.allow_phi = bool(config.get("ALLOW_PHI", False))
+        self.adapter_id = config.get("LORA_ADAPTER_PATH") or config.get("adapter_id")
+        self.base_model_id = config.get("BASE_MODEL_ID", "google/medgemma-2b-it")
 
         # Vertex initialization if available and configured
         if _HAS_VERTEX and config.get("VERTEX_PROJECT") and config.get("VERTEX_LOCATION"):
@@ -143,11 +184,13 @@ class MedGemmaService:
         # 3) Baseline deterministic analysis (quick rules)
         baseline = self._baseline_analysis(age_months, domain, observations, image_summary=visual_summary)
 
-        # 4) Build prompt for MedGemma synthesis (strict JSON)
+        # 4) Build prompt for MedGemma synthesis (canonical template)
         prompt = self._build_synthesis_prompt(age_months, baseline, observations, visual_summary, image_embedding)
         phash = prompt_hash(prompt)
+        input_hash = hashlib.sha256((prompt + str(image_embedding)[:100] if image_embedding else prompt).encode()).hexdigest()
 
         # 5) Call text model (Vertex or HF). If both available, prefer Vertex.
+        t0 = time.perf_counter()
         model_raw = None
         model_parsed = None
         used_vertex = False
@@ -196,11 +239,15 @@ class MedGemmaService:
         else:
             final_report["clinical_summary"] = final_report.get("clinical_summary") or "Automated draft (no model)."
 
+        inference_time_ms = int((time.perf_counter() - t0) * 1000)
         provenance = {
             "prompt_hash": phash,
+            "input_hash": input_hash,
+            "model_id": self.base_model_id,
+            "adapter_id": self.adapter_id,
             "model_raw_snippet": (model_raw or "")[:2000],
-            "model_id": (self.hf_model or "vertex" if used_vertex else None),
             "used_vertex": bool(used_vertex),
+            "inference_time_ms": inference_time_ms,
         }
 
         return {
@@ -209,6 +256,116 @@ class MedGemmaService:
             "visual_summary": visual_summary,
             "model_raw": model_raw,
             "provenance": provenance,
+        }
+
+    async def infer_with_precomputed_embedding(
+        self,
+        case_id: str,
+        age_months: int,
+        observations: str,
+        embedding_b64: str,
+        shape: List[int],
+        emb_version: str = "medsiglip-v1",
+        consent_id: Optional[str] = None,
+        user_id_pseudonym: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Privacy-first inference using precomputed image embedding (design spec Section 16.1).
+        Raw images never leave device; client sends L2-normalized embedding only.
+        Returns structured result with full provenance for audit.
+        """
+        t0 = time.perf_counter()
+        try:
+            raw = base64.b64decode(embedding_b64)
+            n_floats = len(raw) // 4
+            emb = list(struct.unpack(f"{n_floats}f", raw))
+            if shape and len(shape) >= 2 and shape[0] * shape[1] != n_floats:
+                logger.warning("Embedding shape %s does not match byte length", shape)
+        except Exception as e:
+            logger.exception("Embedding decode failed: %s", e)
+            raise ValueError(f"Invalid embedding_b64 or shape: {e}") from e
+
+        input_hash = hashlib.sha256((embedding_b64[:200] + str(age_months) + observations).encode()).hexdigest()
+
+        if not self.allow_phi and self._detect_phi(observations):
+            baseline = self._baseline_analysis(age_months, "", observations, "Embedding provided")
+            return {
+                "case_id": case_id,
+                "result": baseline,
+                "provenance": {"note": "phi_blocked", "input_hash": input_hash},
+                "inference_time_ms": int((time.perf_counter() - t0) * 1000),
+            }
+
+        baseline = self._baseline_analysis(age_months, "", observations, "Precomputed embedding")
+        prompt = self._build_synthesis_prompt(age_months, baseline, observations, "Embedding", emb)
+        phash = prompt_hash(prompt)
+
+        model_raw = None
+        model_parsed = None
+        used_vertex = False
+        if self.vertex_text_endpoint:
+            try:
+                model_raw = await asyncio.to_thread(self._call_vertex_text, prompt)
+                used_vertex = True
+            except Exception as e:
+                logger.exception("Vertex text call failed: %s", e)
+        if not model_raw and self.hf_model and self.hf_api_key:
+            try:
+                model_raw = await self._call_hf_inference(prompt, self.hf_model, self.hf_api_key)
+            except Exception as e:
+                logger.exception("HF call failed: %s", e)
+
+        if model_raw:
+            try:
+                model_parsed = self._parse_model_json(model_raw)
+            except Exception:
+                model_parsed = None
+
+        final_report = baseline.copy()
+        if model_parsed:
+            if "risk_assessment" in model_parsed and "overall" in model_parsed["risk_assessment"]:
+                final_report["riskLevel"] = model_parsed["risk_assessment"]["overall"]
+            if model_parsed.get("clinical_summary"):
+                final_report["clinical_summary"] = model_parsed["clinical_summary"]
+            if model_parsed.get("recommendations"):
+                final_report["recommendations"] = list(
+                    dict.fromkeys(final_report.get("recommendations", []) + model_parsed["recommendations"])
+                )
+            final_report.setdefault("keyFindings", [])
+            for ev in model_parsed.get("evidence", []):
+                txt = ev.get("text", ev) if isinstance(ev, dict) else str(ev)
+                final_report["keyFindings"].append(txt)
+        else:
+            final_report["clinical_summary"] = final_report.get("clinical_summary") or "Automated draft (no model)."
+
+        inference_time_ms = int((time.perf_counter() - t0) * 1000)
+        provenance = {
+            "case_id": case_id,
+            "user_id_pseudonym": user_id_pseudonym,
+            "consent_id": consent_id,
+            "base_model_id": self.base_model_id,
+            "adapter_id": self.adapter_id,
+            "input_hash": input_hash,
+            "prompt_hash": phash,
+            "emb_version": emb_version,
+            "inference_time_ms": inference_time_ms,
+            "used_vertex": used_vertex,
+        }
+
+        return {
+            "case_id": case_id,
+            "result": {
+                "summary": final_report.get("clinical_summary", ""),
+                "risk": final_report.get("riskLevel", "monitor"),
+                "recommendations": final_report.get("recommendations", []),
+                "parent_text": model_parsed.get("plain_language_summary", "") if model_parsed else "",
+                "explain": model_parsed.get("explain", "") if model_parsed else "",
+                "confidence": final_report.get("confidence", 0.5),
+                "adapter_id": self.adapter_id,
+                "model_id": self.base_model_id,
+            },
+            "provenance": provenance,
+            "inference_time_ms": inference_time_ms,
         }
 
     # -------------------------
@@ -249,7 +406,21 @@ class MedGemmaService:
         observations: str,
         visual_summary: Optional[str],
         embedding: Optional[List[float]],
+        use_canonical: bool = True,
     ) -> str:
+        """Build prompt using canonical template (design spec Section 5.1) or legacy JSON."""
+        if use_canonical:
+            context = baseline.get("riskLevel", "monitor")
+            if visual_summary:
+                context = f"{context}; visual: {visual_summary[:200]}"
+            embedding_note = "Precomputed embedding provided." if embedding else "No image embedding."
+            return CANONICAL_PROMPT_TEMPLATE.format(
+                age_months=age_months,
+                context_text=context,
+                embedding_note=embedding_note,
+                observations_text=observations or "(No observations provided)",
+            )
+        # Legacy fallback
         prompt = {
             "instruction": "Synthesize a concise clinical draft JSON following schema: risk_assessment, clinical_summary, plain_language_summary, evidence (list), recommendations (list). Return JSON only.",
             "age_months": age_months,
@@ -366,7 +537,8 @@ class MedGemmaService:
     # -------------------------
     async def _get_image_embedding(self, image_bytes: bytes) -> Tuple[Optional[List[float]], Optional[str]]:
         """
-        Try VertexVision first, then HF fallback. Return (embedding, textual_summary).
+        MedSigLIP chain: Local -> Vertex -> HF -> Vertex Vision -> HF Vision fallback.
+        Return (embedding, textual_summary).
         """
         # Cache key
         k = "img_emb:" + hashlib.sha256(image_bytes).hexdigest()
@@ -380,8 +552,42 @@ class MedGemmaService:
                 pass
 
         embedding, summary = None, None
-        # Vertex
-        if self.vertex_vision_endpoint:
+
+        # 1. Local MedSigLIP (privacy-first, no external calls)
+        if self.cfg.get("MEDSIGLIP_ENABLE_LOCAL", True):
+            try:
+                from app.services.medsiglip_local import get_medsiglip_embedding_local
+                vis = await asyncio.to_thread(get_medsiglip_embedding_local, image_bytes)
+                if vis.get("embedding"):
+                    embedding = vis["embedding"]
+                    summary = vis.get("summary")
+            except Exception as e:
+                logger.debug("MedSigLIP local skipped: %s", e)
+
+        # 2. MedSigLIP Vertex
+        if not embedding:
+            try:
+                from app.services.medsiglip_vertex import get_medsiglip_embedding
+                vis = await asyncio.to_thread(get_medsiglip_embedding, image_bytes)
+                if vis.get("embedding"):
+                    embedding = list(vis["embedding"])
+                    summary = vis.get("summary")
+            except Exception as e:
+                logger.debug("MedSigLIP Vertex skipped: %s", e)
+
+        # 3. MedSigLIP Hugging Face
+        if not embedding:
+            try:
+                from app.services.medsiglip_hf import get_medsiglip_embedding_hf
+                vis = await get_medsiglip_embedding_hf(image_bytes)
+                if vis.get("embedding"):
+                    embedding = list(vis["embedding"])
+                    summary = vis.get("summary")
+            except Exception as e:
+                logger.debug("MedSigLIP HF skipped: %s", e)
+
+        # 4. Generic Vertex Vision (if MedSigLIP unavailable)
+        if not embedding and self.vertex_vision_endpoint:
             try:
                 inst = {
                     "image": {"bytesBase64Encoded": base64.b64encode(image_bytes).decode("utf-8")}
@@ -426,17 +632,53 @@ class MedGemmaService:
     # -------------------------
     def _parse_model_json(self, text: str) -> Dict[str, Any]:
         """
-        Try to extract JSON substring robustly; fallback to non-JSON parsing.
+        Parse structured output per design spec (Section 5.2).
+        Supports ===BEGIN_OUTPUT===/===END_OUTPUT=== delimiters and fallback heuristics.
         """
-        # naive attempt: find first { and last } and json.loads
+        # 1) Try canonical delimiters first
+        begin_marker = "===BEGIN_OUTPUT==="
+        end_marker = "===END_OUTPUT==="
+        if begin_marker in text and end_marker in text:
+            start = text.find(begin_marker) + len(begin_marker)
+            end = text.find(end_marker)
+            candidate = text[start:end].strip()
+            try:
+                parsed = json.loads(candidate)
+                return self._normalize_parsed_output(parsed)
+            except json.JSONDecodeError:
+                logger.warning("Canonical output parse failed; falling back to heuristics")
+
+        # 2) Fallback: find first { and last }
         try:
             first = text.find("{")
             last = text.rfind("}")
             if first != -1 and last != -1 and last > first:
                 candidate = text[first : last + 1]
-                return json.loads(candidate)
-            # As fallback, attempt to parse the whole string
+                parsed = json.loads(candidate)
+                return self._normalize_parsed_output(parsed)
             return json.loads(text)
         except Exception as e:
-            logger.warning("parse_model_json: json.loads failed; returning minimal structure")
+            logger.warning("parse_model_json: json.loads failed; returning minimal structure: %s", e)
             return {"clinical_summary": text[:4000], "evidence": [], "recommendations": []}
+
+    def _normalize_parsed_output(self, parsed: Dict[str, Any]) -> Dict[str, Any]:
+        """Map canonical schema (summary, risk, parent_text, explain) to internal format."""
+        out: Dict[str, Any] = {}
+        if "summary" in parsed:
+            out["clinical_summary"] = (
+                "\n".join(parsed["summary"]) if isinstance(parsed["summary"], list)
+                else str(parsed["summary"])
+            )
+        if "risk" in parsed:
+            out["risk_assessment"] = {"overall": parsed["risk"]}
+        if "parent_text" in parsed:
+            out["plain_language_summary"] = parsed["parent_text"]
+        if "recommendations" in parsed:
+            out["recommendations"] = parsed["recommendations"]
+        if "explain" in parsed:
+            out.setdefault("evidence", []).append({"type": "explain", "text": parsed["explain"]})
+        # Merge with any other keys
+        for k, v in parsed.items():
+            if k not in out:
+                out[k] = v
+        return out
