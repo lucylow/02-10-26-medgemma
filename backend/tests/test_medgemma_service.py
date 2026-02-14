@@ -1,6 +1,27 @@
 # backend/tests/test_medgemma_service.py
+import base64
+
+import numpy as np
 import pytest
 from app.services.medgemma_service import MedGemmaService
+
+
+@pytest.mark.asyncio
+async def test_infer_with_precomputed_embedding_invalid_shape_raises():
+    """Invalid embedding shape -> raises ValueError (parse_embedding_b64 validation)."""
+    svc = MedGemmaService({"ALLOW_PHI": False})
+    # Wrong byte length for shape [1, 256]: provide 128 floats (512 bytes)
+    arr = np.random.randn(128).astype(np.float32)
+    b64 = base64.b64encode(arr.tobytes()).decode("ascii")
+    with pytest.raises(ValueError) as exc_info:
+        await svc.infer_with_precomputed_embedding(
+            case_id="test-1",
+            age_months=24,
+            observations="test",
+            embedding_b64=b64,
+            shape=[1, 256],
+        )
+    assert "expected" in str(exc_info.value).lower() or "mismatch" in str(exc_info.value).lower()
 
 
 @pytest.mark.asyncio

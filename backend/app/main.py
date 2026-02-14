@@ -11,7 +11,24 @@ from app.core.config import settings
 from app.core.logger import logger
 from app.core.disclaimers import API_DISCLAIMER_HEADER
 from app.core.legal_middleware import LegalMiddleware
-from app.api import analyze, infer, screenings, health, technical_writing, radiology, radiology_pacs, reports, medgemma_detailed, citations, infra, fhir, consent, embed
+from app.api import (
+    analyze,
+    infer,
+    screenings,
+    health,
+    technical_writing,
+    radiology,
+    radiology_pacs,
+    reports,
+    medgemma_detailed,
+    citations,
+    infra,
+    fhir,
+    consent,
+    embed,
+    schemas_api,
+    data_quality,
+)
 from app.errors import ErrorResponse, ErrorCodes
 from app.utils.error_formatter import api_error
 
@@ -116,6 +133,8 @@ app.include_router(infra.router)
 app.include_router(fhir.router)
 app.include_router(consent.router)
 app.include_router(embed.router)
+app.include_router(schemas_api.router)
+app.include_router(data_quality.router)
 
 @app.on_event("startup")
 async def startup_event():

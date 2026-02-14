@@ -1,20 +1,23 @@
 # backend/app/api/analyze.py
 import time
 import uuid
+from typing import Optional
+
 from fastapi import APIRouter, File, UploadFile, Form, Depends, BackgroundTasks
+from datetime import datetime
+
 from app.core.config import settings
 from app.core.logger import logger
 from app.core.security import get_api_key
 from app.errors import ApiError, ErrorCodes
-from app.services.storage import save_upload, remove_file
-from app.services.phi_redactor import redact_text
-from app.services.model_wrapper import analyze as run_analysis
-from app.services.medgemma_service import MedGemmaService
+from app.models.schemas import AnalyzeResponse
+from app.schemas.health_data import ScreeningInput
 from app.services.db import get_db
 from app.services.db_cloudsql import is_cloudsql_enabled, insert_screening_record as cloudsql_insert_screening
-from app.models.schemas import AnalyzeResponse
-from typing import Optional
-from datetime import datetime
+from app.services.medgemma_service import MedGemmaService
+from app.services.model_wrapper import analyze as run_analysis
+from app.services.phi_redactor import redact_text
+from app.services.storage import save_upload, remove_file
 
 router = APIRouter()
 
@@ -180,5 +183,89 @@ async def analyze_endpoint(
             remove_file(p)
         # cleanup after response (background)
         background_tasks.add_task(_cleanup, saved_path)
+
+    return result
+
+
+@router.post("/api/screening", response_model=AnalyzeResponse, status_code=200, dependencies=[Depends(get_api_key)])
+async def screening_endpoint(
+    input: ScreeningInput,
+    background_tasks: BackgroundTasks,
+):
+    """
+    Submit screening with strongly-typed ScreeningInput (JSON).
+    Uses same analysis flow as /api/analyze but accepts structured schema.
+    For image uploads, use POST /api/analyze (multipart/form-data).
+    """
+    age = input.child_age_months
+    domain = input.domain or "communication"
+    observations = input.observations or ""
+
+    redaction_result = redact_text(observations)
+    observations_clean = redaction_result["redacted_text"]
+
+    medgemma_svc = _get_medgemma_svc()
+    try:
+        if medgemma_svc:
+            analysis_result = await medgemma_svc.analyze_input(
+                age_months=age,
+                domain=domain,
+                observations=observations_clean,
+                image_bytes=None,
+                image_filename=None,
+            )
+            screening_id = f"ps-{int(time.time())}-{uuid.uuid4().hex[:8]}"
+            result = _medgemma_report_to_response(analysis_result, age, domain, screening_id)
+        else:
+            result = await run_analysis(
+                child_age_months=age,
+                domain=domain,
+                observations=observations_clean,
+                image_path=None,
+            )
+            screening_id = result.get("screening_id", f"ps-{int(time.time())}-{uuid.uuid4().hex[:8]}")
+    except Exception as e:
+        logger.error(f"Screening analysis failure: {e}")
+        raise ApiError(
+            ErrorCodes.ANALYSIS_FAILED,
+            "Analysis failed",
+            status_code=500,
+            details={"error": str(e)} if settings.DEBUG else None,
+        ) from e
+
+    if is_cloudsql_enabled():
+        def _save_cloudsql():
+            try:
+                cloudsql_insert_screening(
+                    screening_id=result["screening_id"],
+                    child_age_months=age,
+                    domain=domain,
+                    observations=observations_clean,
+                    image_path=None,
+                    report=result["report"],
+                )
+            except Exception as e:
+                logger.error(f"Failed to save screening to Cloud SQL: {e}")
+        background_tasks.add_task(_save_cloudsql)
+    else:
+        db = get_db()
+        screening_doc = {
+            "screening_id": result["screening_id"],
+            "childAge": age,
+            "domain": domain,
+            "observations": observations_clean,
+            "image_path": None,
+            "report": result["report"],
+            "timestamp": result.get("timestamp", int(datetime.utcnow().timestamp())),
+            "questionnaire_scores": input.questionnaire_scores.dict() if input.questionnaire_scores is not None else None,
+            "consent_id": input.consent_id,
+        }
+
+        async def _save_doc(doc):
+            try:
+                await db.screenings.insert_one(doc)
+            except Exception as e:
+                logger.error(f"Failed to save screening doc: {e}")
+        background_tasks.add_task(_save_doc, screening_doc)
 
     return result

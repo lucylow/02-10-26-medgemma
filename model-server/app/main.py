@@ -25,6 +25,18 @@ def startup_event():
 def health():
     return {"status": "ok", "model": MODEL_PATH}
 
+
+@app.get("/status")
+def status():
+    """Return device, model, ready state (for monitoring)."""
+    return _service.get_status()
+
+
+@app.get("/warmup")
+def warmup():
+    """Run small inference to verify model is ready (liveness check)."""
+    return _service.warmup()
+
 class InferRequest(BaseModel):
     case_id: Optional[str] = None
     age_months: int

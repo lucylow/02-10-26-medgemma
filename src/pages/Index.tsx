@@ -176,10 +176,6 @@ const Index = () => {
         </motion.div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-8 px-6 border-t text-center text-sm text-muted-foreground">
-        <p>PediScreen AI — Not a diagnostic tool. Always consult a healthcare provider.</p>
-      </footer>
     </div>
   );
 };
