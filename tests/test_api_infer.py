@@ -10,6 +10,7 @@ from httpx import ASGITransport, AsyncClient
 os.environ.setdefault("DUMMY_MEDGEMMA", "1")
 os.environ.setdefault("EMBED_MODE", "dummy")
 os.environ.setdefault("USE_DUMMY", "1")
+os.environ.setdefault("REAL_MODE", "false")
 
 from backend.api import app
 
@@ -34,7 +35,11 @@ async def test_embed():
     path = _ensure_drawing_fixture()
     with open(path, "rb") as f:
         files = {"file": ("test.jpg", f, "image/jpeg")}
-        r = await client.post("/embed", files=files)
+        async with AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://test",
+        ) as client:
+            r = await client.post("/embed", files=files)
     assert r.status_code == 200
     j = r.json()
     assert "embedding_b64" in j
@@ -44,7 +49,7 @@ async def test_embed():
 
 
 @pytest.mark.asyncio
-async def test_infer(client):
+async def test_infer():
     arr = np.ones((1, 256), dtype=np.float32) * 0.01
     arr = arr / (np.linalg.norm(arr, axis=-1, keepdims=True) + 1e-12)
     b64 = base64.b64encode(arr.tobytes()).decode("ascii")
@@ -58,7 +63,11 @@ async def test_infer(client):
         "adapter_id": "pediscreen_v1",
         "consent": {"consent_given": True, "consent_id": "consent-uuid"},
     }
-    r = await client.post("/infer", json=payload)
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        r = await client.post("/infer", json=payload)
     assert r.status_code == 200
     j = r.json()
     assert j["case_id"] == "test-uuid-123"
@@ -68,7 +77,7 @@ async def test_infer(client):
 
 
 @pytest.mark.asyncio
-async def test_infer_rejects_without_consent(client):
+async def test_infer_rejects_without_consent():
     arr = np.ones((1, 256), dtype=np.float32) * 0.01
     b64 = base64.b64encode(arr.tobytes()).decode("ascii")
     payload = {
@@ -79,5 +88,9 @@ async def test_infer_rejects_without_consent(client):
         "shape": [1, 256],
         "consent": {"consent_given": False},
     }
-    r = await client.post("/infer", json=payload)
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        r = await client.post("/infer", json=payload)
     assert r.status_code == 403

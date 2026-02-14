@@ -6,8 +6,9 @@ services:
     ports:
       - "8000:8000"
     environment:
+      - REAL_MODE=${REAL_MODE:-false}
       - EMBED_MODE=${EMBED_MODE:-dummy}
-      - DUMMY_MEDGEMMA=${DUMMY_MEDGEMMA:-1}
+      - FALLBACK_ON_ERROR=${FALLBACK_ON_ERROR:-true}
       - MEDGEMMA_BASE=${MEDGEMMA_BASE:-google/medgemma-2b-it}
       - ADAPTER_PATH=${ADAPTER_PATH:-./adapters/pediscreen_lora}
     volumes:

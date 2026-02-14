@@ -18,7 +18,6 @@ from datasets import load_dataset
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 from transformers import (
     AutoModelForCausalLM,
-    AutoProcessor,
     AutoTokenizer,
     DataCollatorForLanguageModeling,
     Trainer,
@@ -97,15 +96,10 @@ def build_dataset(config: dict, tokenizer):
     tokenized = ds.map(
         tokenize,
         batched=True,
-        remove_columns=ds["train"].column_names if "train" in ds else ds.column_names,
+        remove_columns=ds["train"].column_names,
     )
 
-    # Add labels for causal LM (copy input_ids)
-    def add_labels(examples):
-        examples["labels"] = [list(x) for x in examples["input_ids"]]
-        return examples
-
-    tokenized = tokenized.map(add_labels, batched=True)
+    # For causal LM, DataCollatorForLanguageModeling sets labels from input_ids
     return tokenized
 
 
@@ -131,7 +125,6 @@ def main():
     # Load tokenizer and model
     logger.info("Loading base model: %s", base_model)
     tokenizer = AutoTokenizer.from_pretrained(base_model, trust_remote_code=True)
-    processor = AutoProcessor.from_pretrained(base_model, trust_remote_code=True) if hasattr(AutoProcessor, "from_pretrained") else None
 
     model = AutoModelForCausalLM.from_pretrained(
         base_model,
