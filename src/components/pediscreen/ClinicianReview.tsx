@@ -3,7 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, ClipboardCheck, Shield, FileDown, Scale } from 'lucide-react';
+import { Loader2, ClipboardCheck, Shield, FileDown, Scale, Activity } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import {
   approveReport,
   getReport,
@@ -198,6 +199,12 @@ const ClinicianReview: React.FC<ClinicianReviewProps> = ({
         <p className="text-sm text-muted-foreground">
           Review the AI draft and sign off to finalize this report.
         </p>
+        {draft.model_confidence?.label && (
+          <Badge variant="outline" className="mt-2 gap-1">
+            <Activity className="w-3 h-3" />
+            AI Confidence: {draft.model_confidence.label}
+          </Badge>
+        )}
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">

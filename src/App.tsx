@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ScreeningProvider } from "./contexts/ScreeningContext";
 import { initializeAccessibility } from "@/components/pediscreen/AccessibilityBar";
+import { toast } from "sonner";
 import { flush, dataURLToFile } from "@/services/offlineQueue";
 import { submitScreening } from "@/services/screeningApi";
 import Index from "./pages/Index";
@@ -55,9 +56,7 @@ const App = () => {
         });
       };
       flush(sendPayload).then((count) => {
-        if (count > 0) {
-          console.log(`Offline queue: ${count} screening(s) uploaded`);
-        }
+        if (count > 0) toast.success(`${count} screening(s) uploaded`);
       });
     };
     window.addEventListener("online", handleOnline);

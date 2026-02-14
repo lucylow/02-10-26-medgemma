@@ -21,6 +21,8 @@ from app.models.report_schema import (
 )
 from app.core.config import settings
 from app.core.logger import logger
+from app.services.phi_redactor import redact_text
+from app.services.policy_engine import scan_and_rewrite
 
 # --- prompt templates (strict JSON output) ---
 GENERATION_PROMPT = """
@@ -129,11 +131,16 @@ async def generate_technical_report(
         )
     ]
 
-    # 2) Build prompt and optionally call model
+    # 2) PHI redaction before any external model call
+    observations_clean = observations or ""
+    redaction_result = redact_text(observations_clean)
+    observations_clean = redaction_result["redacted_text"]
+
+    # 3) Build prompt and optionally call model
     prompt = GENERATION_PROMPT.format(
         age=age_months,
         scores=json.dumps(scores),
-        observations=observations or "",
+        observations=observations_clean,
         image_summary=image_summary or "",
     )
     phash = prompt_hash(prompt)
@@ -220,16 +227,21 @@ async def generate_technical_report(
             )
         )
 
-    # 4) Fallbacks
-    clinical_summary = clinical_summary or ("Automated draft: " + observations[:300])
+    # 4) Policy scan: rewrite forbidden claim language in model output
+    clinical_summary, _ = scan_and_rewrite(clinical_summary)
+    technical_summary, _ = scan_and_rewrite(technical_summary)
+    parent_summary, _ = scan_and_rewrite(parent_summary)
+
+    # 5) Fallbacks
+    clinical_summary = clinical_summary or ("Automated draft: " + observations_clean[:300])
     technical_summary = technical_summary or (
-        "Technical observations: " + observations[:300]
+        "Technical observations: " + observations_clean[:300]
     )
-    parent_summary = parent_summary or ("Summary for parent: " + observations[:200])
+    parent_summary = parent_summary or ("Summary for parent: " + observations_clean[:200])
     if not recommendations:
         recommendations = ["Monitor and refer to specialist if concerns persist."]
 
-    # 5) Assemble and validate via Pydantic
+    # 6) Assemble and validate via Pydantic
     tr = TechnicalReport(
         report_id=report_id,
         screening_id=screening_row.get("screening_id"),

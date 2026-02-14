@@ -19,7 +19,7 @@ from app.services.edit_guard import validate_edit
 from app.services.fda_mapper import map_report_to_fda
 from app.services.pdf_exporter import export_report_pdf
 from app.services.pdf_renderer import generate_pdf_bytes
-from app.services.pdf_signing import hash_pdf, embed_hash_in_pdf, PDF_HASH_PLACEHOLDER
+from app.services.pdf_signing import hash_pdf, embed_hash_in_pdf
 from app.services.report_generator import generate_report_from_screening
 
 router = APIRouter()
@@ -398,7 +398,8 @@ async def attach_pdf_to_ehr(
     if isinstance(report, dict) and "draft_json" in report:
         report = report.get("draft_json", report)
     clinician_name = doc.get("clinician_id") or clinician.get("email", "Signed")
-    pdf = export_report_pdf(report, clinician_name, "final")
+    pdf_hash = doc.get("pdf_hash")
+    pdf = export_report_pdf(report, clinician_name, "final", pdf_hash=pdf_hash)
 
     from app.services.fhir_client import FHIRClient
 
