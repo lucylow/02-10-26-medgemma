@@ -161,6 +161,13 @@ class LegalMiddleware(BaseHTTPMiddleware):
                     headers=dict(response.headers),
                 )
             except Exception:
-                pass
+                # Body was consumed; must return new Response with collected content
+                if content:
+                    return Response(
+                        content=content,
+                        status_code=response.status_code,
+                        media_type="application/json",
+                        headers=dict(response.headers),
+                    )
 
         return response
