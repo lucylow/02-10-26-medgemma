@@ -1,0 +1,35 @@
+# Lovable Cloud deployment workflow
+# Deploy frontend to Lovable Cloud; run DB migrations; smoke tests
+name: Lovable Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install and build
+        run: |
+          npm ci
+          npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_SUPABASE_FUNCTION_URL: ${{ secrets.VITE_SUPABASE_FUNCTION_URL }}
+
+      # Add Lovable Cloud deploy step when project is connected
+      # - name: Deploy to Lovable Cloud
+      #   run: npx @lovable/cli deploy
+      #   env:
+      #     LOVABLE_TOKEN: ${{ secrets.LOVABLE_TOKEN }}

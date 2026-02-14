@@ -1,9 +1,9 @@
 /**
- * Auth service - placeholder for JWT auth (Page 4)
- * Will integrate with backend /auth/* endpoints
+ * Auth service - Supabase integration (Page 4)
+ * Primary auth is via SupabaseAuthContext; this module provides helpers.
  */
 
-import { apiClient } from "./apiClient";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 
 export interface User {
   id: string;
@@ -17,24 +17,17 @@ export interface AuthState {
 }
 
 /**
- * Get current user (placeholder - returns null until auth is implemented)
+ * Get current session access token for API calls
  */
-export async function getCurrentUser(): Promise<User | null> {
-  try {
-    const user = await apiClient<User>("/auth/me", { skipAuth: true });
-    return user;
-  } catch {
-    return null;
-  }
+export async function getAccessToken(): Promise<string | null> {
+  if (!isSupabaseConfigured) return null;
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.access_token ?? null;
 }
 
 /**
- * Logout (placeholder - clears client state when implemented)
+ * Logout - delegates to Supabase signOut
  */
 export async function logout(): Promise<void> {
-  try {
-    await apiClient("/auth/logout", { method: "POST", skipAuth: true });
-  } catch {
-    // ignore
-  }
+  if (isSupabaseConfigured) await supabase.auth.signOut();
 }

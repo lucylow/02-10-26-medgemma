@@ -11,6 +11,7 @@ import {
   Route,
 } from "react-router-dom";
 import { ScreeningProvider } from "./contexts/ScreeningContext";
+import { SupabaseAuthProvider } from "./contexts/SupabaseAuthContext";
 import { initializeAccessibility } from "@/components/pediscreen/AccessibilityBar";
 import { toast } from "sonner";
 import { flush, dataURLToFile } from "@/services/offlineQueue";
@@ -39,6 +40,7 @@ import TechnicalWriter from "./pages/TechnicalWriter";
 import DetailedReportEditor from "./pages/DetailedReportEditor";
 import ClinicianDashboard from "./pages/ClinicianDashboard";
 import EndToEndDemo from "./pages/EndToEndDemo";
+import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -46,9 +48,9 @@ const appRoutes = createRoutesFromElements(
   <>
     <Route element={<MainLayout />}>
       <Route path="/" element={<Index />} />
-      <Route path="/dashboard" element={<Dashboard />} />
-      <Route path="/cases" element={<CasesIndex />} />
-      <Route path="/cases/:id" element={<CaseDetail />} />
+      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path="/cases" element={<ProtectedRoute><CasesIndex /></ProtectedRoute>} />
+      <Route path="/cases/:id" element={<ProtectedRoute><CaseDetail /></ProtectedRoute>} />
       <Route path="/auth/login" element={<Login />} />
       <Route path="/auth/signup" element={<Signup />} />
       <Route path="/profile" element={<Profile />} />
@@ -119,13 +121,15 @@ const App = ({ router: customRouter }: AppProps = {}) => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <ScreeningProvider>
-          <Toaster />
-          <Sonner />
-          <RouterProvider router={router} />
-        </ScreeningProvider>
-      </TooltipProvider>
+      <SupabaseAuthProvider>
+        <TooltipProvider>
+          <ScreeningProvider>
+            <Toaster />
+            <Sonner />
+            <RouterProvider router={router} />
+          </ScreeningProvider>
+        </TooltipProvider>
+      </SupabaseAuthProvider>
     </QueryClientProvider>
   );
 };

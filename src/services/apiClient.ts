@@ -1,7 +1,9 @@
 /**
  * Centralized API client for PediScreen AI
- * Handles base URL, auth headers, and consistent error handling
+ * Handles base URL, auth headers (x-api-key + Supabase Bearer token), and error handling
  */
+
+import { getAccessToken } from "./auth";
 
 const API_BASE =
   import.meta.env.VITE_PEDISCREEN_BACKEND_URL ||
@@ -96,8 +98,10 @@ export async function apiClient<T>(
     ...(init.headers as Record<string, string>),
   };
 
-  if (!skipAuth && API_KEY) {
-    headers["x-api-key"] = API_KEY;
+  if (!skipAuth) {
+    if (API_KEY) headers["x-api-key"] = API_KEY;
+    const token = await getAccessToken();
+    if (token) headers["Authorization"] = `Bearer ${token}`;
   }
 
   const response = await fetch(url, {

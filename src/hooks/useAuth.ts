@@ -1,19 +1,22 @@
 /**
- * Auth hook - placeholder for user context (Page 4)
+ * Auth hook - uses Supabase when configured, otherwise returns unauthenticated
  */
+import { useContext } from "react";
+import { SupabaseAuthContext } from "@/contexts/SupabaseAuthContext";
 
-import { useState, useEffect } from "react";
-import { getCurrentUser, type User } from "@/services/auth";
+// Safe default when provider is not mounted (e.g. tests)
+const defaultAuth = {
+  user: null as { id: string; email: string; name?: string } | null,
+  isAuthenticated: false,
+  loading: false,
+};
 
 export function useAuth() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    getCurrentUser()
-      .then(setUser)
-      .finally(() => setLoading(false));
-  }, []);
-
-  return { user, isAuthenticated: !!user, loading };
+  const ctx = useContext(SupabaseAuthContext);
+  if (!ctx) return defaultAuth;
+  return {
+    user: ctx.user,
+    isAuthenticated: ctx.isAuthenticated,
+    loading: ctx.loading,
+  };
 }

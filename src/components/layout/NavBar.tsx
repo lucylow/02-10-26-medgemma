@@ -1,15 +1,22 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Baby, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { User } from "@/services/auth";
+import { useSupabaseAuth } from "@/contexts/SupabaseAuthContext";
 
 interface NavBarProps {
-  user?: User | null;
+  user?: { id: string; email: string; name?: string } | null;
   className?: string;
 }
 
 export default function NavBar({ user, className }: NavBarProps) {
+  const { signOut, isConfigured } = useSupabaseAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await signOut();
+    if (isConfigured) navigate("/");
+  };
   return (
     <nav
       className={cn(
@@ -52,7 +59,7 @@ export default function NavBar({ user, className }: NavBarProps) {
               </Link>
             </li>
             <li>
-              <Button variant="ghost" size="sm" className="gap-2" aria-label="Log out">
+              <Button variant="ghost" size="sm" className="gap-2" aria-label="Log out" onClick={handleLogout}>
                 <LogOut className="w-4 h-4" />
                 Logout
               </Button>

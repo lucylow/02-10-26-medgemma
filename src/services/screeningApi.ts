@@ -133,7 +133,7 @@ export const submitScreening = async (request: ScreeningRequest): Promise<Screen
       };
     }
 
-    // Supabase Edge Functions: use FormData + multipart
+    // Supabase Edge Functions: use FormData + multipart (with session token when available)
     if (SUPABASE_FUNCTION_URL) {
       const form = new FormData();
       form.append('childAge', request.childAge);
@@ -143,8 +143,12 @@ export const submitScreening = async (request: ScreeningRequest): Promise<Screen
         form.append('image', request.imageFile, request.imageFile.name);
       }
 
+      const { getAuthHeaders } = await import('@/lib/apiAuth');
+      const headers = await getAuthHeaders();
+
       const response = await fetch(`${SUPABASE_FUNCTION_URL}/analyze`, {
         method: 'POST',
+        headers,
         body: form,
       });
 
@@ -394,7 +398,9 @@ export const listScreenings = async (params?: { limit?: number; page?: number })
   const limit = params?.limit ?? 50;
   const page = params?.page ?? 0;
   const url = `${SUPABASE_FUNCTION_URL}/list_screenings?limit=${limit}&page=${page}`;
-  const res = await fetch(url);
+  const { getAuthHeaders } = await import('@/lib/apiAuth');
+  const headers = await getAuthHeaders();
+  const res = await fetch(url, { headers });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 };
@@ -423,20 +429,25 @@ export const getScreening = async (screeningId: string): Promise<ScreeningListIt
     };
   }
   if (!SUPABASE_FUNCTION_URL) return null;
-  const res = await fetch(`${SUPABASE_FUNCTION_URL}/get_screening?id=${encodeURIComponent(screeningId)}`);
+  const { getAuthHeaders } = await import('@/lib/apiAuth');
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${SUPABASE_FUNCTION_URL}/get_screening?id=${encodeURIComponent(screeningId)}`, { headers });
   if (!res.ok) return null;
   return res.json();
 };
 
 /**
  * Check API health status
+ * Uses Supabase /health edge function when VITE_SUPABASE_FUNCTION_URL is set
  */
 export const checkApiHealth = async (): Promise<{ healthy: boolean; latency?: number }> => {
   try {
     const start = performance.now();
-    const healthUrl = PEDISCREEN_BACKEND_URL
-      ? `${PEDISCREEN_BACKEND_URL}/health`
-      : `${API_BASE_URL}/health`;
+    const healthUrl = SUPABASE_FUNCTION_URL
+      ? `${SUPABASE_FUNCTION_URL}/health`
+      : PEDISCREEN_BACKEND_URL
+        ? `${PEDISCREEN_BACKEND_URL}/health`
+        : `${API_BASE_URL}/health`;
     const response = await fetch(healthUrl, {
       method: 'GET',
       signal: AbortSignal.timeout(5000),

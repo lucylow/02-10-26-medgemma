@@ -11,7 +11,7 @@ function renderWithRouter(initialPath = "/") {
 describe("Routing", () => {
   it("renders home page at /", () => {
     renderWithRouter("/");
-    expect(screen.getByText(/PediScreen/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /PediScreen AI/i })).toBeInTheDocument();
   });
 
   it("renders dashboard at /dashboard", () => {
@@ -41,13 +41,13 @@ describe("Routing", () => {
 
   it("renders reports page at /reports", () => {
     renderWithRouter("/reports");
-    expect(screen.getByText(/Reports/i)).toBeInTheDocument();
+    expect(screen.getAllByRole("heading", { name: /Reports/i }).length).toBeGreaterThan(0);
   });
 
   it("has Dashboard link in nav", () => {
     renderWithRouter("/dashboard");
-    const dashboardLink = screen.getByRole("link", { name: "Dashboard" });
-    expect(dashboardLink).toBeInTheDocument();
-    expect(dashboardLink).toHaveAttribute("href", "/dashboard");
+    const dashboardLinks = screen.getAllByRole("link", { name: /Dashboard/i });
+    expect(dashboardLinks.length).toBeGreaterThan(0);
+    expect(dashboardLinks[0]).toHaveAttribute("href", "/dashboard");
   });
 });

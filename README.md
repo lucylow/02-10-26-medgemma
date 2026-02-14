@@ -108,6 +108,28 @@ pediscreen-ai/
 └── requirements.txt       # Dependencies
 ```
 
+## Lovable Cloud & Supabase Integration
+
+PediScreen AI is configured for deployment on Lovable Cloud with Supabase:
+
+- **Supabase Auth**: Login, signup, session management (`/auth/login`, `/auth/signup`)
+- **Protected routes**: Dashboard, Cases require auth when Supabase is configured
+- **Edge Functions**: `analyze`, `list_screenings`, `get_screening`, `health` (see `supabase/functions/`)
+- **Backend JWT**: FastAPI accepts `x-api-key` or `Authorization: Bearer <Supabase JWT>`
+
+### Quick Setup
+
+1. Create a Supabase project and get URL + anon key from Dashboard > API
+2. Set env vars (see `.env.example`):
+   - `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` (frontend)
+   - `SUPABASE_JWT_SECRET` (backend, for Bearer validation)
+3. Deploy Edge Functions: `supabase functions deploy`
+4. Run migrations: `supabase db push`
+
+See [docs/RUNBOOK_LOVABLE.md](docs/RUNBOOK_LOVABLE.md) for the full deployment checklist.
+
+---
+
 ## 🚀 Getting Started (5-Minute Demo)
 
 ### Quick Start (Docker)

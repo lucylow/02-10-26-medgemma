@@ -54,6 +54,10 @@ class Settings(BaseSettings):
     HF_MEDSIGLIP_MODEL: Optional[str] = Field("google/medsiglip-base", env="HF_MEDSIGLIP_MODEL")
     HF_MEDSIGLIP_TOKEN: Optional[str] = Field(None, env="HF_MEDSIGLIP_TOKEN")
 
+    # Supabase JWT (for Bearer token validation when frontend uses Supabase Auth)
+    SUPABASE_URL: Optional[str] = Field(None, env="SUPABASE_URL")
+    SUPABASE_JWT_SECRET: Optional[str] = Field(None, env="SUPABASE_JWT_SECRET")
+
     # Clinician auth (Google Identity / OAuth2)
     GOOGLE_CLIENT_ID: Optional[str] = Field(None, env="GOOGLE_CLIENT_ID")
     CLINICIAN_EMAIL_DOMAIN: Optional[str] = Field("@yourclinic.org", env="CLINICIAN_EMAIL_DOMAIN")
