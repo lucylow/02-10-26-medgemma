@@ -1,11 +1,14 @@
 import React from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
-import { Baby, Home, Plus, History, ArrowLeft, Menu, Sparkles, ChevronRight, UserCircle, Settings, BookOpen, FileText } from 'lucide-react';
+import { Baby, Home, Plus, History, ArrowLeft, Menu, Sparkles, ChevronRight, UserCircle, Settings, BookOpen, FileText, Users, Stethoscope, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useScreening, type UserRole } from '@/contexts/ScreeningContext';
 
 const navItems = [
   { title: 'Dashboard', path: '/pediscreen', icon: Home },
@@ -65,11 +68,18 @@ const NavContent = ({ onNavigate }: { onNavigate?: () => void }) => {
   );
 };
 
+const roleLabels: Record<UserRole, string> = {
+  parent: 'Parent / Caregiver',
+  chw: 'CHW',
+  clinician: 'Clinician',
+};
+
 const PediScreenLayout = () => {
   const isMobile = useIsMobile();
   const location = useLocation();
   const [sheetOpen, setSheetOpen] = React.useState(false);
   const breadcrumbs = getBreadcrumbs(location.pathname);
+  const { role, setRole, demoMode } = useScreening();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/5 flex flex-col">
@@ -116,14 +126,33 @@ const PediScreenLayout = () => {
             </Link>
           </div>
           
-          {!isMobile && (
+          <div className="flex items-center gap-2">
+            {!isMobile && (
+              <>
+                <Select value={role} onValueChange={(v) => setRole(v as UserRole)}>
+                  <SelectTrigger className="w-[140px] h-8 bg-primary-foreground/10 border-primary-foreground/20 text-primary-foreground">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="parent"><Heart className="w-4 h-4 mr-2 inline" /> Parent</SelectItem>
+                    <SelectItem value="chw"><Users className="w-4 h-4 mr-2 inline" /> CHW</SelectItem>
+                    <SelectItem value="clinician"><Stethoscope className="w-4 h-4 mr-2 inline" /> Clinician</SelectItem>
+                  </SelectContent>
+                </Select>
+                {demoMode && (
+                  <Badge variant="secondary" className="bg-primary-foreground/20 text-primary-foreground text-xs">
+                    Demo
+                  </Badge>
+                )}
+              </>
+            )}
             <Link to="/">
               <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10 gap-2 rounded-xl">
                 <ArrowLeft className="w-4 h-4" />
                 Back to Home
               </Button>
             </Link>
-          )}
+          </div>
         </div>
       </header>
 

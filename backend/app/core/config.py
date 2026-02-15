@@ -21,6 +21,7 @@ class Settings(BaseSettings):
 
     # Model config
     MEDGEMMA_MODE: bool = Field(False, env="MEDGEMMA_MODE")  # toggle to use real model
+    MOCK_MODE: bool = Field(True, env="MOCK_MODE")  # demo mode: use mock when no model configured
     MEDGEMMA_MODEL_NAME: Optional[str] = Field(None, env="MEDGEMMA_MODEL_NAME")
 
     # MedGemmaService: Vertex AI / Hugging Face

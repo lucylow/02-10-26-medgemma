@@ -141,6 +141,24 @@ See [docs/RUNBOOK_LOVABLE.md](docs/RUNBOOK_LOVABLE.md) for the full deployment c
 
 ## 🚀 Getting Started (5-Minute Demo)
 
+### Quickstart (Makefile)
+```bash
+# 1. Copy env and install deps
+cp .env.example .env
+cd backend && pip install -r requirements.txt
+cd ../app/frontend && npm install
+
+# 2. Run backend (port 8000) — uses mock data when no MedGemma configured
+make backend
+
+# 3. In another terminal: run frontend (port 8080)
+make frontend
+
+# 4. Open http://localhost:8080/pediscreen — submit a mock screening
+```
+
+**Demo vs Live:** Set `MOCK_MODE=true` (default) for mock data without MedGemma. Set `HF_MODEL` and `HF_API_KEY` (or Vertex) for live inference. See `.env.example`.
+
 ### Quick Start (Docker)
 ```bash
 cd backend

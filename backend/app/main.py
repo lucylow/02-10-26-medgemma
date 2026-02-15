@@ -15,6 +15,7 @@ from app.api import (
     analyze,
     infer,
     screenings,
+    screening_v1,
     health,
     technical_writing,
     radiology,
@@ -125,6 +126,7 @@ app.add_middleware(
 app.include_router(analyze.router)
 app.include_router(infer.router)
 app.include_router(screenings.router)
+app.include_router(screening_v1.router)
 app.include_router(health.router)
 app.include_router(technical_writing.router)
 app.include_router(radiology.router)

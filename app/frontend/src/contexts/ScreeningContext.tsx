@@ -1,5 +1,7 @@
 import React, { createContext, useState, useContext, ReactNode } from 'react';
 
+export type UserRole = 'parent' | 'chw' | 'clinician';
+
 export type ScreeningData = {
   childAge: string;
   domain: string;
@@ -20,6 +22,10 @@ type ScreeningContextType = {
   currentScreening: ScreeningData;
   updateScreening: (updates: Partial<ScreeningData>) => void;
   clearScreening: () => void;
+  role: UserRole;
+  setRole: (r: UserRole) => void;
+  demoMode: boolean;
+  setDemoMode: (v: boolean) => void;
 };
 
 const defaultScreening: ScreeningData = {
@@ -34,6 +40,10 @@ const ScreeningContext = createContext<ScreeningContextType | undefined>(undefin
 
 export const ScreeningProvider = ({ children }: { children: ReactNode }) => {
   const [currentScreening, setCurrentScreening] = useState<ScreeningData>(defaultScreening);
+  const [role, setRole] = useState<UserRole>('parent');
+  const [demoMode, setDemoMode] = useState<boolean>(
+    import.meta.env.VITE_API_MODE === 'mock' || !import.meta.env.VITE_PEDISCREEN_BACKEND_URL
+  );
 
   const updateScreening = (updates: Partial<ScreeningData>) => {
     setCurrentScreening(prev => ({ ...prev, ...updates }));
@@ -45,7 +55,7 @@ export const ScreeningProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <ScreeningContext.Provider 
-      value={{ currentScreening, updateScreening, clearScreening }}
+      value={{ currentScreening, updateScreening, clearScreening, role, setRole, demoMode, setDemoMode }}
     >
       {children}
     </ScreeningContext.Provider>

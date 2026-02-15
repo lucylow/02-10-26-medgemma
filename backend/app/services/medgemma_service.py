@@ -247,6 +247,8 @@ class MedGemmaService:
                 final_report["riskLevel"] = model_parsed["risk_assessment"]["overall"]
             if model_parsed.get("clinical_summary"):
                 final_report["clinical_summary"] = model_parsed["clinical_summary"]
+            if model_parsed.get("plain_language_summary"):
+                final_report["plain_language_summary"] = model_parsed["plain_language_summary"]
             if model_parsed.get("recommendations"):
                 # extend baseline recommendations but de-duplicate
                 final_report["recommendations"] = list(
@@ -359,6 +361,8 @@ class MedGemmaService:
                 final_report["riskLevel"] = model_parsed["risk_assessment"]["overall"]
             if model_parsed.get("clinical_summary"):
                 final_report["clinical_summary"] = model_parsed["clinical_summary"]
+            if model_parsed.get("plain_language_summary"):
+                final_report["plain_language_summary"] = model_parsed["plain_language_summary"]
             if model_parsed.get("recommendations"):
                 final_report["recommendations"] = list(
                     dict.fromkeys(final_report.get("recommendations", []) + model_parsed["recommendations"])

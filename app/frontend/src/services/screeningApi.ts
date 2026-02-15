@@ -1,5 +1,8 @@
-const API_BASE_URL = import.meta.env.VITE_MEDGEMMA_API_URL || 
-  (import.meta.env.DEV ? 'http://localhost:5000/api' : 'https://api.pediscreen.ai/v1');
+// Prefer PediScreen backend (8000); fallback to MedGemma API URL
+const API_BASE_URL = import.meta.env.VITE_PEDISCREEN_BACKEND_URL
+  ? `${import.meta.env.VITE_PEDISCREEN_BACKEND_URL}/api`
+  : (import.meta.env.VITE_MEDGEMMA_API_URL ||
+  (import.meta.env.DEV ? 'http://localhost:8000/api' : 'https://api.pediscreen.ai/v1'));
 
 export type RiskLevel = 'low' | 'medium' | 'high' | 'unknown' | 'on_track' | 'monitor' | 'refer';
 
