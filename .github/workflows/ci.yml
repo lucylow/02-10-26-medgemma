@@ -106,3 +106,8 @@ jobs:
         run: |
           pip install pytest
           PYTHONPATH=. python -m pytest app/backend/tests/test_audit.py -v
+
+      - name: Run compliance tests
+        run: |
+          pip install pytest pytest-asyncio cryptography
+          PYTHONPATH=. python -m pytest compliance/tests/ -v

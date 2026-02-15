@@ -1,0 +1,52 @@
+flowchart TB
+    subgraph Client["Client (Mobile/Web)"]
+        A[User captures observations]
+        B[Optional: Capture image]
+        C[MedSigLIP on-device]
+        D[Generate embedding_b64]
+        E[Consent modal if raw_image]
+    end
+
+    subgraph API["Backend API"]
+        F[POST /api/infer]
+        G[POST /api/analyze]
+        H[POST /api/sync_case]
+        I[POST /api/consent]
+        J[Validate consent if raw_image]
+    end
+
+    subgraph Storage["Storage"]
+        K[(MongoDB/CloudSQL)]
+        L[(Object Storage)]
+        M[(Audit Log)]
+    end
+
+    subgraph Inference["MedGemma Inference"]
+        N[Vertex AI / HF]
+        O[Structured output]
+    end
+
+    subgraph Portal["Clinician Portal"]
+        P[Review & Sign-off]
+    end
+
+    A --> B
+    B --> C
+    C --> D
+    B --> E
+    E -->|consent_id| I
+    D --> F
+    D --> H
+    B -->|only if consent| G
+    G --> J
+    J -->|reject if no consent| G
+    F --> N
+    H --> N
+    G --> N
+    N --> O
+    O --> K
+    O --> M
+    K --> P
+    I --> K
+    I --> M
+    G -->|raw image| L

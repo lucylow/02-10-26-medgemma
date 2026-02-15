@@ -96,8 +96,20 @@ async def analyze_endpoint(
     childAge: str = Form(...),
     domain: str = Form(""),
     observations: str = Form(""),
-    image: UploadFile | None = File(None)
+    image: UploadFile | None = File(None),
+    consent_id: str | None = Form(None),
+    consent_given: str | None = Form(None),
 ):
+    # Embeddings-first: raw image requires explicit consent (Page 3)
+    if image:
+        if consent_given != "true" or not consent_id:
+            raise ApiError(
+                ErrorCodes.INVALID_PAYLOAD,
+                "raw_image requires explicit consent. Provide consent_id and consent_given=true.",
+                status_code=400,
+                details={"hint": "Use embeddings-first flow or record consent via POST /api/consent first"},
+            ) from None
+
     # validate age
     try:
         age = int(childAge)

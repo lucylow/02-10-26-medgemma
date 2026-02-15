@@ -1,0 +1,23 @@
+data_field,category,source,stored_where,retention_days,lawful_basis
+case_id,Non-PHI,Client/API,MongoDB/CloudSQL,1825,Consent
+screening_id,Non-PHI,API,MongoDB/CloudSQL,1825,Consent
+child_age_months,PHI,Web form/API,MongoDB/CloudSQL,1825,Consent
+observations,PHI,Web form/API,MongoDB/CloudSQL,1825,Consent
+embedding_b64,PHI,Client (MedSigLIP),MongoDB/CloudSQL,1825,Consent
+raw_image_b64,PHI,Client (explicit consent),Object storage,30,Explicit consent
+image_path,PHI,Upload (analyze endpoint),Local/Cloud storage,30,Explicit consent
+parent_name,PHI,Consent form,consent_records,1825,Consent
+patient_id,PHI,Client,DB,1825,Consent
+user_id_pseudonym,Non-PHI,Server (pseudonymize),DB,1825,Consent
+consent_id,Non-PHI,API,consent_records,2555,Legal obligation
+questionnaire_scores,PHI,Web form,MongoDB/CloudSQL,1825,Consent
+report,PHI,MedGemma inference,MongoDB/CloudSQL,2555,Consent
+clinical_summary,PHI,MedGemma inference,MongoDB/CloudSQL,2555,Consent
+riskLevel,PHI,MedGemma inference,MongoDB/CloudSQL,2555,Consent
+keyFindings,PHI,MedGemma inference,MongoDB/CloudSQL,2555,Consent
+recommendations,PHI,MedGemma inference,MongoDB/CloudSQL,2555,Consent
+audit_log_entry,Non-PHI,Server,audit_log,2555,Legal obligation
+inference_id,Non-PHI,API,feedback_store,1825,Consent
+input_hash,Non-PHI,API,feedback_store,1825,Consent
+result_summary,PHI,API,feedback_store,1825,Consent
+result_risk,PHI,API,feedback_store,1825,Consent

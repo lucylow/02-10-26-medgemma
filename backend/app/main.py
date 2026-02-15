@@ -25,6 +25,7 @@ from app.api import (
     infra,
     fhir,
     consent,
+    dsr,
     embed,
     schemas_api,
     data_quality,
@@ -134,6 +135,7 @@ app.include_router(citations.router)
 app.include_router(infra.router)
 app.include_router(fhir.router)
 app.include_router(consent.router)
+app.include_router(dsr.router)
 app.include_router(embed.router)
 app.include_router(schemas_api.router)
 app.include_router(data_quality.router)

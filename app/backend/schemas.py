@@ -4,7 +4,7 @@ Enhanced for structured clinical report generation
 """
 
 from datetime import datetime
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator, root_validator
 from typing import List, Optional, Dict, Any, Union
 import re
 from enum import Enum
@@ -182,6 +182,27 @@ class InferRequest(BaseModel):
         None, 
         description="Parameters for Gemma 3 (language, tone, reading_level)"
     )
+    # Embeddings-first: raw image requires explicit consent (Page 3)
+    consent: Optional[Dict[str, Any]] = Field(
+        None,
+        description="Consent record: {consent_id, consent_given, consent_scope}. Required when image_b64 is provided.",
+    )
+
+    @root_validator
+    def validate_raw_image_consent(cls, values):
+        """Enforce embeddings-first: raw image requires explicit consent (Page 3)."""
+        image_b64 = values.get("image_b64")
+        consent = values.get("consent")
+        if image_b64:
+            if not consent or not consent.get("consent_given"):
+                raise ValueError(
+                    "raw_image requires explicit consent. Provide consent.consent_given=true and consent.consent_id."
+                )
+            if not consent.get("consent_id"):
+                raise ValueError(
+                    "raw_image requires consent_id for audit trail."
+                )
+        return values
 
     @validator("image_b64")
     def validate_image_b64(cls, v):
