@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      edge_metrics: {
+        Row: {
+          created_at: string
+          error_code: string | null
+          handler: string
+          id: string
+          latency_ms: number | null
+          metadata: Json | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          error_code?: string | null
+          handler: string
+          id?: string
+          latency_ms?: number | null
+          metadata?: Json | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          error_code?: string | null
+          handler?: string
+          id?: string
+          latency_ms?: number | null
+          metadata?: Json | null
+          status?: string
+        }
+        Relationships: []
+      }
       screenings: {
         Row: {
           child_age_months: number
