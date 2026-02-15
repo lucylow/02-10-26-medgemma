@@ -8,8 +8,11 @@ import {
 import { YStack, XStack, Text, Card, Badge, Input, Button } from 'tamagui';
 import { useRouter } from 'expo-router';
 import { Brain, Activity, Zap, BarChart3, Shield, Clock } from 'lucide-react-native';
+import { useAuthState } from '@/contexts/AuthProvider';
 import { useAI } from '@/contexts/AIAgentProvider';
 import { useFhirPatientTimeline } from '@/hooks/useFhirQueries';
+import { UserHeader } from '@/components/UserHeader';
+import { RoleBasedQuickActions } from '@/components/RoleBasedQuickActions';
 import {
   FhirRiskTimeline,
   FhirMilestoneRadar,
@@ -90,13 +93,6 @@ export default function MedGemmaDashboard() {
       age: quickAge,
       observations: text,
       voiceTranscript: text,
-    });
-  };
-
-  const handleQuickScreen = async () => {
-    await startPipeline({
-      age: quickAge,
-      observations: quickInput || '24 month old says 10 words, poor eye contact',
     });
   };
 
