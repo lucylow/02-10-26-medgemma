@@ -7,16 +7,16 @@ import {
 } from 'react-native';
 import { YStack, XStack, Text, Card, Badge, Input, Button } from 'tamagui';
 import { useRouter } from 'expo-router';
-import { Brain, Activity, Zap, BarChart3, Shield, Clock, Mic } from 'lucide-react-native';
+import { Brain, Activity, Zap, BarChart3, Shield, Clock } from 'lucide-react-native';
 import { useAI } from '@/contexts/AIAgentProvider';
-import { useFhirCharts } from '@/hooks/useFhirCharts';
-import { RiskTimelineChart } from '@/components/charts/RiskTimelineChart';
-import { MilestoneHeatmap } from '@/components/charts/MilestoneHeatmap';
-import { ConfidenceTrendChart } from '@/components/charts/ConfidenceTrendChart';
-import { HeaderStats } from '@/components/HeaderStats';
-import { TimeRangeSelector } from '@/components/TimeRangeSelector';
-import { AgentPerformanceCards } from '@/components/AgentPerformanceCards';
-import { RecentFhirEntries } from '@/components/RecentFhirEntries';
+import { useFhirPatientTimeline } from '@/hooks/useFhirQueries';
+import {
+  FhirRiskTimeline,
+  FhirMilestoneRadar,
+  AgentPerformanceChart,
+  FhirSummaryMetrics,
+} from '@/components/charts/FhirCharts';
+import { InfiniteHistoryList } from '@/components/InfiniteHistoryList';
 import { ChartSkeleton } from '@/components/ChartSkeleton';
 import { StatCard } from '@/components/StatCard';
 import { VoiceInput } from '@/components/VoiceInput';
@@ -44,13 +44,6 @@ const clinicianCards = (
   },
 ];
 
-const TIME_RANGE_LABELS: Record<string, string> = {
-  '30d': '30 days',
-  '90d': '90 days',
-  '6m': '6 months',
-  all: 'All time',
-};
-
 const STATS = {
   casesToday: 23,
   aiAccuracy: 94.2,
@@ -65,13 +58,20 @@ export default function MedGemmaDashboard() {
   const [quickInput, setQuickInput] = useState('');
   const [quickAge, setQuickAge] = useState(24);
 
+  const patientId = 'patient-123';
+  const clinicId: string | undefined = undefined;
   const {
-    charts,
-    riskSummary,
-    timeRange,
-    setTimeRange,
+    riskTimeline,
+    milestoneTrends,
+    patientHistory,
+    summary,
     isLoading: chartsLoading,
-  } = useFhirCharts('patient-123');
+    refetch,
+  } = useFhirPatientTimeline(patientId, clinicId);
+
+  const handleQuickStart = () => {
+    router.push('/(tabs)/cases');
+  };
 
   const handleQuickScreen = async () => {
     await startPipeline({
@@ -249,20 +249,18 @@ export default function MedGemmaDashboard() {
             <ChartSkeleton />
           ) : (
             <>
-              <HeaderStats riskSummary={riskSummary} />
-              <TimeRangeSelector timeRange={timeRange} onChange={setTimeRange} />
-
-              <YStack space="$6">
-                <RiskTimelineChart
-                  data={charts.riskTimeline}
-                  timeRangeLabel={TIME_RANGE_LABELS[timeRange]}
-                />
-                <MilestoneHeatmap data={charts.milestoneProgress} />
-                <ConfidenceTrendChart data={charts.confidenceTrend} />
+              <FhirSummaryMetrics summary={summary} />
+              <FhirRiskTimeline patientId={patientId} timeRangeLabel="Live" />
+              <YStack space="$4">
+                <FhirMilestoneRadar patientId={patientId} />
+                <AgentPerformanceChart clinicId="clinic-123" />
               </YStack>
-
-              <AgentPerformanceCards performance={charts.agentPerformance} />
-              <RecentFhirEntries observations={charts.riskTimeline.slice(0, 5)} />
+              <InfiniteHistoryList
+                pages={patientHistory.data?.pages}
+                hasNextPage={patientHistory.hasNextPage}
+                fetchNextPage={patientHistory.fetchNextPage}
+                isFetchingNextPage={patientHistory.isFetchingNextPage}
+              />
             </>
           )}
         </YStack>
