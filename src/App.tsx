@@ -40,6 +40,7 @@ import RadiologyQueue from "./pages/RadiologyQueue";
 import TechnicalWriter from "./pages/TechnicalWriter";
 import DetailedReportEditor from "./pages/DetailedReportEditor";
 import ClinicianDashboard from "./pages/ClinicianDashboard";
+import RealtimeHitlDashboard from "./pages/RealtimeHitlDashboard";
 import EndToEndDemo from "./pages/EndToEndDemo";
 import AgentPipelineScreen from "./pages/AgentPipelineScreen";
 import AgentDashboard from "./pages/AgentDashboard";
@@ -64,6 +65,7 @@ const appRoutes = createRoutesFromElements(
       <Route path="/settings" element={<Settings />} />
     </Route>
     <Route path="/clinician" element={<ClinicianDashboard />} />
+    <Route path="/clinician/review" element={<RealtimeHitlDashboard />} />
     <Route path="/pediscreen" element={<PediScreenLayout />}>
       <Route index element={<PediScreenHome />} />
       <Route path="dashboard" element={<AgentDashboard />} />

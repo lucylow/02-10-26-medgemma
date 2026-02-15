@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Activity, Shield, Brain, TrendingUp } from 'lucide-react';
 import { useAgents } from '@/contexts/AgentContext';
+import { useAgentOrchestratorContext } from '@/contexts/AgentOrchestratorContext';
 import { useAgentStats } from '@/hooks/useAgentStats';
 import { listScreenings, type ScreeningListItem } from '@/services/screeningApi';
 import { ConnectionStatus } from '@/components/pediscreen/ConnectionStatus';
@@ -107,6 +108,7 @@ export default function AgentDashboard() {
   const [quickInput, setQuickInput] = useState('');
   const [quickAge, setQuickAge] = useState(24);
   const { startPipeline } = useAgents();
+  const orchestrator = useAgentOrchestratorContext();
   const navigate = useNavigate();
   const stats = useAgentStats();
   const isConnected = typeof navigator !== 'undefined' && navigator.onLine;
@@ -174,6 +176,21 @@ export default function AgentDashboard() {
 
         {/* LIVE PIPELINE STATUS */}
         <LivePipelineStatus />
+
+        {/* Offline insight when orchestrator provides it */}
+        {orchestrator?.offlineResponse && orchestrator.mode !== 'online' && (
+          <Card className="border-amber-200 bg-amber-50/50">
+            <CardContent className="p-4">
+              <p className="text-xs font-medium text-amber-800 mb-1">Offline Rule Applied</p>
+              <p className="text-sm text-slate-700">
+                {orchestrator.offlineResponse.summary?.join(' ')}
+              </p>
+              <p className="text-xs text-slate-500 mt-1">
+                Confidence: {Math.round((orchestrator.offlineResponse.confidence ?? 0) * 100)}%
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* VOICE ENTRY POINT */}
         <VoiceEntryPoint

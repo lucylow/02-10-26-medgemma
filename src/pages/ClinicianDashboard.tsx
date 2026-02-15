@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, ClipboardList, FileText, Shield } from "lucide-react";
+import { Loader2, ClipboardList, FileText, Shield, Radio } from "lucide-react";
 import { DISCLAIMER_SHORT } from "@/constants/disclaimers";
 import ClinicianReview from "@/components/pediscreen/ClinicianReview";
 import { listDrafts } from "@/api/medgemma";
@@ -152,10 +153,18 @@ export default function ClinicianDashboard() {
         <Shield className="w-4 h-4 flex-shrink-0 mt-0.5" />
         {DISCLAIMER_SHORT}
       </div>
-      <h1 className="text-xl font-semibold flex items-center gap-2 mb-4">
-        <FileText className="w-5 h-5" />
-        Draft Reports
-      </h1>
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-xl font-semibold flex items-center gap-2">
+          <FileText className="w-5 h-5" />
+          Draft Reports
+        </h1>
+        <Button variant="outline" size="sm" asChild>
+          <Link to="/clinician/review" className="flex items-center gap-2">
+            <Radio className="w-4 h-4" />
+            Live HITL Dashboard
+          </Link>
+        </Button>
+      </div>
       <ul className="space-y-3">
         {drafts.length === 0 ? (
           <li className="p-6 rounded-lg border border-dashed text-center text-muted-foreground">

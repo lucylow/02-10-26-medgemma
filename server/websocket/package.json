@@ -1,0 +1,15 @@
+{
+  "name": "pediscreen-hitl-websocket",
+  "version": "1.0.0",
+  "description": "PediScreen AI HITL WebSocket server with Redis Pub/Sub",
+  "main": "hitl.js",
+  "type": "module",
+  "scripts": {
+    "start": "node hitl.js",
+    "dev": "node --watch hitl.js"
+  },
+  "dependencies": {
+    "ioredis": "^5.4.1",
+    "ws": "^8.18.0"
+  }
+}

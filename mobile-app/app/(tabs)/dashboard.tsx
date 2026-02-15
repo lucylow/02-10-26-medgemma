@@ -1,14 +1,26 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
   useWindowDimensions,
 } from 'react-native';
-import { YStack, XStack, Text, Card, Badge } from 'tamagui';
+import { YStack, XStack, Text, Card, Badge, Input, Button } from 'tamagui';
 import { useRouter } from 'expo-router';
-import { Brain, Activity, Zap } from 'lucide-react-native';
-import { useAgentOrchestrator } from '@/hooks/useAgentOrchestrator';
+import { Brain, Activity, Zap, BarChart3, Shield, Clock, Mic } from 'lucide-react-native';
+import { useAI } from '@/contexts/AIAgentProvider';
+import { useFhirCharts } from '@/hooks/useFhirCharts';
+import { RiskTimelineChart } from '@/components/charts/RiskTimelineChart';
+import { MilestoneHeatmap } from '@/components/charts/MilestoneHeatmap';
+import { ConfidenceTrendChart } from '@/components/charts/ConfidenceTrendChart';
+import { HeaderStats } from '@/components/HeaderStats';
+import { TimeRangeSelector } from '@/components/TimeRangeSelector';
+import { AgentPerformanceCards } from '@/components/AgentPerformanceCards';
+import { RecentFhirEntries } from '@/components/RecentFhirEntries';
+import { ChartSkeleton } from '@/components/ChartSkeleton';
+import { StatCard } from '@/components/StatCard';
+import { VoiceInput } from '@/components/VoiceInput';
+import { RecentCases } from '@/components/RecentCases';
 
 const clinicianCards = (
   currentCaseId: string | null
@@ -32,17 +44,48 @@ const clinicianCards = (
   },
 ];
 
+const TIME_RANGE_LABELS: Record<string, string> = {
+  '30d': '30 days',
+  '90d': '90 days',
+  '6m': '6 months',
+  all: 'All time',
+};
+
+const STATS = {
+  casesToday: 23,
+  aiAccuracy: 94.2,
+  hitlRate: 12.3,
+  avgTime: '2.8s',
+};
+
 export default function MedGemmaDashboard() {
   const router = useRouter();
-  const { startFullPipeline, state } = useAgentOrchestrator();
+  const { startPipeline, state } = useAI();
   const { width } = useWindowDimensions();
+  const [quickInput, setQuickInput] = useState('');
+  const [quickAge, setQuickAge] = useState(24);
 
-  const handleQuickStart = async () => {
-    const caseId = await startFullPipeline({
-      age: 24,
-      observations: 'Says 10 words, points to objects',
+  const {
+    charts,
+    riskSummary,
+    timeRange,
+    setTimeRange,
+    isLoading: chartsLoading,
+  } = useFhirCharts('patient-123');
+
+  const handleQuickScreen = async () => {
+    await startPipeline({
+      age: quickAge,
+      observations: quickInput || '24 month old says 10 words, poor eye contact',
     });
-    router.push(`/medgemma/${caseId}`);
+  };
+
+  const handleVoiceTranscript = async (text: string) => {
+    await startPipeline({
+      age: quickAge,
+      observations: text,
+      voiceTranscript: text,
+    });
   };
 
   return (
@@ -52,25 +95,62 @@ export default function MedGemmaDashboard() {
       showsVerticalScrollIndicator={false}
     >
       <YStack space="$6" p="$4">
-        {/* HERO MEDGEMMA STATS */}
-        <YStack space="$4">
+        {/* HERO */}
+        <YStack ai="center" space="$4">
           <XStack ai="center" space="$3">
-            <Brain size={32} color="#1E3A8A" />
-            <Text fontSize="$8" fontWeight="900" color="#1E3A8A">
-              MedGemma 4B-IT
+            <Text fontSize="$10" fontWeight="900" color="#1E3A8A">
+              PediScreen AI
             </Text>
-            <Badge size="$3" bg="#3B82F6" color="white">
-              QLoRA 4-bit
+            <Badge size="$3" bg="#10B981" color="white">
+              MedGemma 4B
             </Badge>
           </XStack>
           <Text fontSize="$5" color="#64748B">
-            Pediatric screening • ASQ-3 validated • AAP 2025 guidelines
+            Pediatric screening • ASQ-3 validated • Live HITL
           </Text>
         </YStack>
 
-        {/* QUICK STATS */}
+        {/* STATS GRID */}
         <XStack flexWrap="wrap" gap="$3">
-          {clinicianCards(state.currentCaseId).map((card) => (
+          <StatCard icon={Activity} value={STATS.casesToday} label="Today" />
+          <StatCard icon={Brain} value={`${STATS.aiAccuracy}%`} label="Accuracy" color="#10B981" />
+          <StatCard icon={Shield} value={`${STATS.hitlRate}%`} label="HITL" color="#F59E0B" />
+          <StatCard icon={Clock} value={STATS.avgTime} label="Avg Time" color="#3B82F6" />
+        </XStack>
+
+        {/* QUICK SCREENING */}
+        <Card bg="#F8FAFC" p="$6" br="$4" borderWidth={1} borderColor="#E2E8F0">
+          <Text fontSize="$6" fontWeight="700" mb="$5">
+            Quick Screening
+          </Text>
+          <YStack space="$4">
+            <Input
+              placeholder="Describe observations..."
+              value={quickInput}
+              onChangeText={setQuickInput}
+              bg="white"
+              borderColor="#E2E8F0"
+            />
+            <XStack space="$3" flexWrap="wrap">
+              <Input
+                placeholder="Age (months)"
+                value={quickAge.toString()}
+                onChangeText={(t) => setQuickAge(Number(t) || 24)}
+                w={120}
+                bg="white"
+                borderColor="#E2E8F0"
+              />
+              <Button flex={1} minWidth={120} bg="#1E3A8A" color="white" onPress={handleQuickScreen}>
+                Run Pipeline
+              </Button>
+            </XStack>
+            <VoiceInput onTranscript={handleVoiceTranscript} />
+          </YStack>
+        </Card>
+
+        {/* QUICK STATS CARDS */}
+        <XStack flexWrap="wrap" gap="$3">
+          {clinicianCards(state.caseId).map((card) => (
             <Card
               key={card.title}
               flex={1}
@@ -153,8 +233,42 @@ export default function MedGemmaDashboard() {
           </Card>
         )}
 
+        {/* FHIR VISUALIZATION DASHBOARD */}
+        <YStack space="$6" mt="$4">
+          <XStack ai="center" space="$3">
+            <BarChart3 size={24} color="#1E3A8A" />
+            <Text fontSize="$7" fontWeight="800" color="#1E3A8A">
+              FHIR Data Visualization
+            </Text>
+            <Badge size="$2" bg="#10B981" color="white">
+              R4 STU3
+            </Badge>
+          </XStack>
+
+          {chartsLoading ? (
+            <ChartSkeleton />
+          ) : (
+            <>
+              <HeaderStats riskSummary={riskSummary} />
+              <TimeRangeSelector timeRange={timeRange} onChange={setTimeRange} />
+
+              <YStack space="$6">
+                <RiskTimelineChart
+                  data={charts.riskTimeline}
+                  timeRangeLabel={TIME_RANGE_LABELS[timeRange]}
+                />
+                <MilestoneHeatmap data={charts.milestoneProgress} />
+                <ConfidenceTrendChart data={charts.confidenceTrend} />
+              </YStack>
+
+              <AgentPerformanceCards performance={charts.agentPerformance} />
+              <RecentFhirEntries observations={charts.riskTimeline.slice(0, 5)} />
+            </>
+          )}
+        </YStack>
+
         {/* AUTH LINKS */}
-        <XStack space="$3" jc="center" flexWrap="wrap">
+        <XStack space="$3" jc="center" flexWrap="wrap" mt="$6">
           <TouchableOpacity onPress={() => router.push('/(auth)/clinician-login')}>
             <Text color="#64748B" fontSize="$4">
               Clinician Login
