@@ -1,30 +1,58 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { YStack, XStack, Text, Card, Button } from 'tamagui';
 import { useRouter } from 'expo-router';
-import { Brain, Shield, Zap, Target, Activity } from 'lucide-react-native';
+import { Brain, Activity } from 'lucide-react-native';
 import { useAgentState } from '@/hooks/useAgentState';
+import { AgentWorkflowViz } from '@/components/workflow/AgentWorkflowViz';
+import type { AgentNode, WorkflowConnection } from '@/types/agentWorkflow';
 
-const agentIcons: Record<string, React.ComponentType<{ size?: number; color?: string }>> = {
-  intake: Shield,
-  embedding: Zap,
-  medgemma: Brain,
-  safety: Shield,
-  summarizer: Target,
-};
+function mapStatus(
+  s: string
+): 'idle' | 'running' | 'streaming' | 'success' | 'error' {
+  if (s === 'pending' || s === 'offline') return 'idle';
+  if (s === 'failed') return 'error';
+  return s as 'running' | 'streaming' | 'success' | 'error';
+}
 
-const statusColors: Record<string, string> = {
-  pending: '#E2E8F0',
-  running: '#F59E0B',
-  streaming: '#3B82F6',
-  success: '#10B981',
-  failed: '#EF4444',
-  offline: '#64748B',
-};
+function mapConnectionStatus(
+  fromStatus: string,
+  toStatus: string
+): WorkflowConnection['status'] {
+  if (fromStatus === 'success' && toStatus !== 'success') return 'active';
+  if (fromStatus === 'success' && toStatus === 'success') return 'completed';
+  if (fromStatus === 'failed' || toStatus === 'failed') return 'error';
+  return 'idle';
+}
 
 export default function PipelineScreen() {
   const router = useRouter();
   const { state, resetPipeline } = useAgentState();
+
+  const workflowPipeline = useMemo<AgentNode[]>(() => {
+    return state.pipeline.map((a) => ({
+      id: a.id,
+      type: a.id as AgentNode['type'],
+      status: mapStatus(a.status),
+      position: { x: 0, y: 0 },
+      confidence: a.confidence > 0 ? a.confidence : undefined,
+      progress: a.progress,
+    }));
+  }, [state.pipeline]);
+
+  const connections = useMemo<WorkflowConnection[]>(() => {
+    const conns: WorkflowConnection[] = [];
+    for (let i = 0; i < state.pipeline.length - 1; i++) {
+      const from = state.pipeline[i];
+      const to = state.pipeline[i + 1];
+      conns.push({
+        from: from.id,
+        to: to.id,
+        status: mapConnectionStatus(from.status, to.status),
+      });
+    }
+    return conns;
+  }, [state.pipeline]);
 
   if (!state.currentCaseId) {
     return (
@@ -54,63 +82,16 @@ export default function PipelineScreen() {
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
       <YStack p="$4" space="$6">
-        <XStack ai="center" jc="space-between">
-          <Text fontSize="$6" fontWeight="800" color="#1E293B">
-            Agent Pipeline
-          </Text>
-          <Text fontSize="$4" color="#64748B">
-            #{state.currentCaseId.slice(-6)}
-          </Text>
-        </XStack>
-
-        <XStack flexWrap="wrap" gap="$3" jc="center">
-          {state.pipeline.map((agent) => {
-            const Icon = agentIcons[agent.id] ?? Brain;
-            const bg = statusColors[agent.status] ?? statusColors.pending;
-            return (
-              <Card
-                key={agent.id}
-                minWidth={140}
-                maxWidth={180}
-                p="$4"
-                bg={bg}
-                br="$4"
-                elevate
-              >
-                <XStack ai="center" space="$3">
-                  <YStack
-                    w={44}
-                    h={44}
-                    br={22}
-                    bg="rgba(255,255,255,0.3)"
-                    ai="center"
-                    jc="center"
-                  >
-                    <Icon size={22} color="white" />
-                  </YStack>
-                  <YStack flex={1}>
-                    <Text
-                      color="white"
-                      fontWeight="700"
-                      fontSize="$3"
-                      textTransform="uppercase"
-                    >
-                      {agent.id}
-                    </Text>
-                    <Text color="rgba(255,255,255,0.9)" fontSize="$2">
-                      {agent.status}
-                    </Text>
-                    {agent.confidence > 0 && (
-                      <Text color="rgba(255,255,255,0.9)" fontSize="$2">
-                        {Math.round(agent.confidence * 100)}%
-                      </Text>
-                    )}
-                  </YStack>
-                </XStack>
-              </Card>
-            );
-          })}
-        </XStack>
+        <AgentWorkflowViz
+          pipeline={workflowPipeline}
+          connections={connections}
+          onNodePress={(nodeId) => {
+            const agent = state.pipeline.find((a) => a.id === nodeId);
+            if (agent?.status === 'streaming' && state.currentCaseId) {
+              router.push(`/medgemma/${state.currentCaseId}`);
+            }
+          }}
+        />
 
         {hasStreaming && medgemmaAgent && (
           <Card p="$4" bg="white" br="$4" elevate>

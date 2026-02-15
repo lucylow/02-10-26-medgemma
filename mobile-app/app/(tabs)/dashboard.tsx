@@ -21,6 +21,7 @@ import { ChartSkeleton } from '@/components/ChartSkeleton';
 import { StatCard } from '@/components/StatCard';
 import { VoiceInput } from '@/components/VoiceInput';
 import { RecentCases } from '@/components/RecentCases';
+import { AgentStatusBadge } from '@/components/AgentStatusBadge';
 
 const clinicianCards = (
   currentCaseId: string | null
@@ -53,10 +54,14 @@ const STATS = {
 
 export default function MedGemmaDashboard() {
   const router = useRouter();
+  const { user, userRole, userMode, hasAccess, organization, signOut } =
+    useAuthState();
   const { startPipeline, state } = useAI();
   const { width } = useWindowDimensions();
   const [quickInput, setQuickInput] = useState('');
   const [quickAge, setQuickAge] = useState(24);
+
+  const clinicianFeatures = hasAccess('view_evidence');
 
   const patientId = 'patient-123';
   const clinicId: string | undefined = undefined;
@@ -88,6 +93,13 @@ export default function MedGemmaDashboard() {
     });
   };
 
+  const handleQuickScreen = async () => {
+    await startPipeline({
+      age: quickAge,
+      observations: quickInput || '24 month old says 10 words, poor eye contact',
+    });
+  };
+
   return (
     <ScrollView
       style={styles.scroll}
@@ -95,6 +107,15 @@ export default function MedGemmaDashboard() {
       showsVerticalScrollIndicator={false}
     >
       <YStack space="$6" p="$4">
+        {/* USER HEADER */}
+        <UserHeader
+          user={user}
+          role={userRole}
+          organization={organization}
+          onSettings={() => router.push('/(tabs)/settings')}
+          onSignOut={() => signOut?.() ?? router.push('/(auth)/sign-in')}
+        />
+
         {/* HERO */}
         <YStack ai="center" space="$4">
           <XStack ai="center" space="$3">
@@ -190,7 +211,7 @@ export default function MedGemmaDashboard() {
           <Text fontSize="$6" fontWeight="700" color="#1E293B">
             Quick Actions
           </Text>
-          <TouchableOpacity onPress={handleQuickStart}>
+          <TouchableOpacity onPress={() => handleQuickScreen()}>
             <Card p="$4" bg="#1E3A8A" br="$4" elevate>
               <XStack ai="center" space="$3">
                 <Zap size={24} color="white" />
@@ -219,6 +240,20 @@ export default function MedGemmaDashboard() {
                 Live
               </Badge>
             </XStack>
+            {state.agents && state.agents.length > 0 && (
+              <XStack ai="center" gap="$2" mt="$2" flexWrap="wrap">
+                {state.agents.slice(0, 4).map((a) => (
+                  <AgentStatusBadge
+                    key={a.id}
+                    agent={a.id}
+                    status={a.status as 'idle' | 'running' | 'streaming' | 'success' | 'error'}
+                    confidence={a.confidence}
+                    size="small"
+                    showIcon={false}
+                  />
+                ))}
+              </XStack>
+            )}
             <Text fontSize="$4" color="#64748B">
               Case #{state.caseId.slice(-6)}
             </Text>

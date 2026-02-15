@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Brain, Activity, FolderOpen, Settings, ShieldAlert, MessageCircle } from 'lucide-react-native';
+import { Brain, Activity, FolderOpen, Settings, ShieldAlert, MessageCircle, Cpu } from 'lucide-react-native';
 
 export default function TabsLayout() {
   return (
@@ -24,6 +24,20 @@ export default function TabsLayout() {
         options={{
           title: 'Pipeline',
           tabBarIcon: ({ color, size }) => <Activity color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="workflow"
+        options={{
+          title: 'Workflow',
+          tabBarIcon: ({ color, size }) => <GitBranch color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="agents"
+        options={{
+          title: 'Agents',
+          tabBarIcon: ({ color, size }) => <Cpu color={color} size={size} />,
         }}
       />
       <Tabs.Screen

@@ -6,11 +6,10 @@
 import React, { createContext, useContext, useEffect } from 'react';
 import {
   ClerkProvider,
-  SignedIn,
-  SignedOut,
   useAuth as useClerkAuth,
   useUser,
   useOrganization,
+  useClerk,
 } from '@clerk/clerk-expo';
 import { useRouter, useSegments } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
