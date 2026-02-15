@@ -4,6 +4,7 @@ import { YStack, XStack, Text, Card, Input, Button } from 'tamagui';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { CheckCircle } from 'lucide-react-native';
 import { useAgentState } from '@/hooks/useAgentState';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
 
 export default function OverrideScreen() {
   const { caseId } = useLocalSearchParams<{ caseId: string }>();
@@ -25,7 +26,8 @@ export default function OverrideScreen() {
   };
 
   return (
-    <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+    <ProtectedRoute requiredPermission="override_ai">
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
       <YStack p="$6" space="$6">
         <XStack ai="center" space="$3">
           <CheckCircle size={28} color="#10B981" />
@@ -73,6 +75,7 @@ export default function OverrideScreen() {
         </Card>
       </YStack>
     </ScrollView>
+    </ProtectedRoute>
   );
 }
 

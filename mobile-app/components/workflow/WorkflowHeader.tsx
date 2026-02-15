@@ -3,6 +3,7 @@
  */
 
 import React from 'react';
+import { Platform, Alert } from 'react-native';
 import { YStack, XStack, Text, Button, Badge } from 'tamagui';
 import { Download, Play, AlertCircle } from 'lucide-react-native';
 
@@ -25,8 +26,13 @@ export function WorkflowHeader({
 }: WorkflowHeaderProps) {
   const handleExport = () => {
     const json = onExport();
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      navigator.clipboard.writeText(json);
+    if (Platform.OS === 'web' && typeof navigator?.clipboard?.writeText === 'function') {
+      navigator.clipboard.writeText(json).then(
+        () => Alert.alert('Exported', 'Workflow JSON copied to clipboard'),
+        () => Alert.alert('Export', `Workflow JSON:\n\n${json.slice(0, 300)}...`)
+      );
+    } else {
+      Alert.alert('Workflow JSON', json.slice(0, 500) + (json.length > 500 ? '...' : ''));
     }
   };
 

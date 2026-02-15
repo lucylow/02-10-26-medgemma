@@ -23,7 +23,7 @@ export function DisclosureSection({
     <YStack gap="$2" mb="$4">
       <Button
         onPress={() => setOpen(!open)}
-        icon={open ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+        icon={open ? <ChevronUp size={20} color="#1E293B" /> : <ChevronDown size={20} color="#1E293B" />}
         justifyContent="flex-start"
         bg="#F8FAFC"
         color="#1E293B"

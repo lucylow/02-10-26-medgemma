@@ -1,8 +1,8 @@
 import React from 'react';
 import { YStack, XStack, Text, Button, Card } from 'tamagui';
 import { useRouter } from 'expo-router';
-import { useUser } from '@clerk/clerk-expo';
 import { UserPlus, Shield, Users } from 'lucide-react-native';
+import { useAuthState } from '@/contexts/AuthProvider';
 
 /**
  * Role selection for new users. In production, role is set via Clerk
@@ -10,7 +10,7 @@ import { UserPlus, Shield, Users } from 'lucide-react-native';
  */
 export default function OnboardingScreen() {
   const router = useRouter();
-  const { user } = useUser();
+  const { user, signOut } = useAuthState();
 
   const handleRoleSelect = (role: 'parent' | 'clinician') => {
     // In production: call backend to set user.publicMetadata.role
@@ -81,7 +81,10 @@ export default function OnboardingScreen() {
           size="$4"
           chromeless
           color="#64748B"
-          onPress={() => router.replace('/(auth)/sign-in')}
+          onPress={() => {
+            signOut?.();
+            router.replace('/(auth)/sign-in');
+          }}
         >
           Sign out
         </Button>

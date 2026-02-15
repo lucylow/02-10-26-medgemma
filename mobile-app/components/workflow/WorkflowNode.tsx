@@ -85,7 +85,6 @@ export function WorkflowNode({
           transform: [{ scale: isDragging ? 1.02 : 1 }],
         },
       ]}
-      {...panResponder.panHandlers}
     >
       <Card
         w={NODE_WIDTH}
@@ -96,12 +95,14 @@ export function WorkflowNode({
         elevate
         pressStyle={{ scale: 0.98 }}
       >
-        <XStack ai="center" space="$2" mb="$2">
-          <Icon size={16} color="white" />
-          <Text fontSize="$4" color="white" fontWeight="600">
-            {config.label}
-          </Text>
-        </XStack>
+        <View {...panResponder.panHandlers}>
+          <XStack ai="center" space="$2" mb="$2">
+            <Icon size={16} color="white" />
+            <Text fontSize="$4" color="white" fontWeight="600">
+              {config.label}
+            </Text>
+          </XStack>
+        </View>
 
         <Badge size="$1" bg="rgba(255,255,255,0.3)" color="white" mb="$2">
           {node.status.toUpperCase()}

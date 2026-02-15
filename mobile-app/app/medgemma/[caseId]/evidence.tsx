@@ -4,6 +4,7 @@ import { YStack, XStack, Text, Card } from 'tamagui';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { FileText, Shield, Brain, Zap } from 'lucide-react-native';
 import { useAgentState } from '@/hooks/useAgentState';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
 
 const agentIcons: Record<string, React.ComponentType<{ size?: number; color?: string }>> = {
   intake: Shield,
@@ -19,7 +20,8 @@ export default function EvidenceScreen() {
   const { pipeline } = useAgentState();
 
   return (
-    <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+    <ProtectedRoute requiredPermission="view_evidence">
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
       <YStack p="$6" space="$6">
         <XStack ai="center" jc="space-between">
           <Text fontSize="$7" fontWeight="800" color="#1E293B">
@@ -59,6 +61,7 @@ export default function EvidenceScreen() {
         </Card>
       </YStack>
     </ScrollView>
+    </ProtectedRoute>
   );
 }
 
