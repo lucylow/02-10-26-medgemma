@@ -1,0 +1,91 @@
+case_id,age_months,domain,observations,clinician_risk,labeler_count,kappa
+gold_0000,24,communication,Child uses many words and short phrases at 24 months.,on_track,3,0.78
+gold_0001,36,social,Plays well with others shares toys sometimes.,on_track,3,0.78
+gold_0002,18,gross_motor,Walks steadily runs climbs on playground equipment.,on_track,3,0.78
+gold_0003,48,cognitive,Child uses many words and short phrases at 48 months.,on_track,3,0.78
+gold_0004,24,fine_motor,Plays well with others shares toys sometimes.,on_track,3,0.78
+gold_0005,36,communication,Walks steadily runs climbs on playground equipment.,on_track,3,0.78
+gold_0006,24,social,Child uses many words and short phrases at 24 months.,on_track,3,0.78
+gold_0007,18,communication,Plays well with others shares toys sometimes.,on_track,3,0.78
+gold_0008,48,gross_motor,Child uses many words and short phrases at 48 months.,on_track,3,0.78
+gold_0009,36,fine_motor,Walks steadily runs climbs on playground equipment.,on_track,3,0.78
+gold_0010,24,cognitive,Plays well with others shares toys sometimes.,on_track,3,0.78
+gold_0011,18,social,Child uses many words and short phrases at 18 months.,on_track,3,0.78
+gold_0012,48,communication,Walks steadily runs climbs on playground equipment.,on_track,3,0.78
+gold_0013,36,gross_motor,Child uses many words and short phrases at 36 months.,on_track,3,0.78
+gold_0014,24,fine_motor,Child uses many words and short phrases at 24 months.,on_track,3,0.78
+gold_0015,18,cognitive,Plays well with others shares toys sometimes.,on_track,3,0.78
+gold_0016,48,social,Walks steadily runs climbs on playground equipment.,on_track,3,0.78
+gold_0017,36,communication,Child uses many words and short phrases at 36 months.,on_track,3,0.78
+gold_0018,24,gross_motor,Plays well with others shares toys sometimes.,on_track,3,0.78
+gold_0019,18,fine_motor,Child uses many words and short phrases at 18 months.,on_track,3,0.78
+gold_0020,36,communication,Uses some words but fewer than other children same age.,monitor,3,0.78
+gold_0021,24,social,Sometimes avoids eye contact during play.,monitor,3,0.78
+gold_0022,48,gross_motor,Climbs stairs with help still working on balance.,monitor,3,0.78
+gold_0023,18,fine_motor,Uses some words but fewer than other children same age.,monitor,3,0.78
+gold_0024,36,cognitive,Sometimes avoids eye contact during play.,monitor,3,0.78
+gold_0025,24,communication,Climbs stairs with help still working on balance.,monitor,3,0.78
+gold_0026,48,social,Uses some words but fewer than other children same age.,monitor,3,0.78
+gold_0027,18,gross_motor,Sometimes avoids eye contact during play.,monitor,3,0.78
+gold_0028,36,fine_motor,Climbs stairs with help still working on balance.,monitor,3,0.78
+gold_0029,24,social,Uses some words but fewer than other children same age.,monitor,3,0.78
+gold_0030,48,communication,Sometimes avoids eye contact during play.,monitor,3,0.78
+gold_0031,18,cognitive,Climbs stairs with help still working on balance.,monitor,3,0.78
+gold_0032,36,communication,Uses some words but fewer than other children same age.,monitor,3,0.78
+gold_0033,24,gross_motor,Sometimes avoids eye contact during play.,monitor,3,0.78
+gold_0034,48,fine_motor,Climbs stairs with help still working on balance.,monitor,3,0.78
+gold_0035,18,social,Uses some words but fewer than other children same age.,monitor,3,0.78
+gold_0036,36,cognitive,Sometimes avoids eye contact during play.,monitor,3,0.78
+gold_0037,24,communication,Climbs stairs with help still working on balance.,monitor,3,0.78
+gold_0038,48,social,Uses some words but fewer than other children same age.,monitor,3,0.78
+gold_0039,18,gross_motor,Sometimes avoids eye contact during play.,monitor,3,0.78
+gold_0040,36,fine_motor,Climbs stairs with help still working on balance.,monitor,3,0.78
+gold_0041,24,social,Uses some words but fewer than other children same age.,monitor,3,0.78
+gold_0042,48,communication,Sometimes avoids eye contact during play.,monitor,3,0.78
+gold_0043,18,cognitive,Climbs stairs with help still working on balance.,monitor,3,0.78
+gold_0044,36,communication,Uses some words but fewer than other children same age.,monitor,3,0.78
+gold_0045,24,gross_motor,Sometimes avoids eye contact during play.,monitor,3,0.78
+gold_0046,48,fine_motor,Climbs stairs with help still working on balance.,monitor,3,0.78
+gold_0047,18,social,Uses some words but fewer than other children same age.,monitor,3,0.78
+gold_0048,36,cognitive,Sometimes avoids eye contact during play.,monitor,3,0.78
+gold_0049,24,communication,Climbs stairs with help still working on balance.,monitor,3,0.78
+gold_0050,48,social,Limited words at 48 months mostly gestures.,discuss,3,0.78
+gold_0051,18,gross_motor,Rarely points to show things of interest.,discuss,3,0.78
+gold_0052,36,fine_motor,Difficulty with fine motor tasks like stacking blocks.,discuss,3,0.78
+gold_0053,24,communication,Limited words at 24 months mostly gestures.,discuss,3,0.78
+gold_0054,48,social,Rarely points to show things of interest.,discuss,3,0.78
+gold_0055,18,cognitive,Difficulty with fine motor tasks like stacking blocks.,discuss,3,0.78
+gold_0056,36,communication,Limited words at 36 months mostly gestures.,discuss,3,0.78
+gold_0057,24,gross_motor,Rarely points to show things of interest.,discuss,3,0.78
+gold_0058,48,fine_motor,Difficulty with fine motor tasks like stacking blocks.,discuss,3,0.78
+gold_0059,18,social,Limited words at 18 months mostly gestures.,discuss,3,0.78
+gold_0060,36,cognitive,Rarely points to show things of interest.,discuss,3,0.78
+gold_0061,24,communication,Difficulty with fine motor tasks like stacking blocks.,discuss,3,0.78
+gold_0062,48,social,Limited words at 48 months mostly gestures.,discuss,3,0.78
+gold_0063,18,gross_motor,Rarely points to show things of interest.,discuss,3,0.78
+gold_0064,36,fine_motor,Difficulty with fine motor tasks like stacking blocks.,discuss,3,0.78
+gold_0065,24,social,Limited words at 24 months mostly gestures.,discuss,3,0.78
+gold_0066,48,communication,Rarely points to show things of interest.,discuss,3,0.78
+gold_0067,18,cognitive,Difficulty with fine motor tasks like stacking blocks.,discuss,3,0.78
+gold_0068,36,communication,Limited words at 36 months mostly gestures.,discuss,3,0.78
+gold_0069,24,gross_motor,Rarely points to show things of interest.,discuss,3,0.78
+gold_0070,48,fine_motor,Difficulty with fine motor tasks like stacking blocks.,discuss,3,0.78
+gold_0071,18,social,Limited words at 18 months mostly gestures.,discuss,3,0.78
+gold_0072,36,cognitive,Rarely points to show things of interest.,discuss,3,0.78
+gold_0073,24,communication,Difficulty with fine motor tasks like stacking blocks.,discuss,3,0.78
+gold_0074,48,social,Limited words at 48 months mostly gestures.,discuss,3,0.78
+gold_0075,18,gross_motor,Rarely points to show things of interest.,discuss,3,0.78
+gold_0076,36,fine_motor,Difficulty with fine motor tasks like stacking blocks.,discuss,3,0.78
+gold_0077,24,social,Limited words at 24 months mostly gestures.,discuss,3,0.78
+gold_0078,48,communication,Rarely points to show things of interest.,discuss,3,0.78
+gold_0079,18,cognitive,Difficulty with fine motor tasks like stacking blocks.,discuss,3,0.78
+gold_0080,36,communication,No words yet at 36 months only sounds.,refer,3,0.78
+gold_0081,24,social,Does not respond to name consistently.,refer,3,0.78
+gold_0082,48,gross_motor,Loss of previously acquired skills.,refer,3,0.78
+gold_0083,18,fine_motor,No words yet at 18 months only sounds.,refer,3,0.78
+gold_0084,36,cognitive,Does not respond to name consistently.,refer,3,0.78
+gold_0085,24,communication,Loss of previously acquired skills.,refer,3,0.78
+gold_0086,48,social,No words yet at 48 months only sounds.,refer,3,0.78
+gold_0087,18,gross_motor,Does not respond to name consistently.,refer,3,0.78
+gold_0088,36,fine_motor,Loss of previously acquired skills.,refer,3,0.78
+gold_0089,24,social,No words yet at 24 months only sounds.,refer,3,0.78

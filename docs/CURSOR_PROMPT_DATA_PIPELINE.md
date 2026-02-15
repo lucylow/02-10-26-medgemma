@@ -692,4 +692,280 @@ DAGSTER_HOME=./.dagster
 
 ---
 
-*End of Cursor Project Prompt. Use this document as the authoritative specification when refactoring the PediScreen AI data pipeline.*
+## Part 16: HIPAA/GDPR Compliance Checklist
+
+### 16.1 HIPAA Technical Safeguards
+
+| Requirement | Implementation | Verification |
+|-------------|----------------|--------------|
+| Access controls | RBAC in backend; encrypt keys per role | Audit log of who accessed what |
+| Audit controls | Log all PHI access, consent changes | `data/real/audit/` JSONL logs |
+| Integrity | Checksums on stored records | `provenance.anonymization_hash` |
+| Transmission security | TLS 1.3 for API; encrypt embeddings client-side | Verify no raw images over wire |
+| Encryption at rest | Fernet AES-256 for raw/processed | Key in KMS/Secret Manager |
+
+### 16.2 GDPR Considerations
+
+- **Lawful basis:** Consent for screening; explicit opt-in for research use
+- **Right to erasure:** Implement `DELETE /api/screenings/{id}` with cascade to embeddings
+- **Data minimization:** Store only age_band, language; no zipcode, ethnicity
+- **Purpose limitation:** Consent flags: `screening_required`, `research_optional`, `delete_images`
+- **Retention:** Auto-delete after 24 months unless consent extended; document in `data/real/audit/retention_policy.json`
+
+### 16.3 De-identification Checklist
+
+Before any record enters `data/real/processed/`:
+
+- [ ] Remove: names, DOB, SSN, address, zipcode, phone, email
+- [ ] Generalize: age → age_band (6-month buckets), ethnicity → removed
+- [ ] Suppress: free-text that may contain identifiers (regex scan)
+- [ ] Apply DP noise to continuous scores (ε ≤ 1.0)
+- [ ] Verify k-anonymity ≥ 5 on (age_band, domain, risk_level)
+
+---
+
+## Part 17: Testing Strategy
+
+### 17.1 Unit Tests
+
+```python
+# tests/test_schemas.py
+def test_screening_record_rejects_phi():
+    with pytest.raises(ValueError):
+        ScreeningRecord(demographics={"zipcode": "12345"}, ...)
+
+# tests/test_anonymizer.py
+def test_dp_noise_preserves_range():
+    scores = {"comm": 0.7}
+    noisy = PrivacyProcessor().add_dp_noise(scores, epsilon=1.0)
+    assert 0 <= noisy["comm"] <= 1
+
+# tests/test_validator.py
+def test_validator_catches_risk_imbalance():
+    batch = [ScreeningRecord(clinician_label=ClinicianLabel(risk_level="on_track", ...)) for _ in range(100)]
+    issues = ScreeningValidator().check_diversity(batch)
+    assert "Risk distribution imbalance" in issues
+```
+
+### 17.2 Integration Tests
+
+- **Generator:** Mock LLM; assert output conforms to `ScreeningRecord`
+- **Pipeline:** Run Dagster job; assert Parquet output exists and passes GE
+- **Loader:** Load v1.0; assert `messages` format matches `finetune_lora` expectations
+
+### 17.3 Regression Tests
+
+- Compare synthetic v1.0 vs v1.1: no degradation in validation metrics
+- After schema change: run `format_for_medgemma` on 100 samples; assert no errors
+
+---
+
+## Part 18: CDC Milestone Reference (Full)
+
+Use this as the authoritative milestone set for grounding synthetic data. Ensure every synthetic record references 2–3 items from the appropriate age/domain.
+
+| Age (mo) | Domain | Milestone | Percentile |
+|----------|--------|-----------|------------|
+| 18 | communication | Says several single words | 0.75 |
+| 18 | communication | Points to show something | 0.60 |
+| 18 | gross_motor | Walks alone | 0.90 |
+| 18 | gross_motor | Climbs on and off furniture | 0.75 |
+| 18 | fine_motor | Scribbles with crayon | 0.70 |
+| 18 | social | Plays simple pretend | 0.65 |
+| 18 | cognitive | Follows one-step directions | 0.60 |
+| 24 | communication | Says 50 words | 0.75 |
+| 24 | communication | Uses two-word phrases | 0.50 |
+| 24 | communication | Follows two-step directions | 0.60 |
+| 24 | gross_motor | Runs | 0.85 |
+| 24 | gross_motor | Kicks a ball | 0.70 |
+| 24 | fine_motor | Builds tower of 4 blocks | 0.65 |
+| 24 | social | Notices other children | 0.80 |
+| 24 | cognitive | Points to body parts | 0.75 |
+| 36 | communication | Talks in 2-3 word sentences | 0.70 |
+| 36 | communication | Says first name | 0.65 |
+| 36 | gross_motor | Climbs well | 0.80 |
+| 36 | fine_motor | Draws a circle | 0.60 |
+| 36 | social | Takes turns in games | 0.55 |
+| 36 | cognitive | Understands 'mine' and 'yours' | 0.65 |
+| 48 | communication | Tells stories | 0.70 |
+| 48 | communication | Says first and last name | 0.75 |
+| 48 | gross_motor | Hops on one foot | 0.65 |
+| 48 | fine_motor | Draws person with 2-4 body parts | 0.60 |
+| 48 | social | Plays cooperatively | 0.70 |
+| 48 | cognitive | Counts to 4 | 0.65 |
+| 60 | communication | Speaks clearly | 0.80 |
+| 60 | communication | Tells a simple story | 0.70 |
+| 60 | gross_motor | Stands on one foot 10 seconds | 0.65 |
+| 60 | fine_motor | Prints some letters | 0.60 |
+| 60 | social | Wants to please friends | 0.75 |
+| 60 | cognitive | Counts 10 or more things | 0.70 |
+
+**Implementation:** Load from `data/public/cdc_milestones.parquet`; filter by `age_months` and `domain`; sample 2–3 for `milestones_context`.
+
+---
+
+## Part 19: API Contract Changes
+
+### 19.1 Backend Screening API
+
+The existing `POST /api/infer` and screening endpoints should accept and return fields aligned with `ScreeningRecord`:
+
+**Request additions (optional):**
+- `consent_id`: For audit trail
+- `provenance`: Client can pass `client_version`, `device_id` (hashed)
+
+**Response additions:**
+- `provenance.model_id`, `provenance.adapter_id`, `provenance.prompt_version`
+- `data_sources`: `["synthetic", "anonymized_production"]` for clinician transparency
+
+### 19.2 New Endpoints for Data Pipeline
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| POST | /api/data/consent | Record consent (screening, research, delete_images) |
+| GET | /api/data/provenance | Return data source summary for UI |
+| POST | /api/data/review | Submit clinician review for synthetic sample (internal) |
+
+---
+
+## Part 20: Migrating from Legacy Data
+
+### 20.1 Converting Existing `SyntheticScreening` to `ScreeningRecord`
+
+```python
+def legacy_to_canonical(legacy: SyntheticScreening, milestones_df: pd.DataFrame) -> ScreeningRecord:
+    age, domain = legacy.age_months, legacy.domain
+    subset = milestones_df[(milestones_df["age_months"] == age) & (milestones_df["domain"] == domain)]
+    milestones = [
+        DevelopmentalMilestone(age_months=r["age_months"], domain=r["domain"], description=r["description"], expected_percentile=r["percentile"])
+        for _, r in subset.head(3).iterrows()
+    ]
+    return ScreeningRecord(
+        record_id=legacy.record_id,
+        synthetic=True,
+        demographics={"age_group": f"{age}m", "language": "en"},
+        observations=[ScreeningObservation(
+            text=legacy.caregiver_text,
+            visual_features=legacy.visual_features,
+            structured_scores=legacy.structured_scores,
+        )],
+        milestones_context=milestones,
+        clinician_label=ClinicianLabel(
+            risk_level=RiskLevel(legacy.clinician_risk),
+            rationale="Migrated from legacy",
+            recommendations=["Continue monitoring"],
+            confidence=0.85,
+        ),
+        provenance={"migrated_from": "SyntheticScreening", "generator_version": "v1.0"},
+    )
+```
+
+### 20.2 Batch Migration Script
+
+```bash
+python -m src.data.migrate_legacy \
+  --input data/synthetic/v1.0/train.parquet \
+  --output data/synthetic/versions/v1.0/train.parquet \
+  --milestones data/public/cdc_milestones.parquet
+```
+
+---
+
+## Part 21: Error Handling and Fallbacks
+
+### 21.1 Generator Fallbacks
+
+| Failure | Fallback |
+|---------|----------|
+| LLM timeout | Retry 2x with exponential backoff; then use rule-based `generate_caregiver_observation` from existing `synthetic_generator.py` |
+| LLM returns invalid JSON | Parse with regex; if fails, use default `risk_level=monitor`, `rationale="LLM parse failed"` |
+| Milestone DB missing | Use hardcoded dict from Part 18 |
+
+### 21.2 Validator Behavior
+
+- **Soft fail:** Log issue, add `provenance.validation_issues: [...]`, still allow record into dataset with flag
+- **Hard fail:** Reject if PHI detected, diagnosis language, or schema violation
+
+### 21.3 Pipeline Resilience
+
+- Dagster: use `RetryPolicy(max_retries=3)` on LLM asset
+- Save checkpoint after each 1k records to allow resume
+
+---
+
+## Part 22: Monitoring and Observability
+
+### 22.1 Metrics to Track
+
+| Metric | Source | Alert Threshold |
+|--------|--------|-----------------|
+| Generation latency (p95) | Generator | > 30s per record |
+| Validation failure rate | Validator | > 5% |
+| DP epsilon consumed | Anonymizer | > 1.0 per record |
+| k-anonymity score | Anonymizer | < 5 |
+| Consent compliance rate | Audit | < 100% |
+
+### 22.2 Logging
+
+- Structured JSON logs: `{"event": "record_generated", "record_id": "...", "latency_ms": 1200}`
+- Never log PHI or raw caregiver text in production
+- Log hashes only: `observation_hash`, `anonymization_hash`
+
+---
+
+## Part 23: Cost and Resource Optimization for LLM Generation
+
+### 23.1 Batch and Caching
+
+- **Batch prompts:** Send 5–10 caregiver prompts in one API call if provider supports
+- **Cache milestones:** Load CDC milestones once; reuse across 10k records
+- **Cache LLM responses:** Hash prompt; skip regenerate if identical (for deterministic seeds)
+
+### 23.2 Model Selection
+
+| Model | Cost (approx) | Quality | Use Case |
+|-------|----------------|---------|----------|
+| Gemma 2 2B | Low | Good | Development, small batches |
+| Gemma 2 9B | Medium | Better | Production synthetic generation |
+| Llama 3.1 8B | Medium | Good | Alternative |
+| Local HF | Free (GPU) | Variable | Air-gapped, privacy-first |
+
+### 23.3 Hybrid Strategy
+
+- **80% rule-based:** Use existing `generate_caregiver_observation` for bulk
+- **20% LLM:** Use LLM for diversity boost, clinician label, or low-confidence cases
+- Reduces cost while improving quality over pure rule-based
+
+---
+
+## Part 24: Cursor Rules File (Optional)
+
+Create `.cursor/rules/pediscreen-data.mdc` for persistent AI guidance:
+
+```markdown
+---
+description: PediScreen AI data pipeline conventions
+globs: src/data/**/*.py, pipelines/**/*.py, data/**/*
+---
+
+When editing data pipeline code:
+- Use ScreeningRecord from src.data.schemas as canonical model
+- Run safety_agent.check_safety on any generated text before storage
+- Add provenance to every record (generator_version, dp_epsilon)
+- Never log PHI; use hashes only
+- Prefer async for LLM and I/O
+```
+
+---
+
+## Part 25: Summary – Priority Order for Implementation
+
+1. **P0 (Week 1):** Schemas, directory structure, migrate existing synthetic to `ScreeningRecord`
+2. **P1 (Week 2):** LLM generator with fallback to rule-based; prompt templates
+3. **P2 (Week 3):** Anonymizer (k-anon, DP), validator expansion, EncryptedStore
+4. **P3 (Week 4):** Dagster pipeline extension, training loader, DVC
+5. **P4 (Week 5):** Frontend provenance/consent UI, audit reports, documentation
+
+---
+
+*End of Cursor Project Prompt. Use this document as the authoritative specification when refactoring the PediScreen AI data pipeline. Total: 25 parts, 15+ pages equivalent.*

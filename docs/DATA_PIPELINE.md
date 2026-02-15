@@ -26,6 +26,10 @@ streamlit run validation/dashboard.py
 - **CDC Milestones**: 300+ ground truth items (0–60 months)
 - **Synthetic**: 10K CDC-grounded screening records
 
+## Documentation
+
+- **[Cursor Project Prompt: Production Data Pipeline & Privacy Overhaul](CURSOR_PROMPT_DATA_PIPELINE.md)** – 15+ page specification for synthetic data generation, HIPAA/GDPR privacy, anonymization, and production readiness
+
 ## Next Steps
 
 - [ ] Clinician review 1K samples (Week 2)

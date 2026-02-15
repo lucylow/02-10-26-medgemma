@@ -1,0 +1,18 @@
+---
+description: PediScreen AI data pipeline conventions
+globs: src/data/**/*.py, pipelines/**/*.py, data/**/*.py
+alwaysApply: false
+---
+
+# PediScreen Data Pipeline Rules
+
+When editing data pipeline code in this project:
+
+- **Canonical schemas**: Use `ScreeningRecord` from `src.data.schemas` as the single source of truth for screening data
+- **Safety**: Run `safety_agent.check_safety()` on any generated text before storage; no diagnosis language
+- **Provenance**: Add provenance to every record (`generator_version`, `dp_epsilon`, `clinician_reviewed`)
+- **Privacy**: Never log PHI; use hashes only (`observation_hash`, `anonymization_hash`)
+- **Async**: Prefer async for LLM and I/O operations
+- **Risk levels**: Use only `on_track`, `monitor`, `discuss`, `refer` (per spec)
+
+See `docs/CURSOR_PROMPT_DATA_PIPELINE.md` for the full specification.
