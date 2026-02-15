@@ -1,1 +1,1 @@
-# PediScreen AI - Validation tools
+"""PediScreen AI — Clinical Validation Suite."""

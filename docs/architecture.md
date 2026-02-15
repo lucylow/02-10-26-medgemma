@@ -131,6 +131,17 @@ flowchart TB
 
 **Output:** CSV/JSON reports for CI and dashboards.
 
+**Clinical Validation Framework** (see `validation/README.md`): Production-grade validation for regulatory approval.
+
+| Component | Responsibility |
+|-----------|----------------|
+| `src/validation/metrics.py` | ClinicalMetrics: sens/spec/PPV/NPV with 95% bootstrap CIs |
+| `src/validation/safety.py` | SafetyMetrics, SafetyValidator: FN analysis, harmful language |
+| `src/validation/drift.py` | DriftDetector: embedding/label shift, CUSUM |
+| `src/validation/reporting.py` | ValidationReport: JSON, model card, FDA CDS checklist |
+| `validation/benchmarks/run_benchmark.py` | Gold holdout → validation report |
+| `validation/dashboards/validation_dashboard.py` | Streamlit clinician review UI |
+
 ---
 
 ### `monitoring/` — Telemetry & KPIs

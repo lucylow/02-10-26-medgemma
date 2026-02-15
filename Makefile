@@ -1,4 +1,4 @@
-.PHONY: dev test lint backend frontend orchestrator data-download data-generate-synthetic data-pipeline
+.PHONY: dev test lint backend frontend orchestrator data-download data-generate-synthetic data-pipeline validation validate
 
 # Quickstart: run backend + frontend
 dev: backend
@@ -34,3 +34,19 @@ data-generate-synthetic:
 # Run full data pipeline (Dagster)
 data-pipeline:
 	dagster dev -m pipelines.data_pipeline
+
+# Clinical validation (gold holdout + benchmark report)
+validation:
+	PYTHONPATH=. python validation/benchmarks/run_benchmark.py --mock-predictions
+
+# Run safety validation suite
+validate-safety:
+	PYTHONPATH=. python validation/benchmarks/run_safety_suite.py
+
+# Run validation tests (integration + clinical)
+test-validation:
+	PYTHONPATH=. pytest tests/integration/test_validation_end2end.py tests/clinical/test_safety_guards.py -v
+
+# Generate gold holdout dataset
+data-gold-holdout:
+	python scripts/generate_gold_holdout.py

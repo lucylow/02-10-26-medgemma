@@ -1,5 +1,6 @@
 # Lovable Cloud deployment workflow
 # Deploy frontend to Lovable Cloud; run DB migrations; smoke tests
+# Build works without secrets (app runs in demo mode); add repo secrets for full Supabase auth.
 name: Lovable Deploy
 
 on:
