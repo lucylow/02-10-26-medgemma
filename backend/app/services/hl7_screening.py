@@ -16,9 +16,7 @@ def _escape_hl7(text: str) -> str:
         .replace("^", "\\S\\")
         .replace("~", "\\R\\")
         .replace("&", "\\T\\")
-    )[:65535]
-  # OBX-5 max length
-)
+    )[:65535]  # OBX-5 max length
 
 
 def build_screening_oru(

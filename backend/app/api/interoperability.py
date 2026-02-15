@@ -7,7 +7,7 @@ import uuid
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel
 
 from app.core.config import settings
@@ -17,8 +17,8 @@ from app.security.google_auth import require_clinician_or_api_key
 from app.services.db import get_db
 from app.services.db_cloudsql import is_cloudsql_enabled, fetch_screening_by_id as cloudsql_fetch_screening
 from app.services.fhir_bundle_builder import create_bundle_for_case
-from app.services.fhir_client import FHIRClient
 from app.services.pdf_exporter import export_report_pdf
+from app.services.hl7_screening import build_screening_oru
 from app.services.legal_audit import write_audit_entry
 
 router = APIRouter(prefix="/api", tags=["Interoperability"])
@@ -124,6 +124,54 @@ async def export_fhir_bundle(
         include_consent=include_consent,
     )
     return JSONResponse(content=bundle)
+
+
+@router.get("/fhir/export/pdf/{case_id}")
+async def export_pdf(
+    case_id: str,
+    api_key: str = Depends(get_api_key),
+):
+    """Export report as PDF (interop endpoint)."""
+    report, _, _, doc = await _get_report_and_screening(case_id)
+    clinician_name = doc.get("clinician_id", "PediScreen AI")
+    version = "final" if doc.get("status") == "finalized" else "draft"
+    try:
+        pdf = export_report_pdf(report, clinician_name, version)
+    except Exception:
+        from app.services.pdf_renderer import generate_pdf_bytes
+        pdf = generate_pdf_bytes(report)
+    return Response(
+        pdf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=pediscreen_report_{case_id}.pdf"},
+    )
+
+
+@router.get("/fhir/export/hl7v2/{case_id}")
+async def export_hl7v2(
+    case_id: str,
+    api_key: str = Depends(get_api_key),
+):
+    """Export report as HL7 v2 ORU message."""
+    report, screening, patient_id, _ = await _get_report_and_screening(case_id)
+    screening_id = screening.get("screening_id") or case_id
+    age = screening.get("child_age_months") or screening.get("childAge") or 0
+    risk = (report.get("risk_assessment") or {}).get("overall", "unknown")
+    summary = report.get("clinical_summary", "") or report.get("summary", "")
+    domain = screening.get("domain", "communication")
+    hl7 = build_screening_oru(
+        screening_id=screening_id,
+        patient_id=patient_id,
+        age_months=int(age),
+        risk_level=risk,
+        summary=summary,
+        domain=domain,
+    )
+    return Response(
+        hl7,
+        media_type="text/plain",
+        headers={"Content-Disposition": f"attachment; filename=pediscreen_{case_id}.hl7"},
+    )
 
 
 @router.post("/fhir/push_bundle")

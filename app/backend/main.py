@@ -698,7 +698,7 @@ async def sign_off(req: ClinicalSignOffRequest, request: Request):
             )
         )
 
-    # Tamper-evident audit log
+    # Tamper-evident audit log (clinician edits + sign-off)
     try:
         from .audit import audit_logger
         audit_logger(
@@ -711,6 +711,15 @@ async def sign_off(req: ClinicalSignOffRequest, request: Request):
             request_id=request.headers.get("x-request-id") or str(uuid.uuid4()),
             resource_type="screening",
         )
+        if req.edits:
+            audit_logger(
+                event_type="clinician_edits",
+                actor_id=req.clinician_id,
+                actor_role="clinician",
+                resource_id=req.screening_id,
+                outcome="edits_applied",
+                resource_type="screening",
+            )
     except Exception as e:
         logger.warning("Audit log write failed (non-fatal): {}", e)
     
