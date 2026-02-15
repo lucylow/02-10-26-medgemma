@@ -208,7 +208,7 @@ export default function MedGemmaDashboard() {
         </YStack>
 
         {/* LIVE PIPELINE STATUS */}
-        {state.currentCaseId && (
+        {state.caseId && (
           <Card p="$4" bg="white" br="$4" elevate>
             <XStack ai="center" space="$3" mb="$2">
               <Activity size={20} color="#3B82F6" />
@@ -220,10 +220,10 @@ export default function MedGemmaDashboard() {
               </Badge>
             </XStack>
             <Text fontSize="$4" color="#64748B">
-              Case #{state.currentCaseId.slice(-6)}
+              Case #{state.caseId.slice(-6)}
             </Text>
             <TouchableOpacity
-              onPress={() => router.push(`/medgemma/${state.currentCaseId}`)}
+              onPress={() => router.push(`/medgemma/${state.caseId}`)}
               style={{ marginTop: 8 }}
             >
               <Text color="#3B82F6" fontWeight="600" fontSize="$4">
@@ -266,6 +266,9 @@ export default function MedGemmaDashboard() {
             </>
           )}
         </YStack>
+
+        {/* RECENT CASES */}
+        <RecentCases />
 
         {/* AUTH LINKS */}
         <XStack space="$3" jc="center" flexWrap="wrap" mt="$6">
