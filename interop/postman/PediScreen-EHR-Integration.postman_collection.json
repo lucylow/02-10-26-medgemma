@@ -1,0 +1,94 @@
+{
+  "info": {
+    "name": "PediScreen AI — EHR Integration",
+    "description": "FHIR export, EHR push, SMART launch, and conformance tests.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {"key": "base_url", "value": "http://localhost:8000"},
+    {"key": "api_key", "value": "dev-example-key"},
+    {"key": "case_id", "value": "test-1"},
+    {"key": "fhir_base_url", "value": "http://localhost:8080/fhir"},
+    {"key": "fhir_token", "value": ""},
+    {"key": "export_id", "value": ""}
+  ],
+  "item": [
+    {
+      "name": "FHIR Conformance",
+      "request": {
+        "method": "GET",
+        "header": [{"key": "x-api-key", "value": "{{api_key}}"}],
+        "url": "{{base_url}}/api/fhir/conformance",
+        "description": "Fetch FHIR server CapabilityStatement. Requires FHIR_BASE_URL."
+      }
+    },
+    {
+      "name": "Export FHIR Bundle",
+      "request": {
+        "method": "GET",
+        "header": [{"key": "x-api-key", "value": "{{api_key}}"}],
+        "url": "{{base_url}}/api/fhir/export_bundle/{{case_id}}?include_consent=true",
+        "description": "Export FHIR transaction Bundle (DocumentReference, QuestionnaireResponse, Observation, Consent)."
+      }
+    },
+    {
+      "name": "Export PDF",
+      "request": {
+        "method": "GET",
+        "header": [{"key": "x-api-key", "value": "{{api_key}}"}],
+        "url": "{{base_url}}/api/fhir/export/pdf/{{case_id}}",
+        "description": "Export report as PDF download."
+      }
+    },
+    {
+      "name": "Export HL7 v2",
+      "request": {
+        "method": "GET",
+        "header": [{"key": "x-api-key", "value": "{{api_key}}"}],
+        "url": "{{base_url}}/api/fhir/export/hl7v2/{{case_id}}",
+        "description": "Export report as HL7 v2 ORU message."
+      }
+    },
+    {
+      "name": "Push Bundle to EHR",
+      "request": {
+        "method": "POST",
+        "header": [
+          {"key": "x-api-key", "value": "{{api_key}}"},
+          {"key": "Content-Type", "value": "application/json"}
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"case_id\": \"{{case_id}}\",\n  \"fhir_base_url\": \"{{fhir_base_url}}\",\n  \"fhir_token\": \"{{fhir_token}}\",\n  \"consent_given\": true\n}"
+        },
+        "url": "{{base_url}}/api/fhir/push_bundle",
+        "description": "Push FHIR bundle to EHR. Requires valid fhir_token from SMART launch."
+      }
+    },
+    {
+      "name": "EHR Export Status",
+      "request": {
+        "method": "GET",
+        "header": [{"key": "x-api-key", "value": "{{api_key}}"}],
+        "url": "{{base_url}}/api/ehr/status/{{export_id}}",
+        "description": "Get push status for an export_id returned from push_bundle."
+      }
+    },
+    {
+      "name": "SMART Launch (browser)",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/api/fhir/launch?iss={{fhir_base_url}}&launch=test-launch-123",
+        "description": "Open in browser to initiate SMART OAuth. Redirects to EHR authorize."
+      }
+    },
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/health",
+        "description": "Backend health check."
+      }
+    }
+  ]
+}

@@ -12,10 +12,18 @@ Actionable steps for adding test cases, running evaluation, retraining adapters,
 
 ## 2. Run Evaluation
 
-1. Prepare eval data: `eval/data/sample_eval.jsonl` (one JSON object per line)
-2. Run eval harness (when available): `python eval/run_eval.py`
-3. Metrics: sensitivity, specificity, PPV, NPV, AUC
-4. Artifacts include `model_version`, `adapter_id`, `prompt_hash`
+1. **Generate synthetic eval data** (reproducible):
+   ```bash
+   python -m pedi_screen.validation.synthetic_eval_generator --n 100 --out data/validation_set
+   ```
+2. **Run full validation suite**:
+   ```python
+   from pedi_screen.validation import run_validation_suite, run_full_evaluation
+   run_validation_suite()  # benchmark + bias + JSON + safety
+   run_full_evaluation()   # + evaluation table for Kaggle
+   ```
+3. **Metrics**: sensitivity, specificity, PPV, NPV, JSON compliance, safety audit (0 tolerance forbidden language)
+4. **Outputs**: `validation_reports/validation_summary.json`, `eval_full_report.json`, `evaluation_table.md`
 
 ## 3. Retrain Adapters
 

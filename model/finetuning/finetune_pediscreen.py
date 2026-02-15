@@ -1,3 +1,5 @@
+# For MedGemma-4B pediatric QLoRA with multimodal + CDS safety, use:
+#   finetune_medgemma4b_pediatric.py
 import torch
 import os
 from transformers import (

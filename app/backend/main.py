@@ -686,6 +686,18 @@ async def sign_off(req: ClinicalSignOffRequest, request: Request):
     screening.status = JobStatus.SIGNED_OFF
     screening.audit_log.append(audit_entry)
 
+    # Add sign-off to technical report revision history
+    if req.screening_id in technical_reports_db:
+        technical_reports_db[req.screening_id].revision_history.append(
+            RevisionEntry(
+                timestamp=_get_audit_timestamp(),
+                actor=req.clinician_id,
+                actor_role="clinician",
+                action="sign_off",
+                diff_summary=req.notes or "Clinician signed off",
+            )
+        )
+
     # Tamper-evident audit log
     try:
         from .audit import audit_logger
@@ -709,10 +721,97 @@ async def sign_off(req: ClinicalSignOffRequest, request: Request):
     return screening
 
 
+@app.post("/api/generate-parent-summary")
+async def generate_parent_summary(req: GenerateParentSummaryRequest):
+    """
+    HITL Stage 3: Generate parent-facing summary ONLY after clinician sign-off.
+    MedGemma never talks directly to parents; Gemma 3 rewrites clinician-approved content.
+    """
+    if not gemma3_service:
+        raise HTTPException(status_code=503, detail="Gemma 3 service not available")
+
+    if req.screening_id not in screening_db:
+        raise HTTPException(status_code=404, detail="Screening result not found")
+
+    screening = screening_db[req.screening_id]
+    if screening.status != JobStatus.SIGNED_OFF:
+        raise HTTPException(
+            status_code=403,
+            detail="Clinician sign-off required before generating parent-facing content. Current status: " + str(screening.status),
+        )
+
+    # Use clinician-reviewed content if available, else AI draft
+    tech_report = technical_reports_db.get(req.screening_id)
+    source = (tech_report.clinician_reviewed if tech_report and tech_report.clinician_reviewed else {}) or (
+        tech_report.ai_draft if tech_report else {}
+    )
+    clinical_summary = source.get("clinical_summary") or screening.clinical_summary or ""
+
+    if not clinical_summary:
+        raise HTTPException(status_code=400, detail="No clinical summary available to rewrite")
+
+    params = req.communication_params or {}
+    try:
+        parent_summary = gemma3_service.rewrite_for_parents(
+            clinical_summary=clinical_summary,
+            tone=params.get("tone", "reassuring"),
+            language=params.get("language", "English"),
+            reading_level=params.get("reading_level", "grade 6"),
+        )
+    except Exception as e:
+        logger.exception("Gemma 3 parent rewrite failed: {}", e)
+        raise HTTPException(status_code=500, detail=f"Parent summary generation failed: {e}") from e
+
+    # Store in technical report and screening
+    ts = _get_audit_timestamp()
+    if tech_report:
+        tech_report.parent_summary = parent_summary
+        tech_report.parent_summary_generated_at = ts
+        tech_report.revision_history.append(
+            RevisionEntry(
+                timestamp=ts,
+                actor="gemma3",
+                actor_role="system",
+                action="parent_rewrite",
+                diff_summary="Parent-facing summary generated from clinician-approved content",
+            )
+        )
+    if screening.report:
+        if isinstance(screening.report, dict):
+            screening.report["parent_friendly_explanation"] = parent_summary
+        else:
+            setattr(screening.report, "parent_friendly_explanation", parent_summary)
+
+    audit_logger(
+        event_type="parent_summary_generated",
+        actor_id="gemma3",
+        actor_role="system",
+        resource_id=req.screening_id,
+        outcome="success",
+        resource_type="screening",
+    )
+
+    return {
+        "success": True,
+        "screening_id": req.screening_id,
+        "parent_summary": parent_summary,
+        "disclaimer": "Screening summary – not a diagnosis.",
+        "generated_at": ts,
+    }
+
+
+@app.get("/api/technical-report/{screening_id}")
+async def get_technical_report(screening_id: str):
+    """Retrieve technical report with provenance and revision history for audit."""
+    if screening_id not in technical_reports_db:
+        raise HTTPException(status_code=404, detail="Technical report not found")
+    return technical_reports_db[screening_id].model_dump()
+
+
 @app.get("/api/results/{screening_id}", response_model=InferResponse)
 async def get_results(screening_id: str):
     """
-    Retrieve screening results. 
+    Retrieve screening results.
     In a real HITL system, this would enforce 'SIGNED_OFF' status for external delivery.
     """
     if screening_id not in screening_db:
