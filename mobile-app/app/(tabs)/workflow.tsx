@@ -3,22 +3,17 @@
  */
 
 import React from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { WorkflowBuilder } from '@/components/workflow';
 
 export default function WorkflowScreen() {
   return (
-    <ScrollView
-      style={styles.scroll}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
+    <View style={styles.container}>
       <WorkflowBuilder />
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  scroll: { flex: 1 },
-  content: { flexGrow: 1, minHeight: 600 },
+  container: { flex: 1 },
 });

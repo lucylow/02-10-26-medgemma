@@ -135,35 +135,25 @@ export default function MedGemmaDashboard() {
           <StatCard icon={Clock} value={STATS.avgTime} label="Avg Time" color="#3B82F6" />
         </XStack>
 
-        {/* QUICK SCREENING */}
-        <Card bg="#F8FAFC" p="$6" br="$4" borderWidth={1} borderColor="#E2E8F0">
-          <Text fontSize="$6" fontWeight="700" mb="$5">
-            Quick Screening
-          </Text>
-          <YStack space="$4">
-            <Input
-              placeholder="Describe observations..."
-              value={quickInput}
-              onChangeText={setQuickInput}
-              bg="white"
-              borderColor="#E2E8F0"
-            />
-            <XStack space="$3" flexWrap="wrap">
-              <Input
-                placeholder="Age (months)"
-                value={quickAge.toString()}
-                onChangeText={(t) => setQuickAge(Number(t) || 24)}
-                w={120}
-                bg="white"
-                borderColor="#E2E8F0"
-              />
-              <Button flex={1} minWidth={120} bg="#1E3A8A" color="white" onPress={handleQuickScreen}>
-                Run Pipeline
-              </Button>
-            </XStack>
-            <VoiceInput onTranscript={handleVoiceTranscript} />
-          </YStack>
-        </Card>
+        {/* ROLE-BASED QUICK ACTIONS */}
+        <RoleBasedQuickActions
+          userMode={userMode}
+          hasClinicianAccess={clinicianFeatures}
+          onQuickScreen={handleQuickScreen}
+          quickInput={quickInput}
+          setQuickInput={setQuickInput}
+        />
+        <XStack space="$3" flexWrap="wrap">
+          <Input
+            placeholder="Age (months)"
+            value={quickAge.toString()}
+            onChangeText={(t) => setQuickAge(Number(t) || 24)}
+            w={120}
+            bg="white"
+            borderColor="#E2E8F0"
+          />
+          <VoiceInput onTranscript={handleVoiceTranscript} />
+        </XStack>
 
         {/* QUICK STATS CARDS */}
         <XStack flexWrap="wrap" gap="$3">
@@ -301,15 +291,15 @@ export default function MedGemmaDashboard() {
 
         {/* AUTH LINKS */}
         <XStack space="$3" jc="center" flexWrap="wrap" mt="$6">
-          <TouchableOpacity onPress={() => router.push('/(auth)/clinician-login')}>
+          <TouchableOpacity onPress={() => router.push('/(auth)/sign-in')}>
             <Text color="#64748B" fontSize="$4">
-              Clinician Login
+              Sign In
             </Text>
           </TouchableOpacity>
           <Text color="#CBD5E1">|</Text>
-          <TouchableOpacity onPress={() => router.push('/(auth)/parent-onboard')}>
+          <TouchableOpacity onPress={() => router.push('/(auth)/onboarding')}>
             <Text color="#64748B" fontSize="$4">
-              Parent Onboard
+              Create Account
             </Text>
           </TouchableOpacity>
         </XStack>

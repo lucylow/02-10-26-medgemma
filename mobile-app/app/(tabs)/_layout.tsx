@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Brain, Activity, FolderOpen, Settings, ShieldAlert, MessageCircle, Cpu } from 'lucide-react-native';
+import { Brain, Activity, FolderOpen, Settings, ShieldAlert, MessageCircle, Cpu, GitBranch } from 'lucide-react-native';
 
 export default function TabsLayout() {
   return (
