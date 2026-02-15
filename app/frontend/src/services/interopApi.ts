@@ -42,6 +42,30 @@ export async function pushBundleToEhr(
   return res.json();
 }
 
+export async function exportPdf(
+  caseId: string,
+  apiKey?: string
+): Promise<Blob> {
+  const url = `${API_BASE}/api/fhir/export/pdf/${caseId}`;
+  const headers: Record<string, string> = {};
+  if (apiKey) headers['x-api-key'] = apiKey;
+  const res = await fetch(url, { headers });
+  if (!res.ok) throw new Error(await res.text());
+  return res.blob();
+}
+
+export async function exportHl7v2(
+  caseId: string,
+  apiKey?: string
+): Promise<string> {
+  const url = `${API_BASE}/api/fhir/export/hl7v2/${caseId}`;
+  const headers: Record<string, string> = {};
+  if (apiKey) headers['x-api-key'] = apiKey;
+  const res = await fetch(url, { headers });
+  if (!res.ok) throw new Error(await res.text());
+  return res.text();
+}
+
 export async function getEhrExportStatus(
   exportId: string,
   apiKey?: string

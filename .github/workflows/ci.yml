@@ -58,6 +58,14 @@ jobs:
           API_KEY: dev-ci-key
           MONGO_URI: mongodb://localhost:27017/pediscreen
 
+      - name: Run FHIR integration tests (optional)
+        run: |
+          cd backend && pytest tests/test_fhir_integration.py tests/test_interoperability.py -v --tb=short
+        env:
+          API_KEY: dev-ci-key
+          MONGO_URI: mongodb://localhost:27017/pediscreen
+        continue-on-error: false
+
       - name: Run ruff
         run: |
           pip install ruff

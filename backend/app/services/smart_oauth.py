@@ -152,6 +152,37 @@ class SMARTClient:
         res.raise_for_status()
         return res.json()
 
+    def refresh_token(
+        self,
+        iss: str,
+        refresh_token: str,
+    ) -> Dict[str, Any]:
+        """
+        Refresh access token using refresh_token.
+        Returns new access_token, expires_in, and optionally new refresh_token.
+        """
+        config = _fetch_smart_configuration(iss)
+        token_url = (
+            config.get("token_endpoint")
+            if config
+            else f"{iss.rstrip('/')}/oauth2/token"
+        )
+        data = {
+            "grant_type": "refresh_token",
+            "refresh_token": refresh_token,
+            "client_id": self.client_id,
+        }
+        if self.client_secret:
+            data["client_secret"] = self.client_secret
+        res = requests.post(
+            token_url,
+            data=data,
+            headers={"Accept": "application/json"},
+            timeout=30,
+        )
+        res.raise_for_status()
+        return res.json()
+
 
 def exchange_code(
     token_url: str,

@@ -3,7 +3,7 @@ SMART-on-FHIR OAuth endpoints for EHR launch context.
 Enables real EHR launch (Epic, Cerner, Athena) with patient context.
 Full SMART-compliant launch flow per HL7 spec.
 """
-from fastapi import APIRouter, Request, Query
+from fastapi import APIRouter, Body, Request, Query
 from fastapi.responses import RedirectResponse
 
 from app.core.config import settings
@@ -85,3 +85,30 @@ async def smart_launch(
 async def smart_callback(request: Request):
     """SMART OAuth callback (alias for /api/fhir/callback)."""
     return await fhir_callback(request)
+
+
+@router.post("/api/fhir/refresh_token")
+async def fhir_refresh_token(
+    iss: str = Body(..., embed=True),
+    refresh_token: str = Body(..., embed=True),
+):
+    """
+    Refresh FHIR access token. Use when access_token expires.
+    Returns new access_token, expires_in, scope, etc.
+    """
+    try:
+        smart = SMARTClient(
+            client_id=CLIENT_ID,
+            redirect_uri=REDIRECT_URI,
+            client_secret=settings.SMART_CLIENT_SECRET,
+        )
+        token = smart.refresh_token(iss, refresh_token)
+        return {
+            "access_token": token.get("access_token"),
+            "token_type": token.get("token_type", "Bearer"),
+            "expires_in": token.get("expires_in"),
+            "scope": token.get("scope"),
+            "refresh_token": token.get("refresh_token"),
+        }
+    except Exception as e:
+        return {"error": "token_refresh_failed", "detail": str(e)}

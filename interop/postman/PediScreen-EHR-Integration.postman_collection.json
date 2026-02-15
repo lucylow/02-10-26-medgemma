@@ -37,7 +37,7 @@
         "method": "GET",
         "header": [{"key": "x-api-key", "value": "{{api_key}}"}],
         "url": "{{base_url}}/api/fhir/export/pdf/{{case_id}}",
-        "description": "Export report as PDF download."
+        "description": "Export report as PDF download. Saves as attachment."
       }
     },
     {
@@ -46,7 +46,20 @@
         "method": "GET",
         "header": [{"key": "x-api-key", "value": "{{api_key}}"}],
         "url": "{{base_url}}/api/fhir/export/hl7v2/{{case_id}}",
-        "description": "Export report as HL7 v2 ORU message."
+        "description": "Export report as HL7 v2.5 ORU message for developmental screening."
+      }
+    },
+    {
+      "name": "Refresh Token",
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"iss\": \"{{fhir_base_url}}\",\n  \"refresh_token\": \"YOUR_REFRESH_TOKEN\"\n}"
+        },
+        "url": "{{base_url}}/api/fhir/refresh_token",
+        "description": "Refresh FHIR access token. Use when access_token expires."
       }
     },
     {

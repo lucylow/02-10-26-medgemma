@@ -73,6 +73,111 @@ export type ScreeningRequest = {
     tone?: string;
     reading_level?: string;
   };
+  /** HITL Stage 0: Consent required before AI reasoning. If not provided, a placeholder is used for demo. */
+  consent?: { consent_id: string; consent_given: boolean; consent_scope?: string[] };
+};
+
+/** Stream event types from SSE pipeline */
+export type StreamEvent = {
+  type: 'status' | 'agent_start' | 'agent_complete' | 'medgemma_token' | 'complete' | 'error';
+  agent?: string;
+  progress?: number;
+  message?: string;
+  token?: string;
+  result?: unknown;
+  success?: boolean;
+  report?: ScreeningResult['report'] & { screening_id?: string; inference_id?: string };
+};
+
+export type StreamScreeningRequest = {
+  childAge: string;
+  domain: string;
+  observations: string;
+  imageFile?: File | null;
+  consent?: { consent_id: string; consent_given: boolean; consent_scope?: string[] };
+};
+
+/**
+ * Stream screening via SSE - real-time agent pipeline with token-by-token MedGemma output.
+ * Calls POST /api/stream-analyze and parses Server-Sent Events.
+ */
+export const streamScreening = async (
+  request: StreamScreeningRequest,
+  onEvent: (event: StreamEvent) => void
+): Promise<ScreeningResult | null> => {
+  let imageB64: string | undefined;
+  if (request.imageFile) {
+    imageB64 = await new Promise<string>((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve((reader.result as string).split(',')[1]);
+      reader.readAsDataURL(request.imageFile!);
+    });
+  }
+
+  const body = {
+    age_months: parseInt(request.childAge, 10),
+    domain: request.domain,
+    observations: request.observations,
+    image_b64: imageB64,
+  };
+
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const apiKey = import.meta.env.VITE_API_KEY;
+  if (apiKey) headers['x-api-key'] = apiKey;
+
+  const res = await fetch(`${API_BASE_URL}/stream-analyze`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Stream failed: ${res.status}`);
+  }
+
+  const reader = res.body?.getReader();
+  if (!reader) throw new Error('No response body');
+
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let finalReport: ScreeningResult | null = null;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() ?? '';
+
+    for (const line of lines) {
+      if (line.startsWith('data: ')) {
+        try {
+          const data = JSON.parse(line.slice(6)) as StreamEvent;
+          onEvent(data);
+          if (data.type === 'complete' && data.report) {
+            const r = data.report as Record<string, unknown>;
+            finalReport = {
+              success: true,
+              screeningId: (r.screening_id as string) ?? (r.screeningId as string),
+              inferenceId: (r.inference_id as string) ?? (r.inferenceId as string),
+              feedbackAllowed: (r.feedback_allowed as boolean) ?? true,
+              feedbackUrl: r.feedback_url as string,
+              report: (r.report ?? r) as ScreeningResult['report'],
+              timestamp: r.timestamp as string,
+            };
+          }
+          if (data.type === 'error') {
+            throw new Error(data.message || 'Stream error');
+          }
+        } catch (e) {
+          if (e instanceof SyntaxError) continue;
+          throw e;
+        }
+      }
+    }
+  }
+
+  return finalReport;
 };
 
 /**
@@ -89,6 +194,13 @@ export const submitScreening = async (request: ScreeningRequest): Promise<Screen
       'Content-Type': 'application/json',
     };
 
+    // HITL Stage 0: Consent required before AI reasoning
+    const consent = request.consent ?? {
+      consent_id: crypto.randomUUID(),
+      consent_given: true,
+      consent_scope: ['screening', 'medgemma-inference'],
+    };
+
     if (request.imageFile) {
       // If there's an image, convert it to base64 to send as JSON
       const reader = new FileReader();
@@ -97,30 +209,23 @@ export const submitScreening = async (request: ScreeningRequest): Promise<Screen
         reader.readAsDataURL(request.imageFile as File);
       });
       const imageBase64 = await base64Promise;
-      
+
       body = JSON.stringify({
         age_months: parseInt(request.childAge),
         domain: request.domain,
         observations: request.observations,
         image_b64: imageBase64.split(',')[1], // Remove data:image/jpeg;base64,
-        use_gemma3_for_communication: request.useGemma3 ?? true, // Default to true for Gemma 3
-        communication_params: request.communicationParams || {
-          tone: 'reassuring',
-          language: 'English',
-          reading_level: 'grade 6'
-        }
+        consent,
+        // Gemma 3 parent rewrite happens after clinician sign-off, not here
+        use_gemma3_for_communication: false,
       });
     } else {
       body = JSON.stringify({
         age_months: parseInt(request.childAge),
         domain: request.domain,
         observations: request.observations,
-        use_gemma3_for_communication: request.useGemma3 ?? true,
-        communication_params: request.communicationParams || {
-          tone: 'reassuring',
-          language: 'English',
-          reading_level: 'grade 6'
-        }
+        consent,
+        use_gemma3_for_communication: false,
       });
     }
 
@@ -253,6 +358,33 @@ function extractRecommendations(recommendations: unknown): string[] {
   
   return [];
 }
+
+/**
+ * HITL Stage 3: Generate parent-facing summary ONLY after clinician sign-off.
+ * Call this after the clinician has signed off on the screening.
+ */
+export const generateParentSummary = async (
+  screeningId: string,
+  params?: { tone?: string; language?: string; reading_level?: string }
+): Promise<{ parentSummary: string; disclaimer: string }> => {
+  const response = await fetch(`${API_BASE_URL}/generate-parent-summary`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      screening_id: screeningId,
+      communication_params: params || { tone: 'reassuring', language: 'English', reading_level: 'grade 6' },
+    }),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.detail || err.error || `HTTP ${response.status}`);
+  }
+  const data = await response.json();
+  return {
+    parentSummary: data.parent_summary || '',
+    disclaimer: data.disclaimer || 'Screening summary – not a diagnosis.',
+  };
+};
 
 /**
  * Check API health status

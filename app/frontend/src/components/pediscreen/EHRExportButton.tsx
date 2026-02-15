@@ -21,7 +21,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { ExternalLink, Loader2 } from 'lucide-react';
-import { exportFhirBundle, pushBundleToEhr, EHR_CONSENT_COPY } from '@/services/interopApi';
+import { exportFhirBundle, exportPdf, exportHl7v2, pushBundleToEhr, EHR_CONSENT_COPY } from '@/services/interopApi';
 
 type Props = {
   caseId: string;
@@ -47,9 +47,46 @@ const EHRExportButton: React.FC<Props> = ({
   const [consentOpen, setConsentOpen] = useState(false);
   const [consentGiven, setConsentGiven] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [pendingAction, setPendingAction] = useState<'export' | 'push' | null>(null);
+  const [pendingAction, setPendingAction] = useState<'export' | 'push' | 'pdf' | 'hl7' | null>(null);
 
   const id = caseId || screeningId;
+
+  const handleExportPdf = async () => {
+    if (!id) return;
+    setLoading(true);
+    try {
+      const blob = await exportPdf(id, apiKey);
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `pediscreen_report_${id}.pdf`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      onSuccess?.();
+    } catch (err) {
+      onError?.(err instanceof Error ? err : new Error(String(err)));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleExportHl7 = async () => {
+    if (!id) return;
+    setLoading(true);
+    try {
+      const text = await exportHl7v2(id, apiKey);
+      const blob = new Blob([text], { type: 'text/plain' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `pediscreen_${id}.hl7`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      onSuccess?.();
+    } catch (err) {
+      onError?.(err instanceof Error ? err : new Error(String(err)));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleExportFhir = () => {
     if (!id) return;
@@ -121,6 +158,12 @@ const EHRExportButton: React.FC<Props> = ({
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={handleExportFhir}>
             Export FHIR (JSON)
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleExportPdf}>
+            Export PDF
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleExportHl7}>
+            Export HL7 v2
           </DropdownMenuItem>
           {fhirBaseUrl && fhirToken && (
             <DropdownMenuItem onClick={handlePush}>
