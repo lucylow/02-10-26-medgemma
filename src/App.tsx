@@ -44,6 +44,7 @@ import EndToEndDemo from "./pages/EndToEndDemo";
 import AgentPipelineScreen from "./pages/AgentPipelineScreen";
 import AgentDashboard from "./pages/AgentDashboard";
 import VoiceInputScreen from "./pages/VoiceInputScreen";
+import PediScreenCaseDetail from "./pages/pediscreen/PediScreenCaseDetail";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { ThemeProvider } from "./theme";
 
@@ -79,6 +80,7 @@ const appRoutes = createRoutesFromElements(
       <Route path="technical-writer" element={<TechnicalWriter />} />
       <Route path="end2end-demo" element={<EndToEndDemo />} />
       <Route path="report/:reportId" element={<DetailedReportEditor />} />
+      <Route path="case/:id" element={<PediScreenCaseDetail />} />
     </Route>
     <Route path="*" element={<NotFound />} />
   </>

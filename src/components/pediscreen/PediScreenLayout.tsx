@@ -37,6 +37,7 @@ const getBreadcrumbs = (pathname: string) => {
   if (pathname.includes('/technical-writer')) crumbs.push({ label: 'Technical Writer', path: '/pediscreen/technical-writer' });
   if (pathname.includes('/end2end-demo')) crumbs.push({ label: 'End2End Demo', path: '/pediscreen/end2end-demo' });
   if (pathname.includes('/results')) crumbs.push({ label: 'Results', path: pathname });
+  if (pathname.includes('/case/')) crumbs.push({ label: 'Case Detail', path: pathname });
   if (pathname.includes('/learn-more')) crumbs.push({ label: 'Architecture', path: '/pediscreen/learn-more' });
   return crumbs;
 };

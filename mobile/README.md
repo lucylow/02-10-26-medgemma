@@ -1,30 +1,74 @@
-# PediScreen Mobile – React Native Offline Queue (SQLite)
+# PediScreen AI Mobile — HITL MedGemma Frontend
 
-Reference implementation for offline-first screening on React Native using SQLite.
+Clinically-validated **Human-in-the-Loop (HITL)** React Native app with Expo Router. MedGemma drafts screening recommendations; clinicians approve/edit in real-time via mobile dashboard with complete audit trails.
 
-## Install
+## Architecture
 
-```bash
-npm install react-native-sqlite-storage uuid react-native-background-fetch @react-native-community/netinfo axios react-native-image-picker react-native-fs
-cd ios && pod install
+```
+Voice/Text → MedGemma Draft → HITL Gate → Clinician Review → Final CDS
+     ↓              ↓              ↓              ↓               ↓
+AssemblyAI    QLoRA 4B-IT    APPROVE/EDIT/   Live Dashboard   FHIR Bundle
+              REJECT Flow    + Notifications + Audit Log
 ```
 
-## Files
+## Features
 
-- `db/sqlite.js` – Open DB and schema
-- `storage/queue_sqlite.js` – CRUD for queued cases
-- `sync/sync_sqlite.js` – Background sync with NetInfo + backoff
-- `compute/computeEmbeddingLocalServer.js` – Call local embed server
-- `components/ScreeningFormSQLite.js` – Form component
+- **Confidence-based routing** — Auto HITL when confidence < 85%
+- **Real-time collaboration** — WebSocket clinician sync
+- **Push notifications** — Expo instant HITL alerts
+- **Role-based queues** — Clinician workload management
+- **Audit compliance** — Complete decision trails
+- **Multi-decision flow** — Approve / Edit / Reject / Escalate
+- **Feedback loop** — Agent improvement scores
 
-## Usage
+## Setup
 
-1. Call `startBackgroundSync()` from your app entry (e.g. `App.js`).
-2. Set `SYNC_URL` and `AUTH_HEADER` (or `EMBED_SERVER_URL`) via env.
-3. Use `ScreeningFormSQLite` or integrate queue/sync into your screens.
+```bash
+cd mobile
+npm install
+```
 
-## Notes
+**Assets:** Add `icon.png`, `splash-icon.png`, `adaptive-icon.png`, and `favicon.png` to `./assets/` for production. For quick start, you can use placeholder images or run `npx create-expo-app temp --template tabs` and copy its assets.
 
-- Use `react-native-sqlite-storage` promise mode.
-- Background fetch on iOS is limited; rely on NetInfo for near-real-time sync.
-- Keep `embedding_b64` sized reasonably (~1KB for 256-dim, ~4KB for 1024-dim).
+Add `.env` (optional):
+
+```
+EXPO_PUBLIC_API_URL=http://localhost:8000/api
+EXPO_PUBLIC_WS_URL=ws://localhost:8000
+EXPO_PUBLIC_API_KEY=your-api-key
+```
+
+## Run
+
+```bash
+npm start
+# or
+npm run ios
+npm run android
+```
+
+## Backend
+
+The mobile app expects these API endpoints:
+
+- `POST /api/infer` — MedGemma inference
+- `POST /api/hitl/audit` — Log audit events
+- `POST /api/hitl/finalize` — Finalize case after clinician decision
+- `GET /api/hitl/pending` — List pending HITL cases
+
+When the backend is unavailable, the pipeline falls back to mock data and triggers HITL for demo.
+
+## File Structure
+
+```
+mobile/
+├── app/
+│   ├── (auth)/          # Clinician / Parent login
+│   ├── (tabs)/          # Dashboard, Pipeline, Review, Cases
+│   └── hitl/[caseId]/   # HITL review screen
+├── components/          # ClinicianDecisionButtons, AuditTrail, etc.
+├── contexts/            # AuthProvider
+├── hooks/               # useHitlOrchestrator, useHitlNotifications
+├── lib/                 # API client
+└── types/               # HITL types
+```

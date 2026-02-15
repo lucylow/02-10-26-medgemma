@@ -112,13 +112,21 @@ const PediScreenHome = () => {
             </CardContent>
           </Card>
         </div>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        <div className="flex flex-col sm:flex-row flex-wrap gap-4 justify-center">
           <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
             <Link to="/pediscreen/screening">
               <Button size="lg" className="gap-2 w-full sm:w-auto rounded-xl shadow-lg hover:shadow-xl transition-shadow px-8">
                 <Sparkles className="w-5 h-5" />
                 Start Evidence Collection
                 <ArrowRight className="w-4 h-4" />
+              </Button>
+            </Link>
+          </motion.div>
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+            <Link to="/pediscreen/dashboard">
+              <Button size="lg" variant="secondary" className="gap-2 w-full sm:w-auto rounded-xl">
+                <Brain className="w-5 h-5" />
+                AI Orchestrator Dashboard
               </Button>
             </Link>
           </motion.div>

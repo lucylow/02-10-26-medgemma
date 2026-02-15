@@ -1,12 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Mic, Plus, Activity, ShieldCheck, Brain, ArrowRight } from 'lucide-react';
+import { Activity, Shield, Brain, TrendingUp } from 'lucide-react';
 import { useAgents } from '@/contexts/AgentContext';
+import { useAgentStats } from '@/hooks/useAgentStats';
 import { listScreenings, type ScreeningListItem } from '@/services/screeningApi';
-import { motion } from 'framer-motion';
+import { ConnectionStatus } from '@/components/pediscreen/ConnectionStatus';
+import { AgentStatCard } from '@/components/pediscreen/AgentStatCard';
+import { QuickActionRow } from '@/components/pediscreen/QuickActionRow';
+import { LivePipelineStatus } from '@/components/pediscreen/LivePipelineStatus';
+import { VoiceEntryPoint } from '@/components/pediscreen/VoiceEntryPoint';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { ArrowRight } from 'lucide-react';
+import { useEffect } from 'react';
 
 const formatDate = (iso: string) => {
   const d = new Date(iso);
@@ -25,39 +31,7 @@ const formatRiskLabel = (riskLevel?: string) => {
   return map[riskLevel?.toLowerCase() || ''] || riskLevel || '—';
 };
 
-function StatCard({
-  icon: Icon,
-  label,
-  value,
-  bgClass,
-  iconBgClass,
-  valueClass,
-}: {
-  icon: React.ComponentType<{ size?: number; className?: string }>;
-  label: string;
-  value: number;
-  bgClass: string;
-  iconBgClass: string;
-  valueClass: string;
-}) {
-  return (
-    <Card className={`flex-1 border-none shadow-md ${bgClass}`}>
-      <CardContent className="p-5">
-        <div className="flex items-center gap-3">
-          <div className={`w-12 h-12 rounded-full flex items-center justify-center ${iconBgClass}`}>
-            <Icon size={24} className={valueClass} />
-          </div>
-          <div>
-            <p className={`text-2xl font-bold ${valueClass}`}>{value}</p>
-            <p className="text-sm text-muted-foreground">{label}</p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function RecentCasesList() {
+function RecentCasesGrid() {
   const [items, setItems] = useState<ScreeningListItem[]>([]);
   const navigate = useNavigate();
 
@@ -130,117 +104,86 @@ function RecentCasesList() {
 }
 
 export default function AgentDashboard() {
-  const [inputText, setInputText] = useState('');
-  const [childAge, setChildAge] = useState(24);
+  const [quickInput, setQuickInput] = useState('');
+  const [quickAge, setQuickAge] = useState(24);
   const { startPipeline } = useAgents();
   const navigate = useNavigate();
+  const stats = useAgentStats();
+  const isConnected = typeof navigator !== 'undefined' && navigator.onLine;
 
   const handleQuickScreen = async () => {
-    await startPipeline(inputText || 'My child says about 10 words', childAge);
+    await startPipeline(quickInput || 'Says 10 words, ignores name', quickAge);
     navigate('/pediscreen/agent-pipeline');
-  };
-
-  const stats = {
-    totalCases: 23,
-    lowRisk: 18,
-    needsReview: 5,
-    avgConfidence: 87,
   };
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="space-y-6"
-      >
-        {/* Header */}
-        <div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-primary">
-            PediScreen AI Dashboard
-          </h2>
-          <p className="text-muted-foreground mt-1">
-            Multi-agent orchestration • CDS validated • Real-time streaming
+      <div className="space-y-8">
+        {/* HERO HEADER */}
+        <div className="text-center space-y-4">
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1E3A8A]">
+              PediScreen AI
+            </h1>
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500 text-white">
+              Multi-Agent Orchestration
+            </span>
+          </div>
+          <p className="text-slate-600 text-center max-w-xl mx-auto">
+            Voice → Smart Routing → Agent Pipeline → CDS Results
           </p>
+          <ConnectionStatus isConnected={!!isConnected} />
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <StatCard
+        {/* STATS GRID */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <AgentStatCard
             icon={Activity}
-            label="Total Screenings"
-            value={stats.totalCases}
-            bgClass="bg-primary/10"
-            iconBgClass="bg-primary/30"
-            valueClass="text-primary"
+            label="Total Cases"
+            value={stats.total}
+            color="#1E3A8A"
           />
-          <StatCard
-            icon={ShieldCheck}
+          <AgentStatCard
+            icon={Shield}
             label="Low Risk"
             value={stats.lowRisk}
-            bgClass="bg-emerald-500/10"
-            iconBgClass="bg-emerald-500/30"
-            valueClass="text-emerald-600"
+            color="#10B981"
           />
-          <StatCard
-            icon={Plus}
-            label="Needs Review"
-            value={stats.needsReview}
-            bgClass="bg-amber-500/10"
-            iconBgClass="bg-amber-500/30"
-            valueClass="text-amber-600"
+          <AgentStatCard
+            icon={Brain}
+            label="AI Enhanced"
+            value={stats.aiEnhanced}
+            color="#3B82F6"
+          />
+          <AgentStatCard
+            icon={TrendingUp}
+            label="Avg Confidence"
+            value={stats.avgConfidence}
+            color="#F59E0B"
           />
         </div>
 
-        {/* Quick Screening */}
-        <Card className="border-none shadow-lg bg-slate-50/80">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Brain className="w-5 h-5 text-primary" />
-              Quick Screening
-            </CardTitle>
-            <CardDescription>
-              Enter observations to trigger smart agent routing
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Input
-                placeholder="Describe observations (e.g., 'says 10 words, ignores name')"
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                className="flex-1 rounded-xl"
-              />
-              <Button
-                size="default"
-                className="rounded-xl bg-primary gap-2 shrink-0"
-                onClick={handleQuickScreen}
-              >
-                <Mic size={20} />
-                Voice
-              </Button>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Input
-                type="number"
-                placeholder="Child age (months)"
-                value={childAge}
-                onChange={(e) => setChildAge(Number(e.target.value) || 24)}
-                className="w-32 rounded-xl"
-              />
-              <Button
-                className="flex-1 rounded-xl bg-primary"
-                onClick={handleQuickScreen}
-              >
-                Analyze
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        {/* QUICK ACTIONS */}
+        <QuickActionRow
+          quickInput={quickInput}
+          quickAge={quickAge}
+          setQuickInput={setQuickInput}
+          setQuickAge={setQuickAge}
+          onQuickScreen={handleQuickScreen}
+        />
 
-        {/* Recent Cases */}
-        <RecentCasesList />
-      </motion.div>
+        {/* LIVE PIPELINE STATUS */}
+        <LivePipelineStatus />
+
+        {/* VOICE ENTRY POINT */}
+        <VoiceEntryPoint
+          defaultAge={quickAge}
+          onPipelineStart={() => navigate('/pediscreen/agent-pipeline')}
+        />
+
+        {/* RECENT CASES */}
+        <RecentCasesGrid />
+      </div>
     </div>
   );
 }

@@ -13,7 +13,8 @@ import { cn } from '@/lib/utils';
 
 export interface VoiceInputProps {
   apiKey: string;
-  onTranscript: (text: string) => void;
+  onTranscript?: (text: string) => void;
+  onRecordingComplete?: (text: string) => void;
   onDomainHint?: (domain: string | null) => void;
   disabled?: boolean;
   className?: string;
@@ -22,6 +23,7 @@ export interface VoiceInputProps {
 export const VoiceInput: React.FC<VoiceInputProps> = ({
   apiKey,
   onTranscript,
+  onRecordingComplete,
   onDomainHint,
   disabled = false,
   className,
@@ -44,7 +46,7 @@ export const VoiceInput: React.FC<VoiceInputProps> = ({
 
   // Sync full transcript to parent (accumulated text from streaming)
   useEffect(() => {
-    if (transcript.text) {
+    if (transcript.text && onTranscript) {
       onTranscript(transcript.text);
     }
   }, [transcript.text, onTranscript]);
@@ -52,6 +54,9 @@ export const VoiceInput: React.FC<VoiceInputProps> = ({
   const handleToggle = () => {
     if (isListening) {
       stopListening();
+      if (transcript.text.trim()) {
+        onRecordingComplete?.(transcript.text);
+      }
     } else {
       startListening();
     }

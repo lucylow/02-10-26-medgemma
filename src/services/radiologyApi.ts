@@ -1,10 +1,16 @@
 /**
  * Radiology case prioritization API.
  * AI-assisted urgency labeling; clinician review required.
+ * Uses backend base URL (no /api suffix) since routes are /api/radiology/...
  */
-const API_BASE =
-  import.meta.env.VITE_MEDGEMMA_API_URL ||
-  (import.meta.env.DEV ? "http://localhost:8000" : "https://api.pediscreen.ai");
+function getApiBase(): string {
+  const backend = import.meta.env.VITE_PEDISCREEN_BACKEND_URL;
+  if (backend) return backend.replace(/\/api\/?$/, "");
+  const medgemma = import.meta.env.VITE_MEDGEMMA_API_URL;
+  if (medgemma) return medgemma.replace(/\/api\/?$/, "");
+  return import.meta.env.DEV ? "http://localhost:8000" : "https://api.pediscreen.ai";
+}
+const API_BASE = getApiBase();
 const API_KEY = import.meta.env.VITE_API_KEY || "dev-example-key";
 
 function headers(): Record<string, string> {
@@ -36,9 +42,18 @@ export type RadiologyBenchmark = {
 };
 
 export async function fetchRadiologyQueue(): Promise<{ items: RadiologyStudy[] }> {
-  const res = await fetch(`${API_BASE}/api/radiology/queue`, { headers: headers() });
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
+  try {
+    const res = await fetch(`${API_BASE}/api/radiology/queue`, { headers: headers() });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  } catch (e) {
+    if (e instanceof TypeError && (e.message === "Failed to fetch" || e.message.includes("fetch"))) {
+      throw new Error(
+        "Backend unreachable. Ensure the PediScreen backend is running (e.g. make backend or uvicorn on port 8000)."
+      );
+    }
+    throw e;
+  }
 }
 
 export async function uploadRadiologyStudy(
@@ -86,9 +101,16 @@ export function getExplainabilityImageUrl(studyId: string): string {
 }
 
 export async function fetchRadiologyBenchmark(): Promise<RadiologyBenchmark> {
-  const res = await fetch(`${API_BASE}/api/radiology/benchmark`, { headers: headers() });
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
+  try {
+    const res = await fetch(`${API_BASE}/api/radiology/benchmark`, { headers: headers() });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  } catch (e) {
+    if (e instanceof TypeError && (e.message === "Failed to fetch" || e.message.includes("fetch"))) {
+      throw new Error("Backend unreachable. Ensure the PediScreen backend is running.");
+    }
+    throw e;
+  }
 }
 
 /** PACS WADO-RS ingest request */
