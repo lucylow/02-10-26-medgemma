@@ -5,6 +5,12 @@
   "drift_detection": {
     "enabled": false,
     "window_size": 1000,
-    "threshold_std": 2.0
+    "threshold_std": 2
+  },
+  "validation_gates": {
+    "sensitivity_min": 0.93,
+    "specificity_min": 0.78,
+    "fnr_max": 0.02,
+    "safety_agent_recall_min": 1.0
   }
 }

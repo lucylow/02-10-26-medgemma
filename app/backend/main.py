@@ -27,7 +27,10 @@ from .schemas import (
     AuditLogEntry,
     ClinicalSignOffRequest,
     JobResponse,
-    AsyncJobStatus
+    AsyncJobStatus,
+    GenerateParentSummaryRequest,
+    RevisionEntry,
+    TechnicalReport,
 )
 from .medgemma_service import MedGemmaService
 from .medsiglip_service import MedSigLIPService
@@ -41,6 +44,8 @@ from .tasks import run_medgemma_pipeline
 from .audit import audit_logger
 from .audit.schema import AuditRequestMeta, AuditResponseMeta
 from .audit.redaction import hash_sensitive, hash_serialized
+from .consent_utils import validate_consent_for_screening
+from .safety_advanced import advanced_safety
 
 # Configuration from environment
 MODEL_NAME = os.getenv("MEDGEMMA_MODEL_NAME", "google/medgemma-2b-it")
@@ -99,6 +104,7 @@ if not SERVER_PRIVATE_KEY_B64:
 # --- HITL State Management (In-Memory Mock) ---
 # In a production system, this would be a database (PostgreSQL/Redis)
 screening_db = {}
+technical_reports_db = {}  # screening_id -> TechnicalReport
 
 
 def _get_audit_timestamp():
@@ -220,6 +226,12 @@ async def analyze(req: InferRequest, request: Request):
             detail="MedGemma model is not loaded. Check server health."
         )
 
+    # HITL Stage 0: No AI reasoning until consent is recorded
+    if os.getenv("CONSENT_REQUIRED_FOR_ALL", "1") == "1":
+        ok, err = validate_consent_for_screening(req.consent)
+        if not ok:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=err)
+
     try:
         # Handle raw image via MedSigLIP if provided
         visual_evidence_desc = req.visual_evidence_description
@@ -306,27 +318,18 @@ async def analyze(req: InferRequest, request: Request):
         if not parsed and not result.get("text"):
              raise HTTPException(status_code=500, detail="Model returned empty response")
         
-        # --- GEMMA 3 INTEGRATION ---
-        # If Gemma 3 is enabled and requested, use it to enhance the report
-        if gemma3_service and req.use_gemma3_for_communication:
-            logger.info("Using Gemma 3 for communication layer")
-            comm_params = req.communication_params or {}
-            
-            # 1. Rewrite parent-friendly explanation (Use Case 3.1 & 3.3)
-            clinical_summary = parsed.get("clinical_summary", "")
-            if clinical_summary:
-                try:
-                    gemma3_explanation = gemma3_service.rewrite_for_parents(
-                        clinical_summary=clinical_summary,
-                        tone=comm_params.get("tone", "reassuring"),
-                        language=comm_params.get("language", "English"),
-                        reading_level=comm_params.get("reading_level", "grade 6")
-                    )
-                    parsed["parent_friendly_explanation"] = gemma3_explanation
-                    logger.info("Gemma 3 rewritten explanation successfully")
-                except Exception as e:
-                    logger.error("Gemma 3 rewrite failed: {}", e)
-        # ---------------------------
+        # HITL Stage 3: Gemma 3 parent rewrite happens ONLY after clinician sign-off.
+        # Do NOT call Gemma 3 here. Parent content is generated via /api/generate-parent-summary
+        # after clinician approves. MedGemma never talks directly to parents.
+        parsed["parent_friendly_explanation"] = ""  # Filled after sign-off
+
+        # HITL Stage 1: Safety agent scans MedGemma output for disallowed content
+        safety_result = advanced_safety(parsed, req.observations or "")
+        if not safety_result.get("ok"):
+            risk_strat = parsed.get("risk_stratification", {})
+            if risk_strat.get("level", "").lower() != "elevated":
+                parsed.setdefault("risk_stratification", {})["level"] = "moderate"
+            parsed["safety_flags"] = safety_result.get("reasons", [])
 
         # Build response
         screening_id = req.case_id or f"screen_{uuid.uuid4().hex[:12]}"
@@ -402,6 +405,45 @@ async def analyze(req: InferRequest, request: Request):
         # Persist to "DB"
         screening_db[screening_id] = response
 
+        # Initialize technical report for audit trail
+        tech_report = TechnicalReport(
+            screening_id=screening_id,
+            ai_draft=parsed.copy() if parsed else {},
+            revision_history=[
+                RevisionEntry(
+                    timestamp=_get_audit_timestamp(),
+                    actor="system",
+                    actor_role="medgemma",
+                    action="ai_draft",
+                    diff_summary="Initial AI screening output",
+                )
+            ],
+            provenance=ProvenanceMeta(
+                model_id=result.get("model"),
+                adapter_version=result.get("adapter_path"),
+                prompt_hash=hash_sensitive(
+                    medgemma_service.build_prompt(
+                        age_months=req.age_months,
+                        observations=req.observations,
+                        domain=req.domain,
+                        questionnaire_scores=req.questionnaire_scores.dict() if req.questionnaire_scores else None,
+                        visual_evidence=visual_evidence_desc,
+                    )
+                ) if hasattr(medgemma_service, "build_prompt") else None,
+            ),
+        )
+        if not safety_result.get("ok"):
+            tech_report.revision_history.append(
+                RevisionEntry(
+                    timestamp=_get_audit_timestamp(),
+                    actor="safety_agent",
+                    actor_role="system",
+                    action="safety_rewrite",
+                    diff_summary=f"Flags: {safety_result.get('reasons', [])}",
+                )
+            )
+        technical_reports_db[screening_id] = tech_report
+
         # --- Tamper-evident audit log (no raw PHI) ---
         try:
             prompt_text = medgemma_service.build_prompt(
@@ -450,6 +492,16 @@ async def analyze(req: InferRequest, request: Request):
                 client_ip=client_ip,
                 request_id=request_id,
             )
+            # Log safety agent decisions for audit
+            if not safety_result.get("ok"):
+                audit_logger(
+                    event_type="safety_agent_flags",
+                    actor_id="safety_agent",
+                    actor_role="system",
+                    resource_id=screening_id,
+                    outcome="flags_applied",
+                    resource_type="screening",
+                )
         except Exception as e:
             logger.warning("Audit log write failed (non-fatal): {}", e)
 
@@ -530,10 +582,16 @@ async def process_case(req: InferRequest, request: Request):
     """
     Orchestrator entry point:
     1. Validate & Store initial intake.
-    2. Synchronous agents (Embedding/VisionQA/Temporal - partially done in InferRequest).
+    2. HITL: Consent gate before enqueueing AI.
     3. Enqueue heavy MedGemma pipeline.
     4. Return job_id + poll_url.
     """
+    # HITL Stage 0: No AI reasoning until consent is recorded
+    if os.getenv("CONSENT_REQUIRED_FOR_ALL", "1") == "1":
+        ok, err = validate_consent_for_screening(req.consent)
+        if not ok:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=err)
+
     case_id = req.case_id or str(uuid.uuid4())
     job_id = str(uuid.uuid4())
     
@@ -580,27 +638,41 @@ async def get_job_status(job_id: str):
 @app.post("/api/sign-off", response_model=InferResponse)
 async def sign_off(req: ClinicalSignOffRequest, request: Request):
     """
-    Clinician sign-off endpoint. 
+    Clinician sign-off endpoint.
     Enforces HITL by transitioning state from REQUIRES_REVIEW to SIGNED_OFF.
+    Records clinician edits in technical report for audit.
     """
     if req.screening_id not in screening_db:
         raise HTTPException(status_code=404, detail="Screening result not found")
-    
+
     screening = screening_db[req.screening_id]
-    
+
     if screening.status != JobStatus.REQUIRES_REVIEW:
         raise HTTPException(
-            status_code=400, 
+            status_code=400,
             detail=f"Cannot sign off. Current status is {screening.status}, but REQUIRES_REVIEW is expected."
         )
-    
-    # Apply human edits if provided
+
+    # Apply human edits if provided and record in technical report
+    tech_report = technical_reports_db.get(req.screening_id)
     if req.edits and screening.report:
         for key, value in req.edits.items():
             if hasattr(screening.report, key):
                 setattr(screening.report, key, value)
                 logger.info("Applied human edit to field: {}", key)
-    
+        if tech_report:
+            r = screening.report
+            tech_report.clinician_reviewed = r if isinstance(r, dict) else (r.model_dump() if hasattr(r, "model_dump") else {})
+            tech_report.revision_history.append(
+                RevisionEntry(
+                    timestamp=_get_audit_timestamp(),
+                    actor=req.clinician_id,
+                    actor_role="clinician",
+                    action="clinician_edit",
+                    diff_summary=f"Edits: {list(req.edits.keys())}",
+                )
+            )
+
     # Record the sign-off in audit log
     audit_entry = AuditLogEntry(
         timestamp=_get_audit_timestamp(),

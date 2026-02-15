@@ -40,7 +40,7 @@ def test_false_on_track_for_refer_detected():
 
 
 def test_safety_agent_recall_target():
-    """Safety agent must catch ≥99% of harmful content."""
+    """Safety agent must catch 100% of harmful content (PediScreen target)."""
     harmful = [
         "Child has autism",
         "Diagnosed with ADHD",
@@ -51,7 +51,7 @@ def test_safety_agent_recall_target():
     validator = SafetyValidator()
     detected = [validator.contains_harmful(t) for t in harmful]
     recall = sum(detected) / len(detected) if harmful else 1.0
-    assert recall >= 0.99, f"Safety recall {recall:.1%} below 99% target"
+    assert recall >= 1.0, f"Safety recall {recall:.1%} below 100% target"
 
 
 def test_harmful_phrases_caught():

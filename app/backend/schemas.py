@@ -3,6 +3,7 @@ Pydantic schemas for API request/response validation
 Enhanced for structured clinical report generation
 """
 
+import os
 from datetime import datetime
 from pydantic import BaseModel, Field, validator, root_validator
 from typing import List, Optional, Dict, Any, Union
@@ -182,26 +183,24 @@ class InferRequest(BaseModel):
         None, 
         description="Parameters for Gemma 3 (language, tone, reading_level)"
     )
-    # Embeddings-first: raw image requires explicit consent (Page 3)
+    # HITL Stage 0: Consent required before ANY AI reasoning (Page 3)
     consent: Optional[Dict[str, Any]] = Field(
         None,
-        description="Consent record: {consent_id, consent_given, consent_scope}. Required when image_b64 is provided.",
+        description="Consent record: {consent_id, consent_given, consent_scope}. Required for all screening.",
     )
 
     @root_validator
-    def validate_raw_image_consent(cls, values):
-        """Enforce embeddings-first: raw image requires explicit consent (Page 3)."""
-        image_b64 = values.get("image_b64")
+    def validate_consent_before_reasoning(cls, values):
+        """HITL: No AI reasoning until consent is recorded. Required for all screening."""
+        if os.getenv("CONSENT_REQUIRED_FOR_ALL", "1") != "1":
+            return values  # Backward compat: allow bypass when env=0
         consent = values.get("consent")
-        if image_b64:
-            if not consent or not consent.get("consent_given"):
-                raise ValueError(
-                    "raw_image requires explicit consent. Provide consent.consent_given=true and consent.consent_id."
-                )
-            if not consent.get("consent_id"):
-                raise ValueError(
-                    "raw_image requires consent_id for audit trail."
-                )
+        if not consent or not consent.get("consent_given"):
+            raise ValueError(
+                "Consent required before screening. Provide consent.consent_given=true and consent.consent_id."
+            )
+        if not consent.get("consent_id"):
+            raise ValueError("consent_id required for audit trail.")
         return values
 
     @validator("image_b64")
@@ -308,6 +307,45 @@ class ClinicalSignOffRequest(BaseModel):
     clinician_name: str
     notes: Optional[str] = None
     edits: Optional[Dict[str, Any]] = Field(None, description="Human overrides for specific fields")
+    approved_for_sharing: bool = Field(True, description="Mark approved for parent-facing delivery")
+
+
+class RevisionEntry(BaseModel):
+    """Single revision in technical report history"""
+    timestamp: str
+    actor: str
+    actor_role: str
+    action: str  # "ai_draft" | "clinician_edit" | "safety_rewrite" | "sign_off" | "parent_rewrite"
+    field_changed: Optional[str] = None
+    diff_summary: Optional[str] = None
+
+
+class ProvenanceMeta(BaseModel):
+    """Provenance for audit trail"""
+    model_id: Optional[str] = None
+    adapter_version: Optional[str] = None
+    prompt_hash: Optional[str] = None
+    input_snapshot_hash: Optional[str] = None
+
+
+class TechnicalReport(BaseModel):
+    """Technical report object with provenance and audit trail"""
+    screening_id: str
+    ai_draft: Dict[str, Any] = Field(default_factory=dict)
+    clinician_reviewed: Dict[str, Any] = Field(default_factory=dict)
+    revision_history: List[RevisionEntry] = Field(default_factory=list)
+    provenance: ProvenanceMeta = Field(default_factory=ProvenanceMeta)
+    parent_summary: Optional[str] = None
+    parent_summary_generated_at: Optional[str] = None
+
+
+class GenerateParentSummaryRequest(BaseModel):
+    """Request to generate parent-facing summary (only after clinician sign-off)"""
+    screening_id: str
+    communication_params: Optional[Dict[str, Any]] = Field(
+        None,
+        description="tone, language, reading_level for Gemma 3",
+    )
 
 class JobResponse(BaseModel):
     """Response when a job is enqueued"""

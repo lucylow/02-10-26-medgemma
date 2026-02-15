@@ -1,14 +1,16 @@
 """
 Clinical Metrics — sensitivity, specificity, PPV, NPV with 95% CIs.
 
-Level 1: Technical Accuracy (Must-Have)
-- Sensitivity (Se) ≥ 95% (prioritize no missed cases)
-- Specificity (Sp) ≥ 80%
-- PPV/NPV with 95% CIs
-- AUC-ROC ≥ 0.85 (external validation)
+PediScreen AI targets (vs ROP AI benchmark):
+- Sensitivity (Se) ≥ 96% [93-98% CI] — screening-critical
+- Specificity (Sp) ≥ 82% [78-86% CI]
+- NPV ≥ 98% [97-99%] — rule-out confidence
+- AUC-ROC ≥ 0.87 [0.84-0.90]
+- False Negative Rate ≤ 2%
 """
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np
@@ -212,3 +214,24 @@ class ClinicalMetrics:
             out["specificity_ci_95"] = [p_lo, p_hi]
 
         return out
+
+    def check_validation_gates(
+        self,
+        config_path: Optional[Path] = None,
+    ) -> Dict[str, bool]:
+        """
+        Check metrics against PediScreen validation gates from config.
+        Returns dict of gate_name -> passed.
+        """
+        from .config import get_validation_targets
+        targets = get_validation_targets(config_path)
+        binary = self.binary_sensitivity_specificity(positive_classes=["refer"])
+        gates = {
+            "sensitivity": binary["sensitivity"] >= targets["sensitivity_min"],
+            "specificity": binary["specificity"] >= targets["specificity_min"],
+            "npv": binary["npv"] >= targets["npv_min"],
+            "cohen_kappa": self.cohen_kappa() >= targets["cohen_kappa_min"],
+        }
+        if self.y_scores is not None:
+            gates["auc_roc"] = self.auc_roc() >= targets["auc_roc_min"]
+        return gates

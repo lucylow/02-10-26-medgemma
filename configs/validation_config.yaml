@@ -1,0 +1,49 @@
+# PediScreen AI — Validation Targets & Thresholds
+# Source: PediScreen vs ROP AI Models comparison (Feb 2026)
+# Used for validation gates, reporting, and CI checks
+
+# Primary accuracy targets (PediScreen published targets)
+accuracy:
+  sensitivity:
+    target: 0.96
+    ci_95: [0.93, 0.98]
+    min_gate: 0.93  # Lower CI bound must meet minimum
+  specificity:
+    target: 0.82
+    ci_95: [0.78, 0.86]
+    min_gate: 0.78
+  ppv:
+    target: 0.65
+    min_gate: 0.55  # Estimated; screening accepts lower PPV
+  npv:
+    target: 0.98
+    ci_95: [0.97, 0.99]
+    min_gate: 0.97  # Critical for screening (rule-out)
+  auc_roc:
+    target: 0.87
+    ci_95: [0.84, 0.90]
+    min_gate: 0.84
+
+# Safety-critical (non-negotiable)
+safety:
+  false_negative_rate_max: 0.02   # ≤2% (3x better than ROP AI 6-12%)
+  high_risk_fn_count_max: 0       # No false "on_track" for refer cases
+  safety_agent_recall_min: 1.0    # 100% (catches harmful language)
+
+# Clinician agreement (AI vs gold standard)
+clinician_agreement:
+  cohen_kappa_min: 0.70
+  target: 0.78  # PediScreen targeted; ROP AI 75-82%
+
+# Risk stratification distribution (reference)
+risk_distribution:
+  on_track: 0.30
+  monitor: 0.40
+  discuss: 0.20
+  refer: 0.10
+
+# Validation rigor (reference values)
+validation_rigor:
+  multi_site_count: 4
+  temporal_validation_months: 3
+  reader_study_matrix: "3x3"

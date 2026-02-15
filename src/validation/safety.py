@@ -1,15 +1,16 @@
 """
 Safety Metrics — false negative analysis, harmful language detection.
 
-Level 2: Clinical Safety (Non-Negotiable)
-- False Negative Rate ≤ 2% (high-risk → missed)
-- No false "On Track" for refer-level cases
-- Safety agent recall ≥ 99% (catches harmful language)
+Level 2: Clinical Safety (Non-Negotiable) — PediScreen vs ROP AI
+- False Negative Rate ≤ 2% (3x better than ROP AI 6-12%)
+- No false "On Track" for refer-level cases (high-risk FN = 0)
+- Safety agent recall 100% (catches harmful language)
 """
 from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Dict, List, Optional
 
 import numpy as np
@@ -108,7 +109,7 @@ class SafetyMetrics:
     ) -> float:
         """
         Safety agent recall: fraction of harmful content caught.
-        Target: ≥ 99%.
+        Target: 100% (PediScreen safety advantage).
         """
         if not harmful_cases or not safety_agent_detected:
             return 1.0
@@ -121,6 +122,24 @@ class SafetyMetrics:
         ref_idx = self.labels.index("refer") if "refer" in self.labels else 3
         ot_idx = self.labels.index("on_track") if "on_track" in self.labels else 0
         return int(((self.y_true == ref_idx) & (self.y_pred == ot_idx)).sum())
+
+    def check_safety_gates(
+        self,
+        config_path: Optional[Path] = None,
+    ) -> Dict[str, bool]:
+        """
+        Check safety metrics against PediScreen validation gates.
+        Returns dict of gate_name -> passed.
+        """
+        from .config import get_validation_targets
+        targets = get_validation_targets(config_path)
+        fn_analysis = self.false_negative_analysis(high_risk_label="refer")
+        fnr = fn_analysis["false_negative_rate"]
+        high_risk_fn = self.false_on_track_for_refer()
+        return {
+            "false_negative_rate": fnr <= targets["fnr_max"],
+            "high_risk_fn_count": high_risk_fn <= targets["high_risk_fn_max"],
+        }
 
 
 class SafetyValidator:
@@ -143,10 +162,18 @@ class SafetyValidator:
         self,
         harmful_phrases_db: List[str],
         safety_agent_outputs: List[bool],
+        recall_min: Optional[float] = None,
+        config_path: Optional[Path] = None,
     ) -> Dict:
         """
         Validate safety agent recall. Must catch 100% of diagnostic language.
+        recall_min: override; if None, loaded from validation_config.yaml.
         """
+        if recall_min is None:
+            from .config import get_validation_targets
+            recall_min = get_validation_targets(config_path).get(
+                "safety_recall_min", 1.0
+            )
         n = min(len(harmful_phrases_db), len(safety_agent_outputs))
         if n == 0:
             return {"recall": 1.0, "passed": True, "n": 0}
@@ -154,7 +181,7 @@ class SafetyValidator:
         recall = detected / n
         return {
             "recall": recall,
-            "passed": recall >= 0.99,
+            "passed": recall >= recall_min,
             "n": n,
             "detected": detected,
         }

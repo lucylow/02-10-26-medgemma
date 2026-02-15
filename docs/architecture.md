@@ -223,6 +223,13 @@ flowchart TB
 
 ---
 
+## Data Strategy
+
+- [Dataset Research](dataset_research.md) — Pediatric dataset landscape and synthetic augmentation strategy
+- [Data Acquisition Checklist](data_acquisition_checklist.md) — Track CDC, M-CHAT, ASQ-3, and collaboration sources
+
+---
+
 ## Success Criteria
 
 - [x] Modular delineation with clear boundaries

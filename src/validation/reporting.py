@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
 
+from .config import get_validation_targets
 from .metrics import ClinicalMetrics
 from .safety import SafetyMetrics
 
@@ -54,24 +55,47 @@ class ValidationReport:
             "human_review_required": True,  # Sign-off gates
         }
 
-    def generate_full_report(self) -> Dict[str, Any]:
-        """Generate complete validation report dict."""
+    def generate_full_report(
+        self,
+        config_path: Optional[Path] = None,
+    ) -> Dict[str, Any]:
+        """Generate complete validation report dict with validation gates."""
         accuracy = self.compute_metrics()
         safety = self.safety_analysis()
         checklist = self.fda_cds_checklist()
+
+        # PediScreen validation gates from config
+        validation_gates: Dict[str, bool] = {}
+        if self.metrics:
+            validation_gates.update(
+                self.metrics.check_validation_gates(config_path)
+            )
+        if self.safety_metrics:
+            validation_gates.update(
+                self.safety_metrics.check_safety_gates(config_path)
+            )
+
         report = {
             "model_version": self.model_version,
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "accuracy": accuracy,
             "safety": safety,
             "fda_cds_checklist": checklist,
-            "compliance_status": all(checklist.values()),
+            "validation_gates": validation_gates,
+            "validation_targets": get_validation_targets(config_path),
+            "compliance_status": (
+                all(checklist.values()) and all(validation_gates.values())
+            ),
         }
         return report
 
-    def render_json(self, path: str | Path) -> None:
+    def render_json(
+        self,
+        path: str | Path,
+        config_path: Optional[Path] = None,
+    ) -> None:
         """Write report to JSON file."""
-        report = self.generate_full_report()
+        report = self.generate_full_report(config_path)
         Path(path).parent.mkdir(parents=True, exist_ok=True)
         with open(path, "w", encoding="utf-8") as f:
             json.dump(report, f, indent=2)

@@ -9,6 +9,8 @@ from typing import Any, Dict, List, Optional
 
 from .tests.benchmark_tests import run_benchmark_tests
 from .tests.bias_audit import run_bias_audit
+from .tests.json_schema_validator import validate_json_schema
+from .tests.safety_audit import run_safety_audit
 
 
 def run_validation_suite(
@@ -43,6 +45,8 @@ def run_validation_suite(
         "test_data_path": data_path,
         "benchmark": {},
         "bias_audit": {},
+        "json_compliance": 0.0,
+        "safety_audit": {},
     }
 
     # Run benchmark tests
@@ -52,6 +56,20 @@ def run_validation_suite(
     # Run bias audit
     bias = run_bias_audit(data_path=data_path)
     results["bias_audit"] = bias
+
+    # JSON schema compliance and safety audit (if model_outputs.json exists)
+    if data_path:
+        out_path = os.path.join(data_path, "model_outputs.json")
+        if os.path.isfile(out_path):
+            try:
+                with open(out_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                outputs = data.get("outputs", [])
+                if outputs and isinstance(outputs[0], dict):
+                    results["json_compliance"] = validate_json_schema(outputs)
+                    results["safety_audit"] = run_safety_audit(outputs)
+            except Exception:
+                pass
 
     # Write reports
     summary_path = os.path.join(output_dir, "validation_summary.json")

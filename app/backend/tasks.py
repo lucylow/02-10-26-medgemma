@@ -9,7 +9,7 @@ from .job_store import write_job
 from .webhooks import get_webhook, sign_payload
 from .safety_advanced import advanced_safety
 from .orchestrator.agent_graph import AgentGraph
-from agents.schemas import AgentContext
+from .agents.schemas import AgentContext
 from typing import Dict
 
 # In a real worker, this would point to the running FastAPI app or the model service directly

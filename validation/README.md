@@ -41,20 +41,23 @@ streamlit run validation/dashboards/validation_dashboard.py
 
 ## Core Metrics (Level 1: Technical Accuracy)
 
+PediScreen targets (vs ROP AI benchmark) — see `configs/validation_config.yaml`:
+
 | Metric | Target |
 |--------|--------|
-| Sensitivity (refer) | ≥ 95% [92-97% CI] |
-| Specificity | ≥ 80% |
-| PPV/NPV | With 95% CIs |
-| AUC-ROC | ≥ 0.85 (external) |
+| Sensitivity (refer) | ≥ 96% [93-98% CI] |
+| Specificity | ≥ 82% [78-86% CI] |
+| PPV | ≥ 65% (est; screening accepts lower) |
+| NPV | ≥ 98% [97-99%] |
+| AUC-ROC | ≥ 0.87 [0.84-0.90] |
 
 ## Safety (Level 2: Non-Negotiable)
 
 | Metric | Target |
 |--------|--------|
-| False Negative Rate | ≤ 2% |
+| False Negative Rate | ≤ 2% (3x better than ROP AI 6-12%) |
 | False "On Track" for refer | 0 |
-| Safety agent recall | ≥ 99% |
+| Safety agent recall | 100% |
 
 ## FDA CDS Checklist
 
@@ -68,17 +71,26 @@ streamlit run validation/dashboards/validation_dashboard.py
 ## API
 
 ```python
-from src.validation import ClinicalMetrics, SafetyMetrics, ValidationReport
+from src.validation import (
+    ClinicalMetrics,
+    SafetyMetrics,
+    ValidationReport,
+    get_validation_targets,
+)
 
 # Compute metrics with bootstrap CIs
 metrics = ClinicalMetrics(y_true, y_pred, y_scores)
 acc = metrics.compute_all(n_bootstrap=1000, include_ci=True)
 
+# Check validation gates (uses configs/validation_config.yaml)
+gates = metrics.check_validation_gates()
+
 # Safety analysis
 safety = SafetyMetrics(y_true, y_pred, case_ids=ids, observations=texts)
 fn = safety.false_negative_analysis(high_risk_label="refer")
+safety_gates = safety.check_safety_gates()
 
-# Generate report
+# Generate report (includes validation_gates, validation_targets)
 report = ValidationReport(metrics=metrics, safety_metrics=safety)
 report.render_json("validation/reports/validation_report.json")
 ```

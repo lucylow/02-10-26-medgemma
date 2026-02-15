@@ -31,27 +31,14 @@ from fastapi import FastAPI, Request, HTTPException, Header
 from pydantic import BaseModel
 from loguru import logger
 import requests
-import sys
 
-# Ensure parent directory is in path to find sibling modules if this is in a subdirectory
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-# Local modules (expected to exist in parent or same dir)
-try:
-    from job_store import write_job, read_job
-    from tasks import run_medgemma_pipeline
-    from webhooks import register_webhook as register_wh, get_webhook as get_wh, sign_payload
-    from embedding_service import compute_embedding
-    from audit_service import append_audit
-    from parent_service import rewrite_for_parent
-except ImportError:
-    # Try importing from the same directory if they are siblings
-    from .job_store import write_job, read_job
-    from .tasks import run_medgemma_pipeline
-    from .webhooks import register_webhook as register_wh, get_webhook as get_wh, sign_payload
-    from .embedding_service import compute_embedding
-    from .audit_service import append_audit
-    from .parent_service import rewrite_for_parent
+# Local modules (from parent app.backend package)
+from ..job_store import write_job, read_job
+from ..tasks import run_medgemma_pipeline
+from ..webhooks import register_webhook as register_wh, get_webhook as get_wh, sign_payload
+from ..embedding_service import compute_embedding
+from ..audit_service import append_audit
+from ..parent_service import rewrite_for_parent
 
 # Config / env
 POLL_INTERVAL = float(os.getenv("JOB_POLL_INTERVAL", "3.0"))  # seconds
@@ -279,11 +266,8 @@ async def poll_job_store_loop(stop_event: asyncio.Event):
     The Celery worker already updates job_store; this poller ensures webhook delivery if worker didn't.
     """
     logger.info("Starting job_store poller (interval=%s seconds)", POLL_INTERVAL)
-    # Attempt to use job_store.list_all / rcli if available
-    try:
-        import job_store as js
-    except ImportError:
-        from . import job_store as js
+    # Use job_store from parent package
+    from .. import job_store as js
 
     # determine how to list keys
     list_keys_fn = None

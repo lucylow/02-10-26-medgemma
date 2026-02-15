@@ -1,0 +1,72 @@
+{
+  "description": "Sample pediatric screening dataset for MedGemma-4B fine-tuning. Schema: age_months, observations, image_path (optional), risk, summary, rationale, next_steps, patient_id. Use patient-level splits to avoid leakage.",
+  "examples": [
+    {
+      "patient_id": "p001",
+      "age_months": 24,
+      "observations": "Says ~10 words, rarely points, doesn't respond to name consistently.",
+      "image_path": null,
+      "risk": "refer",
+      "summary": [
+        "Limited expressive vocabulary for age.",
+        "Reduced joint attention and pointing.",
+        "Inconsistent response to name."
+      ],
+      "rationale": "Observations suggest monitoring of communication and social communication milestones. Screening supports referral for further evaluation.",
+      "next_steps": [
+        "Refer for developmental evaluation.",
+        "Consider speech-language and autism screening.",
+        "Schedule follow-up in 2-3 months."
+      ]
+    },
+    {
+      "patient_id": "p001",
+      "age_months": 26,
+      "observations": "Now says 25+ words, points to request, responds to name most of the time.",
+      "image_path": null,
+      "risk": "monitor",
+      "summary": [
+        "Vocabulary improved since last screening.",
+        "Emerging joint attention skills."
+      ],
+      "rationale": "Progress noted. Continued monitoring recommended.",
+      "next_steps": [
+        "Continue monitoring language milestones.",
+        "Encourage caregiver to track new words."
+      ]
+    },
+    {
+      "patient_id": "p002",
+      "age_months": 18,
+      "observations": "Walks independently, stacks 3 blocks, says 15 words, follows simple commands.",
+      "image_path": null,
+      "risk": "low",
+      "summary": [
+        "Motor and language skills within expected range for age."
+      ],
+      "rationale": "Screening suggests development within typical range.",
+      "next_steps": [
+        "Routine well-child care.",
+        "Next screening at 24 months."
+      ]
+    },
+    {
+      "patient_id": "p003",
+      "age_months": 36,
+      "observations": "Speaks in 2-3 word phrases, not yet toilet trained, some tantrums with transitions.",
+      "image_path": null,
+      "risk": "monitor",
+      "summary": [
+        "Expressive language emerging.",
+        "Toilet training not yet started.",
+        "Behavioral challenges with transitions."
+      ],
+      "rationale": "Mixed profile. Some areas on track; others warrant monitoring.",
+      "next_steps": [
+        "Discuss toilet training readiness with caregiver.",
+        "Suggest visual schedules for transitions.",
+        "Re-screen in 6 months."
+      ]
+    }
+  ]
+}

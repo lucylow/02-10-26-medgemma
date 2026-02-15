@@ -106,7 +106,9 @@ pediscreen-ai/
 │   ├── impact_calculations.md    # Detailed health impact math
 │   ├── pattern_detection.md      # Clinical vision guide
 │   ├── offline_playbook.md       # Strategies for low-connectivity settings
-│   └── legal_compliance.md       # Regulatory strategy & liability mitigation
+│   ├── legal_compliance.md       # Regulatory strategy & liability mitigation
+│   ├── dataset_research.md      # Pediatric dataset research & data strategy
+│   └── data_acquisition_checklist.md  # Data acquisition progress tracker
 │
 ├── model/
 │   ├── finetuning/        # MedGemma LoRA tuning scripts
