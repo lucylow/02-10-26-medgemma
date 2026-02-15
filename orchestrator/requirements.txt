@@ -1,0 +1,8 @@
+# Orchestrator dependencies (root orchestrator with memory layer)
+fastapi>=0.95.0
+uvicorn[standard]>=0.22.0
+pydantic>=1.10.0
+python-multipart>=0.0.6
+motor>=4.3.0
+httpx>=0.24.0
+numpy>=1.24.0

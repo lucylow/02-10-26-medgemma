@@ -8,6 +8,42 @@ from typing import Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, Field
 
 
+# --- Memory & Reflection (PydanticAI-style) ---
+
+class AgentMemory(BaseModel):
+    """Stored agent memory for case/child context."""
+    case_id: str
+    agent_name: str
+    session_id: str
+    memory_type: Literal["short_term", "long_term", "reflection"] = "short_term"
+    content: Dict[str, Any]
+    confidence: float = Field(..., ge=0.0, le=1.0)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    expires_at: Optional[datetime] = None  # TTL for short-term
+
+
+class ReflectionLog(BaseModel):
+    """Agent self-reflection audit log."""
+    case_id: str
+    agent_name: str
+    reflection_type: Literal["self_critique", "error_analysis", "improvement"]
+    input_summary: str
+    output_summary: str
+    critique: str
+    confidence_change: float
+    action_taken: Literal["adjust_confidence", "retry", "escalate", "proceed"]
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+
+class MemoryAugmentedContext(BaseModel):
+    """Context augmented with retrieved memory for agent execution."""
+    current_case: Dict[str, Any]
+    relevant_history: List[Dict[str, Any]] = []
+    agent_memories: List[AgentMemory] = []
+    reflections: List[ReflectionLog] = []
+    longitudinal_trend: Optional[Dict[str, Any]] = None
+
+
 # --- Process case request/response ---
 
 class ProcessCaseRequest(BaseModel):
@@ -19,6 +55,7 @@ class ProcessCaseRequest(BaseModel):
     image_b64: Optional[str] = None
     role: Literal["parent", "chw", "clinician"] = "chw"
     consent_id: Optional[str] = None
+    child_id: Optional[str] = None  # For longitudinal tracking across visits
 
 
 class EmbeddingMetadata(BaseModel):
@@ -63,3 +100,10 @@ class ProcessCaseResponse(BaseModel):
     embedding_metadata: EmbeddingMetadata
     temporal_analysis: TemporalAnalysis
     safety_status: SafetyStatus
+
+
+class ScreeningReportWithMemory(ProcessCaseResponse):
+    """Memory-augmented screening report with reflection audit trail."""
+    memory_used: bool = False
+    reflections: List[Dict[str, Any]] = Field(default_factory=list)
+    longitudinal_insights: Optional[Dict[str, Any]] = None

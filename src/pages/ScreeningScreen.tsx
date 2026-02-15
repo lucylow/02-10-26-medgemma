@@ -30,7 +30,10 @@ import ConsentModal, { hasStoredConsent } from '@/components/pediscreen/ConsentM
 import ImageUploadConsentModal, { hasImageConsentPreference, getStoredUploadPreference } from '@/components/pediscreen/ImageUploadConsentModal';
 import CapturePreviewStep from '@/components/pediscreen/CapturePreviewStep';
 import DisclaimerBanner from '@/components/pediscreen/DisclaimerBanner';
+import { VoiceInput } from '@/components/voice/VoiceInput';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+
+const ASSEMBLYAI_KEY = import.meta.env.VITE_ASSEMBLYAI_KEY ?? '';
 
 const developmentalDomains = [
   { label: 'Communication & Language', value: 'communication', emoji: '💬' },
@@ -451,7 +454,7 @@ const ScreeningScreen = () => {
               {/* Input mode selector */}
               <Tabs value={inputMode} onValueChange={(v) => setInputMode(v as InputMode)}>
                 <TabsList className="grid w-full grid-cols-3 rounded-xl">
-                  <TabsTrigger value="voice" className="gap-2" disabled={!voiceSupported}>
+                  <TabsTrigger value="voice" className="gap-2" disabled={!voiceSupported && !ASSEMBLYAI_KEY}>
                     <Mic className="h-4 w-4" />
                     Voice
                   </TabsTrigger>
@@ -467,37 +470,53 @@ const ScreeningScreen = () => {
 
                 <TabsContent value="voice" className="mt-4">
                   <div className="space-y-4">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="lg"
-                      className={cn(
-                        'w-full min-h-[120px] flex flex-col gap-3 rounded-xl border-2 border-dashed transition-colors',
-                        isRecording && 'border-destructive bg-destructive/10'
-                      )}
-                      onMouseDown={startVoiceRecording}
-                      onMouseUp={stopVoiceRecording}
-                      onMouseLeave={stopVoiceRecording}
-                      onTouchStart={startVoiceRecording}
-                      onTouchEnd={stopVoiceRecording}
-                    >
-                      {isRecording ? (
-                        <MicOff className="h-12 w-12 text-destructive" />
-                      ) : (
-                        <Mic className="h-12 w-12 text-primary" />
-                      )}
-                      <span className="text-sm font-medium">
-                        {isRecording ? 'Recording... Release to stop' : 'Hold to speak'}
-                      </span>
-                    </Button>
-                    {currentScreening.observations && (
-                      <div className="p-4 rounded-lg bg-primary/5 border border-primary/10">
-                        <p className="text-xs font-medium text-muted-foreground mb-1">You said:</p>
-                        <p className="text-sm text-foreground">{currentScreening.observations}</p>
-                      </div>
+                    {ASSEMBLYAI_KEY ? (
+                      <VoiceInput
+                        apiKey={ASSEMBLYAI_KEY}
+                        onTranscript={(text) => updateScreening({ observations: text })}
+                        onDomainHint={(domain) => domain && updateScreening({ domain })}
+                      />
+                    ) : (
+                      <>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="lg"
+                          className={cn(
+                            'w-full min-h-[120px] flex flex-col gap-3 rounded-xl border-2 border-dashed transition-colors',
+                            isRecording && 'border-destructive bg-destructive/10'
+                          )}
+                          onMouseDown={startVoiceRecording}
+                          onMouseUp={stopVoiceRecording}
+                          onMouseLeave={stopVoiceRecording}
+                          onTouchStart={startVoiceRecording}
+                          onTouchEnd={stopVoiceRecording}
+                        >
+                          {isRecording ? (
+                            <MicOff className="h-12 w-12 text-destructive" />
+                          ) : (
+                            <Mic className="h-12 w-12 text-primary" />
+                          )}
+                          <span className="text-sm font-medium">
+                            {isRecording ? 'Recording... Release to stop' : 'Hold to speak'}
+                          </span>
+                        </Button>
+                        {currentScreening.observations && (
+                          <div className="p-4 rounded-lg bg-primary/5 border border-primary/10">
+                            <p className="text-xs font-medium text-muted-foreground mb-1">You said:</p>
+                            <p className="text-sm text-foreground">{currentScreening.observations}</p>
+                          </div>
+                        )}
+                      </>
                     )}
-                    {!voiceSupported && (
+                    {!voiceSupported && !ASSEMBLYAI_KEY && (
                       <p className="text-xs text-muted-foreground">Voice input requires Chrome or Edge. Use Text or Visual mode instead.</p>
+                    )}
+                    {ASSEMBLYAI_KEY && (
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Shield className="h-3 w-3" />
+                        HIPAA-ready streaming. No audio stored.
+                      </p>
                     )}
                   </div>
                 </TabsContent>

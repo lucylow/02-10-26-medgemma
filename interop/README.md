@@ -122,6 +122,19 @@ curl -H "x-api-key: dev-example-key" "http://localhost:8000/api/fhir/conformance
 curl -H "x-api-key: dev-example-key" "http://localhost:8000/api/fhir/export_bundle/test-1"
 ```
 
+## Postman Collection
+
+Import `interop/postman/PediScreen-EHR-Integration.postman_collection.json` for manual testing. Includes: conformance, export bundle, PDF, HL7 v2, push, status, refresh token.
+
+## Token Refresh
+
+```
+POST /api/fhir/refresh_token
+{"iss": "https://fhir.example.com/r4", "refresh_token": "..."}
+```
+
+Returns new `access_token`, `expires_in`, `scope`. Use before token expiry for long-lived sessions.
+
 ## Frontend
 
-Set `VITE_BACKEND_URL` (e.g. `http://localhost:8000`) so the EHR export button can reach the backend. Default in dev: `http://localhost:8000`.
+Set `VITE_BACKEND_URL` (e.g. `http://localhost:8000`) so the EHR export button can reach the backend. Default in dev: `http://localhost:8000`. Export formats: FHIR (JSON), PDF, HL7 v2, Push to EHR.

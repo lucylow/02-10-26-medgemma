@@ -13,6 +13,7 @@ from app.core.disclaimers import API_DISCLAIMER_HEADER
 from app.core.legal_middleware import LegalMiddleware
 from app.api import (
     analyze,
+    stream_analyze,
     infer,
     screenings,
     screening_v1,
@@ -124,6 +125,7 @@ app.add_middleware(
 
 # include routers
 app.include_router(analyze.router)
+app.include_router(stream_analyze.router)
 app.include_router(infer.router)
 app.include_router(screenings.router)
 app.include_router(screening_v1.router)

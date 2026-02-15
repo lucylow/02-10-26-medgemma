@@ -13,6 +13,7 @@ interface ImportMetaEnv {
   readonly VITE_ANALYTICS_URL?: string;
   readonly VITE_ANALYTICS_ENDPOINT?: string;
   readonly VITE_SENTRY_DSN?: string;
+  readonly VITE_ASSEMBLYAI_KEY?: string;
 }
 
 interface ImportMeta {

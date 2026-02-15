@@ -11,6 +11,7 @@ import {
   Route,
 } from "react-router-dom";
 import { ScreeningProvider } from "./contexts/ScreeningContext";
+import { AgentProvider } from "./contexts/AgentContext";
 import { SupabaseAuthProvider } from "./contexts/SupabaseAuthContext";
 import { initializeAccessibility } from "@/components/pediscreen/AccessibilityBar";
 import { toast } from "sonner";
@@ -40,6 +41,9 @@ import TechnicalWriter from "./pages/TechnicalWriter";
 import DetailedReportEditor from "./pages/DetailedReportEditor";
 import ClinicianDashboard from "./pages/ClinicianDashboard";
 import EndToEndDemo from "./pages/EndToEndDemo";
+import AgentPipelineScreen from "./pages/AgentPipelineScreen";
+import AgentDashboard from "./pages/AgentDashboard";
+import VoiceInputScreen from "./pages/VoiceInputScreen";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { ThemeProvider } from "./theme";
 
@@ -61,6 +65,9 @@ const appRoutes = createRoutesFromElements(
     <Route path="/clinician" element={<ClinicianDashboard />} />
     <Route path="/pediscreen" element={<PediScreenLayout />}>
       <Route index element={<PediScreenHome />} />
+      <Route path="dashboard" element={<AgentDashboard />} />
+      <Route path="agent-pipeline" element={<AgentPipelineScreen />} />
+      <Route path="voice" element={<VoiceInputScreen />} />
       <Route path="screening" element={<ScreeningScreen />} />
       <Route path="results" element={<ResultsScreen />} />
       <Route path="history" element={<ScreeningHistory />} />
@@ -125,11 +132,13 @@ const App = ({ router: customRouter }: AppProps = {}) => {
       <QueryClientProvider client={queryClient}>
         <SupabaseAuthProvider>
           <TooltipProvider>
-            <ScreeningProvider>
-              <Toaster />
-              <Sonner />
-              <RouterProvider router={router} />
-            </ScreeningProvider>
+            <AgentProvider>
+              <ScreeningProvider>
+                <Toaster />
+                <Sonner />
+                <RouterProvider router={router} />
+              </ScreeningProvider>
+            </AgentProvider>
           </TooltipProvider>
         </SupabaseAuthProvider>
       </QueryClientProvider>

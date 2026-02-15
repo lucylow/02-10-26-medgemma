@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import { PARENT_ONE_LINER } from '@/constants/disclaimers';
-import { Baby, Home, Plus, History, ArrowLeft, Menu, Sparkles, ChevronRight, UserCircle, Settings, BookOpen, Scan, FileText, FlaskConical } from 'lucide-react';
+import { Baby, Home, Plus, History, ArrowLeft, Menu, Sparkles, ChevronRight, UserCircle, Settings, BookOpen, Scan, FileText, FlaskConical, Mic } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
@@ -9,9 +9,12 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const navItems = [
-  { title: 'Dashboard', path: '/pediscreen', icon: Home },
+  { title: 'Home', path: '/pediscreen', icon: Home },
+  { title: 'Dashboard', path: '/pediscreen/dashboard', icon: Sparkles },
+  { title: 'Voice', path: '/pediscreen/voice', icon: Mic },
   { title: 'Profiles', path: '/pediscreen/profiles', icon: UserCircle },
   { title: 'New Screening', path: '/pediscreen/screening', icon: Plus },
+  { title: 'Agent Pipeline', path: '/pediscreen/agent-pipeline', icon: Sparkles },
   { title: 'History', path: '/pediscreen/history', icon: History },
   { title: 'Education', path: '/pediscreen/education', icon: BookOpen },
   { title: 'Settings', path: '/pediscreen/settings', icon: Settings },
@@ -22,6 +25,9 @@ const navItems = [
 
 const getBreadcrumbs = (pathname: string) => {
   const crumbs = [{ label: 'PediScreen', path: '/pediscreen' }];
+  if (pathname.includes('/dashboard')) crumbs.push({ label: 'Dashboard', path: '/pediscreen/dashboard' });
+  if (pathname.includes('/voice')) crumbs.push({ label: 'Voice', path: '/pediscreen/voice' });
+  if (pathname.includes('/agent-pipeline')) crumbs.push({ label: 'AI Agent Pipeline', path: '/pediscreen/agent-pipeline' });
   if (pathname.includes('/profiles')) crumbs.push({ label: 'Profiles', path: '/pediscreen/profiles' });
   if (pathname.includes('/screening')) crumbs.push({ label: 'New Screening', path: '/pediscreen/screening' });
   if (pathname.includes('/history')) crumbs.push({ label: 'History', path: '/pediscreen/history' });

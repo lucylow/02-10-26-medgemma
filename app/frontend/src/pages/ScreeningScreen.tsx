@@ -2,6 +2,8 @@ import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useScreening } from '@/contexts/ScreeningContext';
 import { submitScreening } from '@/services/screeningApi';
+import { StreamingResults } from '@/components/pediscreen/StreamingResults';
+import { OfflineScreening } from '@/components/pediscreen/OfflineScreening';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -30,12 +32,20 @@ const developmentalDomains = [
   { label: 'Personal-Social', value: 'social', emoji: '👋' },
 ];
 
+type ScreenStep = 'form' | 'streaming';
+
 const ScreeningScreen = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { currentScreening, updateScreening, clearScreening } = useScreening();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [step, setStep] = useState<ScreenStep>('form');
+  const [forceOnline, setForceOnline] = useState(false);
+  const [enteredOffline, setEnteredOffline] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const isOnline = typeof navigator !== 'undefined' && navigator.onLine;
+  const useOfflineMode = (enteredOffline || !isOnline) && !forceOnline;
 
   // Calculate form progress
   const getProgress = () => {
@@ -91,52 +101,49 @@ const ScreeningScreen = () => {
       return;
     }
 
-    setIsSubmitting(true);
-    
-    // We utilize MedGemma's multimodal capabilities to analyze both 
-    // clinical text observations and visual evidence (e.g., drawings, pointing).
-    // The reasoning is performed on-device to ensure maximum privacy 
-    // and zero latency for front-line health workers.
-    try {
-      const result = await submitScreening({
-        childAge: currentScreening.childAge,
-        domain: currentScreening.domain,
-        observations: currentScreening.observations,
-        imageFile: currentScreening.imageFile,
+    setForceOnline(false);
+    setEnteredOffline(!navigator.onLine);
+    setStep('streaming');
+  };
+
+  const handleStreamComplete = (result: {
+    screeningId?: string;
+    inferenceId?: string;
+    report?: unknown;
+    feedbackAllowed?: boolean;
+    feedbackUrl?: string;
+  }) => {
+    if (result.report) {
+      navigate('/pediscreen/results', { 
+        state: { 
+          screeningId: result.screeningId,
+          inferenceId: result.inferenceId,
+          feedbackAllowed: result.feedbackAllowed ?? true,
+          feedbackUrl: result.feedbackUrl,
+          report: result.report,
+          childAge: currentScreening.childAge,
+          domain: currentScreening.domain,
+          imagePreview: currentScreening.imagePreview,
+        }
       });
-      
-      if (result.success && result.report) {
-        navigate('/pediscreen/results', { 
-          state: { 
-            screeningId: result.screeningId,
-            inferenceId: result.inferenceId,
-            feedbackAllowed: result.feedbackAllowed ?? true,
-            feedbackUrl: result.feedbackUrl,
-            report: result.report,
-            childAge: currentScreening.childAge,
-            domain: currentScreening.domain,
-            imagePreview: currentScreening.imagePreview,
-            confidence: result.confidence,
-          }
-        });
-        clearScreening();
-      } else {
-        toast({
-          title: 'Analysis Failed',
-          description: result.message || 'Please try again.',
-          variant: 'destructive',
-        });
-      }
-    } catch (error) {
-      console.error('Submission error:', error);
+      clearScreening();
+    } else {
       toast({
-        title: 'Error',
-        description: 'Could not connect to analysis service.',
+        title: 'Analysis Failed',
+        description: 'No report received from stream.',
         variant: 'destructive',
       });
-    } finally {
-      setIsSubmitting(false);
+      setStep('form');
     }
+  };
+
+  const handleStreamError = (error: string) => {
+    toast({
+      title: 'Stream Error',
+      description: error,
+      variant: 'destructive',
+    });
+    setStep('form');
   };
 
   const steps = [
@@ -144,6 +151,32 @@ const ScreeningScreen = () => {
     { label: 'Observations', completed: !!currentScreening.observations },
     { label: 'Review', completed: progress === 100 },
   ];
+
+  if (step === 'streaming') {
+    return (
+      <div className="max-w-3xl mx-auto px-4 py-8">
+        {useOfflineMode ? (
+          <OfflineScreening
+            input={currentScreening.observations!}
+            age={parseInt(currentScreening.childAge!, 10) || 24}
+            domain={currentScreening.domain || 'communication'}
+            onUpgradeToOnline={() => setForceOnline(true)}
+          />
+        ) : (
+          <StreamingResults
+            request={{
+              childAge: currentScreening.childAge!,
+              domain: currentScreening.domain || 'communication',
+              observations: currentScreening.observations!,
+              imageFile: currentScreening.imageFile,
+            }}
+            onComplete={handleStreamComplete}
+            onError={handleStreamError}
+          />
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">

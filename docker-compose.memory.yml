@@ -1,0 +1,29 @@
+# Memory-enabled PediScreen Orchestrator
+# Usage: docker-compose -f docker-compose.memory.yml up
+# Requires: orchestrator/ with memory layer, motor package
+version: "3.8"
+services:
+  mongo:
+    image: mongo:6.0
+    container_name: pediscreen-memory-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_memory_data:/data/db
+
+  orchestrator:
+    build:
+      context: .
+      dockerfile: Dockerfile.orchestrator
+    ports:
+      - "7000:7000"
+    environment:
+      - MONGODB_URI=mongodb://mongo:27017
+      - MONGODB_DB=pediscreen_orchestrator
+    depends_on:
+      - mongo
+    restart: unless-stopped
+
+volumes:
+  mongo_memory_data:
