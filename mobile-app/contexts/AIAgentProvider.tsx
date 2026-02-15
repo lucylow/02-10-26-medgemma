@@ -101,9 +101,9 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
       observations: input.observations,
       voiceTranscript: input.voiceTranscript,
     });
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const timeout = setTimeout(() => resolve(null), 60000);
-      const unsub = agentState.subscribe((state) => {
+      const unsub = useAgentState.subscribe((state) => {
         const m = state.pipeline.find((a) => a.id === 'medgemma');
         if (m?.status === 'success') {
           clearTimeout(timeout);
