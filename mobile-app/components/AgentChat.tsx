@@ -10,9 +10,17 @@ import { MessageBubble } from './MessageBubble';
 import { TypingIndicator } from './TypingIndicator';
 import type { Message } from './MessageBubble';
 
+export interface AgentResponse {
+  risk?: string;
+  confidence?: number;
+  summary?: string[];
+  rationale?: string;
+  recommendations?: string[];
+}
+
 export interface AgentChatProps {
   agentType?: string;
-  onSendMessage?: (message: string) => Promise<void>;
+  onSendMessage?: (message: string) => Promise<AgentResponse | null | void>;
 }
 
 export function AgentChat({
@@ -48,7 +56,37 @@ export function AgentChat({
 
     try {
       if (onSendMessage) {
-        await onSendMessage(text);
+        const result = await onSendMessage(text);
+        if (result) {
+          const content =
+            result.rationale ||
+            (result.summary?.length ? result.summary.join('\n• ') : '') ||
+            'Analysis complete.';
+          const recs = result.recommendations?.length
+            ? '\n\nRecommendations:\n• ' + result.recommendations.join('\n• ')
+            : '';
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: `agent_${Date.now()}`,
+              role: 'agent',
+              content: content + recs,
+              timestamp: new Date().toISOString(),
+              confidence: result.confidence ?? 0.9,
+              risk: (result.risk as 'low' | 'monitor' | 'elevated' | 'discuss') ?? 'low',
+            },
+          ]);
+        } else {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: `agent_${Date.now()}`,
+              role: 'system',
+              content: 'Analysis complete. View full results in Pipeline.',
+              timestamp: new Date().toISOString(),
+            },
+          ]);
+        }
       } else {
         setMessages((prev) => [
           ...prev,

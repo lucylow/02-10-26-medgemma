@@ -42,6 +42,12 @@ interface AIContextValue {
     domain?: string;
     voiceTranscript?: string;
   }) => Promise<string>;
+  startPipelineForChat: (input: {
+    age: number;
+    observations: string;
+    domain?: string;
+    voiceTranscript?: string;
+  }) => Promise<{ risk?: string; confidence?: number; summary?: string[]; rationale?: string; recommendations?: string[] } | null>;
   triggerHitl: (agent: AgentType, output: Record<string, unknown>) => void;
   resetPipeline: () => void;
 }
@@ -83,6 +89,35 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
     return caseId;
   };
 
+  /** Start pipeline without navigating - returns medgemma output for chat UI */
+  const startPipelineForChat = async (input: {
+    age: number;
+    observations: string;
+    domain?: string;
+    voiceTranscript?: string;
+  }): Promise<{ risk?: string; confidence?: number; summary?: string[]; rationale?: string; recommendations?: string[] } | null> => {
+    await orchestrator.startFullPipeline({
+      age: input.age,
+      observations: input.observations,
+      voiceTranscript: input.voiceTranscript,
+    });
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => resolve(null), 60000);
+      const unsub = agentState.subscribe((state) => {
+        const m = state.pipeline.find((a) => a.id === 'medgemma');
+        if (m?.status === 'success') {
+          clearTimeout(timeout);
+          unsub();
+          resolve(m.output as Record<string, unknown>);
+        } else if (m?.status === 'failed') {
+          clearTimeout(timeout);
+          unsub();
+          resolve(null);
+        }
+      });
+    });
+  };
+
   const triggerHitl = (agent: AgentType, output: Record<string, unknown>) => {
     const confidence = (output.confidence as number) ?? 0;
     const risk = (output.risk as string) ?? '';
@@ -116,6 +151,7 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
       value={{
         state,
         startPipeline,
+        startPipelineForChat,
         triggerHitl,
         resetPipeline: orchestrator.resetPipeline,
       }}
