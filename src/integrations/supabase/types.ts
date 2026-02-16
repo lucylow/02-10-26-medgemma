@@ -14,6 +14,96 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_events: {
+        Row: {
+          adapter_id: string | null
+          agent: string | null
+          case_id: string | null
+          confidence: number | null
+          cost_estimate_usd: number | null
+          error_code: string | null
+          event_type: string
+          fallback: boolean
+          fallback_reason: string | null
+          id: string
+          idempotency_key: string | null
+          input_hash: string | null
+          input_types: string[] | null
+          latency_ms: number | null
+          metadata: Json | null
+          model_id: string | null
+          model_provider: string | null
+          model_version: string | null
+          org_id: string | null
+          prompt_tokens: number | null
+          region: string | null
+          risk_level: string | null
+          screening_id: string | null
+          status_code: number | null
+          timestamp: string
+          trace_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          adapter_id?: string | null
+          agent?: string | null
+          case_id?: string | null
+          confidence?: number | null
+          cost_estimate_usd?: number | null
+          error_code?: string | null
+          event_type?: string
+          fallback?: boolean
+          fallback_reason?: string | null
+          id?: string
+          idempotency_key?: string | null
+          input_hash?: string | null
+          input_types?: string[] | null
+          latency_ms?: number | null
+          metadata?: Json | null
+          model_id?: string | null
+          model_provider?: string | null
+          model_version?: string | null
+          org_id?: string | null
+          prompt_tokens?: number | null
+          region?: string | null
+          risk_level?: string | null
+          screening_id?: string | null
+          status_code?: number | null
+          timestamp?: string
+          trace_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          adapter_id?: string | null
+          agent?: string | null
+          case_id?: string | null
+          confidence?: number | null
+          cost_estimate_usd?: number | null
+          error_code?: string | null
+          event_type?: string
+          fallback?: boolean
+          fallback_reason?: string | null
+          id?: string
+          idempotency_key?: string | null
+          input_hash?: string | null
+          input_types?: string[] | null
+          latency_ms?: number | null
+          metadata?: Json | null
+          model_id?: string | null
+          model_provider?: string | null
+          model_version?: string | null
+          org_id?: string | null
+          prompt_tokens?: number | null
+          region?: string | null
+          risk_level?: string | null
+          screening_id?: string | null
+          status_code?: number | null
+          timestamp?: string
+          trace_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       edge_metrics: {
         Row: {
           created_at: string

@@ -46,6 +46,7 @@ import AgentPipelineScreen from "./pages/AgentPipelineScreen";
 import AgentDashboard from "./pages/AgentDashboard";
 import VoiceInputScreen from "./pages/VoiceInputScreen";
 import PediScreenCaseDetail from "./pages/pediscreen/PediScreenCaseDetail";
+import Telemetry from "./pages/Telemetry";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { ThemeProvider } from "./theme";
 
@@ -64,6 +65,7 @@ const appRoutes = createRoutesFromElements(
       <Route path="/reports" element={<Reports />} />
       <Route path="/settings" element={<Settings />} />
     </Route>
+    <Route path="/telemetry" element={<Telemetry />} />
     <Route path="/clinician" element={<ClinicianDashboard />} />
     <Route path="/clinician/review" element={<RealtimeHitlDashboard />} />
     <Route path="/pediscreen" element={<PediScreenLayout />}>

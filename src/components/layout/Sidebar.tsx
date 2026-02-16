@@ -7,6 +7,7 @@ import {
   Settings,
   Baby,
   ChevronRight,
+  Activity,
 } from "lucide-react";
 
 const sidebarItems = [
@@ -14,6 +15,7 @@ const sidebarItems = [
   { title: "Dashboard", path: "/dashboard", icon: Baby },
   { title: "Cases", path: "/cases", icon: FolderOpen },
   { title: "Reports", path: "/reports", icon: FileText },
+  { title: "Telemetry", path: "/telemetry", icon: Activity },
   { title: "Settings", path: "/settings", icon: Settings },
 ];
 
