@@ -5,6 +5,7 @@
  * - Lovable AI (Gemini) integration for clinical reasoning
  * - Deterministic baseline fallback
  * - Idempotency via idempotency_key
+ * - Rich telemetry to ai_events table
  * - Metrics logging to edge_metrics table
  */
 
@@ -25,6 +26,11 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   auth: { persistSession: false },
 });
 
+const MODEL_ID = "google/gemini-3-flash-preview";
+const AGENT_VERSION = "medgemma-service-v0.4";
+// Approximate cost per 1k tokens for Gemini 3 Flash
+const COST_PER_1K_TOKENS = 0.00015;
+
 // ── Metrics helper ──────────────────────────────────────────────
 async function recordMetric(handler: string, status: string, latencyMs: number, errorCode?: string) {
   try {
@@ -37,6 +43,22 @@ async function recordMetric(handler: string, status: string, latencyMs: number, 
   } catch (e) {
     console.error("metric insert failed:", e);
   }
+}
+
+// ── Rich telemetry event ────────────────────────────────────────
+async function recordAIEvent(event: Record<string, unknown>) {
+  try {
+    await supabase.from("ai_events").insert(event);
+  } catch (e) {
+    console.error("ai_event insert failed:", e);
+  }
+}
+
+// ── Input hash (SHA-256, no PHI logged) ─────────────────────────
+async function hashInput(text: string): Promise<string> {
+  const encoded = new TextEncoder().encode(text);
+  const buf = await crypto.subtle.digest("SHA-256", encoded);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
 }
 
 // ── Deterministic baseline ──────────────────────────────────────
@@ -120,7 +142,7 @@ Parent/caregiver observations: ${observations}`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: MODEL_ID,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
@@ -133,17 +155,17 @@ Parent/caregiver observations: ${observations}`;
     if (!resp.ok) {
       const errText = await resp.text();
       console.error("Lovable AI error:", resp.status, errText);
-      return null;
+      return { ok: false, status: resp.status, error: errText };
     }
 
     const data = await resp.json();
     const content = data.choices?.[0]?.message?.content;
+    const usage = data.usage;
     if (!content) return null;
 
-    // Extract JSON from response
     const first = content.indexOf("{");
     const last = content.lastIndexOf("}");
-    if (first === -1 || last === -1) return null;
+    if (first === -1 || last === -1) return { ok: false, raw: content, usage };
 
     const parsed = JSON.parse(content.slice(first, last + 1));
     if (
@@ -151,12 +173,12 @@ Parent/caregiver observations: ${observations}`;
       ["low", "medium", "high"].includes(parsed.riskLevel) &&
       Array.isArray(parsed.keyFindings)
     ) {
-      return parsed;
+      return { ok: true, result: parsed, usage };
     }
-    return null;
+    return { ok: false, raw: content, usage };
   } catch (e) {
     console.error("Lovable AI call failed:", e);
-    return null;
+    return { ok: false, error: String(e) };
   }
 }
 
@@ -168,6 +190,7 @@ serve(async (req) => {
 
   const start = performance.now();
   let errorCode: string | undefined;
+  const traceId = crypto.randomUUID();
 
   try {
     if (req.method !== "POST") {
@@ -208,6 +231,7 @@ serve(async (req) => {
     let domain: string;
     let observations: string;
     let imagePath: string | null = null;
+    let inputTypes: string[] = ["text"];
 
     if (contentType.includes("multipart/form-data")) {
       const form = await req.formData();
@@ -217,6 +241,7 @@ serve(async (req) => {
 
       const file = form.get("image") as File | null;
       if (file && file.size > 0) {
+        inputTypes.push("image");
         const screeningPrefix = idempotencyKey || `ps-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
         const storagePath = `${screeningPrefix}/${file.name ?? "upload.jpg"}`;
         const bytes = new Uint8Array(await file.arrayBuffer());
@@ -249,36 +274,53 @@ serve(async (req) => {
 
     // ── Analysis: baseline + AI ───────────────────────────────
     const baseline = baselineReport(childAge, domain, observations, !!imagePath);
+    const inputHash = await hashInput(`${childAge}|${domain}|${observations}`);
+    const promptTokens = Math.ceil((observations || "").split(/\s+/).length * 1.3);
 
     // Try Lovable AI for enhanced clinical reasoning
-    const aiResult = await callLovableAI(childAge, domain, observations);
+    const aiStart = performance.now();
+    const aiResponse = await callLovableAI(childAge, domain, observations);
+    const aiLatency = Math.round(performance.now() - aiStart);
 
     let finalReport = baseline;
     let usedModel = false;
-    let parseOk = true;
+    let isFallback = false;
+    let fallbackReason: string | null = null;
 
-    if (aiResult) {
-      usedModel = true;
-      // Merge: AI enriches baseline, baseline findings preserved
-      finalReport = {
-        ...baseline,
-        riskLevel: aiResult.riskLevel,
-        confidence: Math.min(1, Math.max(0, aiResult.confidence)),
-        summary: aiResult.summary || baseline.summary,
-        keyFindings: [...new Set([...baseline.keyFindings, ...(aiResult.keyFindings || [])])],
-        recommendations: [...new Set([...baseline.recommendations, ...(aiResult.recommendations || [])])],
-        evidence: [
-          ...baseline.evidence,
-          ...(aiResult.evidence || []).map((e: { type?: string; content?: string; influence?: number }) => ({
-            type: e.type || "model_text",
-            content: e.content || "",
-            influence: Math.min(1, Math.max(0, e.influence ?? 0.5)),
-          })),
-        ],
-      };
+    if (aiResponse && typeof aiResponse === "object" && "ok" in aiResponse) {
+      if (aiResponse.ok && aiResponse.result) {
+        usedModel = true;
+        const aiResult = aiResponse.result;
+        finalReport = {
+          ...baseline,
+          riskLevel: aiResult.riskLevel,
+          confidence: Math.min(1, Math.max(0, aiResult.confidence)),
+          summary: aiResult.summary || baseline.summary,
+          keyFindings: [...new Set([...baseline.keyFindings, ...(aiResult.keyFindings || [])])],
+          recommendations: [...new Set([...baseline.recommendations, ...(aiResult.recommendations || [])])],
+          evidence: [
+            ...baseline.evidence,
+            ...(aiResult.evidence || []).map((e: { type?: string; content?: string; influence?: number }) => ({
+              type: e.type || "model_text",
+              content: e.content || "",
+              influence: Math.min(1, Math.max(0, e.influence ?? 0.5)),
+            })),
+          ],
+        };
+      } else {
+        // AI call failed or parse failed — fallback to baseline
+        isFallback = true;
+        fallbackReason = aiResponse.error ? String(aiResponse.error) : "parse_failure";
+      }
+    } else if (!LOVABLE_API_KEY) {
+      isFallback = true;
+      fallbackReason = "no_api_key_configured";
+    } else {
+      isFallback = true;
+      fallbackReason = "null_response";
     }
 
-    // ── Persist ───────────────────────────────────────────────
+    // ── Persist screening ─────────────────────────────────────
     const screeningId = idempotencyKey || `ps-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
     const insertRow = {
       screening_id: screeningId,
@@ -286,7 +328,7 @@ serve(async (req) => {
       domain,
       observations,
       image_path: imagePath,
-      report: { ...finalReport, model_used: usedModel, model_parse_ok: parseOk },
+      report: { ...finalReport, model_used: usedModel, model_parse_ok: !isFallback || usedModel },
     };
 
     const { error: dbErr } = await supabase.from("screenings").insert([insertRow]);
@@ -299,7 +341,42 @@ serve(async (req) => {
       });
     }
 
-    await recordMetric("analyze", "success", performance.now() - start);
+    const totalLatency = Math.round(performance.now() - start);
+    const totalTokens = promptTokens + (aiResponse?.usage?.total_tokens || 256);
+    const costEstimate = (totalTokens / 1000) * COST_PER_1K_TOKENS;
+
+    // ── Record rich telemetry ─────────────────────────────────
+    await Promise.all([
+      recordMetric("analyze", "success", totalLatency),
+      recordAIEvent({
+        event_type: "inference",
+        screening_id: screeningId,
+        model_provider: usedModel ? "google" : null,
+        model_id: usedModel ? MODEL_ID : null,
+        adapter_id: "medgemma_pediscreen_v1",
+        model_version: AGENT_VERSION,
+        input_types: inputTypes,
+        input_hash: inputHash.slice(0, 16),
+        prompt_tokens: promptTokens,
+        risk_level: finalReport.riskLevel,
+        confidence: finalReport.confidence,
+        fallback: isFallback,
+        fallback_reason: fallbackReason,
+        latency_ms: totalLatency,
+        status_code: 200,
+        cost_estimate_usd: usedModel ? costEstimate : 0,
+        agent: AGENT_VERSION,
+        trace_id: traceId,
+        idempotency_key: idempotencyKey,
+        metadata: {
+          ai_latency_ms: aiLatency,
+          used_model: usedModel,
+          domain,
+          age_months: childAge,
+          image_provided: !!imagePath,
+        },
+      }),
+    ]);
 
     return new Response(
       JSON.stringify({
@@ -308,14 +385,28 @@ serve(async (req) => {
         report: finalReport,
         timestamp: Date.now(),
         model_used: usedModel,
-        model_parse_ok: parseOk,
+        fallback: isFallback,
+        trace_id: traceId,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
     console.error("analyze error:", err);
     errorCode = "internal_error";
-    await recordMetric("analyze", "error", performance.now() - start, errorCode);
+    const totalLatency = performance.now() - start;
+    await Promise.all([
+      recordMetric("analyze", "error", totalLatency, errorCode),
+      recordAIEvent({
+        event_type: "inference",
+        fallback: true,
+        fallback_reason: "internal_error",
+        latency_ms: Math.round(totalLatency),
+        status_code: 500,
+        error_code: errorCode,
+        agent: AGENT_VERSION,
+        trace_id: traceId,
+      }),
+    ]);
     return new Response(
       JSON.stringify({ error: errorCode, detail: String(err) }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
