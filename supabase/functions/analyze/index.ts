@@ -329,6 +329,14 @@ serve(async (req) => {
       observations,
       image_path: imagePath,
       report: { ...finalReport, model_used: usedModel, model_parse_ok: !isFallback || usedModel },
+      status: "created",
+      risk_level: finalReport.riskLevel,
+      model_id: usedModel ? MODEL_ID : null,
+      adapter_id: "medgemma_pediscreen_v1",
+      confidence: finalReport.confidence,
+      input_hash: inputHash.slice(0, 16),
+      is_mock: isFallback,
+      prompt_hash: inputHash,
     };
 
     const { error: dbErr } = await supabase.from("screenings").insert([insertRow]);
