@@ -104,6 +104,42 @@ export type Database = {
         }
         Relationships: []
       }
+      audit_events: {
+        Row: {
+          action: string
+          case_id: string | null
+          created_at: string
+          entry_hash: string
+          id: number
+          payload: Json | null
+          prev_hash: string | null
+          screening_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          case_id?: string | null
+          created_at?: string
+          entry_hash?: string
+          id?: never
+          payload?: Json | null
+          prev_hash?: string | null
+          screening_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          case_id?: string | null
+          created_at?: string
+          entry_hash?: string
+          id?: never
+          payload?: Json | null
+          prev_hash?: string | null
+          screening_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       edge_metrics: {
         Row: {
           created_at: string
@@ -136,34 +172,52 @@ export type Database = {
       }
       screenings: {
         Row: {
+          adapter_id: string | null
           child_age_months: number
+          confidence: number | null
           created_at: string
           domain: string | null
           id: string
           image_path: string | null
+          input_hash: string | null
+          model_id: string | null
           observations: string | null
           report: Json
+          risk_level: string | null
           screening_id: string
+          status: string
         }
         Insert: {
+          adapter_id?: string | null
           child_age_months: number
+          confidence?: number | null
           created_at?: string
           domain?: string | null
           id?: string
           image_path?: string | null
+          input_hash?: string | null
+          model_id?: string | null
           observations?: string | null
           report?: Json
+          risk_level?: string | null
           screening_id: string
+          status?: string
         }
         Update: {
+          adapter_id?: string | null
           child_age_months?: number
+          confidence?: number | null
           created_at?: string
           domain?: string | null
           id?: string
           image_path?: string | null
+          input_hash?: string | null
+          model_id?: string | null
           observations?: string | null
           report?: Json
+          risk_level?: string | null
           screening_id?: string
+          status?: string
         }
         Relationships: []
       }
