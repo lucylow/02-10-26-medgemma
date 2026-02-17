@@ -29,6 +29,7 @@ export type Database = {
           idempotency_key: string | null
           input_hash: string | null
           input_types: string[] | null
+          is_mock: boolean
           latency_ms: number | null
           metadata: Json | null
           model_id: string | null
@@ -58,6 +59,7 @@ export type Database = {
           idempotency_key?: string | null
           input_hash?: string | null
           input_types?: string[] | null
+          is_mock?: boolean
           latency_ms?: number | null
           metadata?: Json | null
           model_id?: string | null
@@ -87,6 +89,7 @@ export type Database = {
           idempotency_key?: string | null
           input_hash?: string | null
           input_types?: string[] | null
+          is_mock?: boolean
           latency_ms?: number | null
           metadata?: Json | null
           model_id?: string | null
@@ -107,10 +110,13 @@ export type Database = {
       audit_events: {
         Row: {
           action: string
+          adapter_id: string | null
           case_id: string | null
           created_at: string
           entry_hash: string
           id: number
+          is_mock: boolean
+          model_id: string | null
           payload: Json | null
           prev_hash: string | null
           screening_id: string | null
@@ -118,10 +124,13 @@ export type Database = {
         }
         Insert: {
           action: string
+          adapter_id?: string | null
           case_id?: string | null
           created_at?: string
           entry_hash?: string
           id?: never
+          is_mock?: boolean
+          model_id?: string | null
           payload?: Json | null
           prev_hash?: string | null
           screening_id?: string | null
@@ -129,10 +138,13 @@ export type Database = {
         }
         Update: {
           action?: string
+          adapter_id?: string | null
           case_id?: string | null
           created_at?: string
           entry_hash?: string
           id?: never
+          is_mock?: boolean
+          model_id?: string | null
           payload?: Json | null
           prev_hash?: string | null
           screening_id?: string | null
@@ -170,6 +182,42 @@ export type Database = {
         }
         Relationships: []
       }
+      embedding_stats: {
+        Row: {
+          adapter_id: string | null
+          id: number
+          mean_norm: number | null
+          meta: Json | null
+          model_id: string | null
+          n_samples: number | null
+          psi_score: number | null
+          recorded_at: string
+          std_norm: number | null
+        }
+        Insert: {
+          adapter_id?: string | null
+          id?: never
+          mean_norm?: number | null
+          meta?: Json | null
+          model_id?: string | null
+          n_samples?: number | null
+          psi_score?: number | null
+          recorded_at?: string
+          std_norm?: number | null
+        }
+        Update: {
+          adapter_id?: string | null
+          id?: never
+          mean_norm?: number | null
+          meta?: Json | null
+          model_id?: string | null
+          n_samples?: number | null
+          psi_score?: number | null
+          recorded_at?: string
+          std_norm?: number | null
+        }
+        Relationships: []
+      }
       screenings: {
         Row: {
           adapter_id: string | null
@@ -177,11 +225,14 @@ export type Database = {
           confidence: number | null
           created_at: string
           domain: string | null
+          embedding_hash: string | null
           id: string
           image_path: string | null
           input_hash: string | null
+          is_mock: boolean
           model_id: string | null
           observations: string | null
+          prompt_hash: string | null
           report: Json
           risk_level: string | null
           screening_id: string
@@ -193,11 +244,14 @@ export type Database = {
           confidence?: number | null
           created_at?: string
           domain?: string | null
+          embedding_hash?: string | null
           id?: string
           image_path?: string | null
           input_hash?: string | null
+          is_mock?: boolean
           model_id?: string | null
           observations?: string | null
+          prompt_hash?: string | null
           report?: Json
           risk_level?: string | null
           screening_id: string
@@ -209,11 +263,14 @@ export type Database = {
           confidence?: number | null
           created_at?: string
           domain?: string | null
+          embedding_hash?: string | null
           id?: string
           image_path?: string | null
           input_hash?: string | null
+          is_mock?: boolean
           model_id?: string | null
           observations?: string | null
+          prompt_hash?: string | null
           report?: Json
           risk_level?: string | null
           screening_id?: string
@@ -223,10 +280,55 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      vw_screenings_anonymized: {
+        Row: {
+          adapter_id: string | null
+          child_age_months: number | null
+          confidence: number | null
+          created_at: string | null
+          domain: string | null
+          id: string | null
+          input_hash: string | null
+          model_id: string | null
+          observations_excerpt: string | null
+          risk_level: string | null
+          screening_id: string | null
+          status: string | null
+        }
+        Insert: {
+          adapter_id?: string | null
+          child_age_months?: number | null
+          confidence?: number | null
+          created_at?: string | null
+          domain?: string | null
+          id?: string | null
+          input_hash?: string | null
+          model_id?: string | null
+          observations_excerpt?: never
+          risk_level?: string | null
+          screening_id?: string | null
+          status?: string | null
+        }
+        Update: {
+          adapter_id?: string | null
+          child_age_months?: number | null
+          confidence?: number | null
+          created_at?: string | null
+          domain?: string | null
+          id?: string | null
+          input_hash?: string | null
+          model_id?: string | null
+          observations_excerpt?: never
+          risk_level?: string | null
+          screening_id?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
-      [_ in never]: never
+      purge_mock_ai_events: { Args: never; Returns: number }
+      purge_mock_screenings: { Args: never; Returns: number }
     }
     Enums: {
       [_ in never]: never
