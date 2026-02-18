@@ -5,10 +5,11 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Activity, AlertTriangle, ArrowDownToLine, Brain, CheckCircle2, Clock, DollarSign, RefreshCw, Wifi, WifiOff, Zap } from "lucide-react";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from "recharts";
-import { supabase } from "@/integrations/supabase/client";
+import { Activity, AlertTriangle, Brain, CheckCircle2, Clock, DollarSign, RefreshCw, Wifi, WifiOff, Zap } from "lucide-react";
 import { toast } from "sonner";
+import { OverviewCard } from "@/components/charts/OverviewCard";
+import { UsageTimeseries } from "@/components/charts/UsageTimeseries";
+import { ModelTable } from "@/components/charts/ModelTable";
 
 interface OverviewData {
   active_connection: boolean;
@@ -153,74 +154,35 @@ export default function Telemetry() {
       <main className="max-w-7xl mx-auto p-6 space-y-6">
         {/* Status cards row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Connection status */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                {overview?.active_connection ? (
-                  <div className="relative">
-                    <Wifi className="w-8 h-8 text-emerald-500" />
-                    <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full animate-pulse" />
-                  </div>
-                ) : (
-                  <WifiOff className="w-8 h-8 text-muted-foreground" />
-                )}
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">AI Connection</p>
-                  <p className="text-lg font-bold text-foreground">
-                    {overview?.active_connection ? "Active" : "Inactive"}
-                  </p>
-                  <p className="text-xs text-muted-foreground">Last used {lastUsedLabel}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Total requests */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <Zap className="w-8 h-8 text-primary" />
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Total Requests</p>
-                  <p className="text-2xl font-bold text-foreground">{overview?.total_requests ?? "—"}</p>
-                  <p className="text-xs text-muted-foreground">{successRate}% success rate</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Avg latency */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <Clock className="w-8 h-8 text-amber-500" />
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Avg Latency</p>
-                  <p className="text-2xl font-bold text-foreground">{overview?.avg_latency_ms ?? 0}ms</p>
-                  <p className="text-xs text-muted-foreground">
-                    {overview?.fallback_count ?? 0} fallback{(overview?.fallback_count ?? 0) !== 1 ? "s" : ""}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Cost & models */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <DollarSign className="w-8 h-8 text-emerald-500" />
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Est. Cost</p>
-                  <p className="text-2xl font-bold text-foreground">${(overview?.total_cost_usd ?? 0).toFixed(4)}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {overview?.number_of_models ?? 0} model{(overview?.number_of_models ?? 0) !== 1 ? "s" : ""} used
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <OverviewCard
+            icon={overview?.active_connection ? Wifi : WifiOff}
+            iconClassName={overview?.active_connection ? "text-success" : "text-muted-foreground"}
+            pulse={overview?.active_connection ?? false}
+            title="AI Connection"
+            value={overview?.active_connection ? "Active" : "Inactive"}
+            subtitle={`Last used ${lastUsedLabel}`}
+          />
+          <OverviewCard
+            icon={Zap}
+            iconClassName="text-primary"
+            title="Total Requests"
+            value={overview?.total_requests ?? "—"}
+            subtitle={`${successRate}% success rate`}
+          />
+          <OverviewCard
+            icon={Clock}
+            iconClassName="text-warning"
+            title="Avg Latency"
+            value={`${overview?.avg_latency_ms ?? 0}ms`}
+            subtitle={`${overview?.fallback_count ?? 0} fallback${(overview?.fallback_count ?? 0) !== 1 ? "s" : ""}`}
+          />
+          <OverviewCard
+            icon={DollarSign}
+            iconClassName="text-success"
+            title="Est. Cost"
+            value={`$${(overview?.total_cost_usd ?? 0).toFixed(4)}`}
+            subtitle={`${overview?.number_of_models ?? 0} model${(overview?.number_of_models ?? 0) !== 1 ? "s" : ""} used`}
+          />
         </div>
 
         {/* Top model badge */}
@@ -257,89 +219,12 @@ export default function Telemetry() {
 
           {/* Usage Trend */}
           <TabsContent value="overview" className="mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Calls per day</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {overview?.timeseries && overview.timeseries.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={320}>
-                    <AreaChart data={overview.timeseries}>
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                      <XAxis dataKey="date" tick={{ fontSize: 12 }} className="fill-muted-foreground" />
-                      <YAxis tick={{ fontSize: 12 }} className="fill-muted-foreground" />
-                      <Tooltip
-                        contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}
-                        labelStyle={{ color: "hsl(var(--foreground))" }}
-                      />
-                      <Area type="monotone" dataKey="calls" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.15} strokeWidth={2} name="Calls" />
-                      <Area type="monotone" dataKey="errors" stroke="hsl(var(--destructive))" fill="hsl(var(--destructive))" fillOpacity={0.1} strokeWidth={2} name="Errors" />
-                      <Area type="monotone" dataKey="fallbacks" stroke="hsl(var(--muted-foreground))" fill="hsl(var(--muted-foreground))" fillOpacity={0.08} strokeWidth={1.5} name="Fallbacks" />
-                      <Legend />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="flex items-center justify-center h-48 text-muted-foreground">
-                    <p>No telemetry data for this period. Run a screening to generate events.</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <UsageTimeseries data={overview?.timeseries ?? []} />
           </TabsContent>
 
           {/* Models tab */}
           <TabsContent value="models" className="mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Model Breakdown</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {models.length > 0 ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Model</TableHead>
-                        <TableHead>Provider</TableHead>
-                        <TableHead className="text-right">Calls</TableHead>
-                        <TableHead className="text-right">Avg Latency</TableHead>
-                        <TableHead className="text-right">Error Rate</TableHead>
-                        <TableHead className="text-right">Fallback Rate</TableHead>
-                        <TableHead className="text-right">Est. Cost</TableHead>
-                        <TableHead>Adapters</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {models.map((m) => (
-                        <TableRow key={m.model_id}>
-                          <TableCell className="font-medium">{m.model_id}</TableCell>
-                          <TableCell>{m.provider}</TableCell>
-                          <TableCell className="text-right">{m.calls}</TableCell>
-                          <TableCell className="text-right">{m.avg_latency_ms}ms</TableCell>
-                          <TableCell className="text-right">
-                            <Badge variant={m.error_rate > 5 ? "destructive" : "secondary"}>
-                              {m.error_rate}%
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Badge variant={m.fallback_rate > 10 ? "outline" : "secondary"}>
-                              {m.fallback_rate}%
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right">${m.cost_estimate_usd.toFixed(4)}</TableCell>
-                          <TableCell>
-                            {m.adapters.map(a => (
-                              <Badge key={a} variant="outline" className="mr-1 text-xs">{a}</Badge>
-                            ))}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                ) : (
-                  <p className="text-muted-foreground text-center py-8">No model data for this period.</p>
-                )}
-              </CardContent>
-            </Card>
+            <ModelTable models={models} />
           </TabsContent>
 
           {/* Errors tab */}
@@ -383,7 +268,7 @@ export default function Telemetry() {
                   </Table>
                 ) : (
                   <div className="flex items-center justify-center py-8 text-muted-foreground gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                    <CheckCircle2 className="w-5 h-5 text-success" />
                     No errors in this period
                   </div>
                 )}
@@ -436,7 +321,7 @@ export default function Telemetry() {
                   </Table>
                 ) : (
                   <div className="flex items-center justify-center py-8 text-muted-foreground gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                    <CheckCircle2 className="w-5 h-5 text-success" />
                     No fallbacks in this period
                   </div>
                 )}
