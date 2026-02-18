@@ -1,8 +1,8 @@
 // supabase/functions/list_screenings/index.ts
 /**
- * List screenings with filtering, pagination, and summary counts.
- * Supports: last_hour=true, status filter, priority filter, limit/offset.
- * Logs invocation metrics.
+ * List screenings with cursor pagination, filtering, and summary counts.
+ * Supports: cursor (created_at ISO), limit, risk filter, since/from/to.
+ * Standardized error responses with trace propagation.
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -20,13 +20,17 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   auth: { persistSession: false },
 });
 
+function errorResponse(code: string, message: string, status: number, traceId: string) {
+  return new Response(
+    JSON.stringify({ error_code: code, message, trace_id: traceId }),
+    { status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+  );
+}
+
 async function recordMetric(handler: string, status: string, latencyMs: number, errorCode?: string) {
   try {
     await supabase.from("edge_metrics").insert({
-      handler,
-      status,
-      latency_ms: Math.round(latencyMs),
-      error_code: errorCode || null,
+      handler, status, latency_ms: Math.round(latencyMs), error_code: errorCode || null,
     });
   } catch (e) {
     console.error("metric insert failed:", e);
@@ -39,87 +43,99 @@ serve(async (req) => {
   }
 
   const start = performance.now();
+  const traceId = req.headers.get("x-request-id") || crypto.randomUUID();
 
   try {
     if (req.method !== "GET") {
-      return new Response(JSON.stringify({ error: "method_not_allowed" }), {
-        status: 405,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return errorResponse("METHOD_NOT_ALLOWED", "Only GET is supported", 405, traceId);
     }
 
     const url = new URL(req.url);
-    const limit = Math.min(100, Number(url.searchParams.get("limit") || "50"));
-    const page = Number(url.searchParams.get("page") || "0");
-    const offset = page * limit;
+    const limit = Math.min(100, Math.max(1, Number(url.searchParams.get("limit") || "50")));
+    const cursor = url.searchParams.get("cursor"); // ISO timestamp for cursor pagination
+    const page = Number(url.searchParams.get("page") || "0"); // legacy offset pagination
+    const riskFilter = url.searchParams.get("risk");
+    const since = url.searchParams.get("since") || url.searchParams.get("from");
+    const until = url.searchParams.get("to");
     const lastHour = url.searchParams.get("last_hour") === "true";
-    const since = lastHour
-      ? new Date(Date.now() - 60 * 60 * 1000).toISOString()
-      : url.searchParams.get("since") || null;
-    const riskFilter = url.searchParams.get("risk") || null; // low, medium, high
+    const excludeMock = url.searchParams.get("exclude_mock") === "true";
 
     let query = supabase
       .from("screenings")
       .select("*", { count: "exact" })
       .order("created_at", { ascending: false });
 
-    if (since) {
-      query = query.gte("created_at", since);
+    // Cursor pagination (preferred over offset)
+    if (cursor) {
+      query = query.lt("created_at", cursor);
+    } else if (page > 0) {
+      query = query.range(page * limit, page * limit + limit - 1);
     }
 
-    query = query.range(offset, offset + limit - 1);
+    // Time filters
+    if (lastHour) {
+      query = query.gte("created_at", new Date(Date.now() - 60 * 60 * 1000).toISOString());
+    } else if (since) {
+      query = query.gte("created_at", since);
+    }
+    if (until) {
+      query = query.lte("created_at", until);
+    }
+
+    // Risk filter at DB level using the risk_level column
+    if (riskFilter && ["low", "medium", "high"].includes(riskFilter)) {
+      query = query.eq("risk_level", riskFilter);
+    }
+
+    // Mock filter
+    if (excludeMock) {
+      query = query.eq("is_mock", false);
+    }
+
+    if (!cursor || page === 0) {
+      query = query.limit(limit);
+    }
 
     const { data, error, count } = await query;
 
     if (error) {
       console.error("list query error:", error);
       await recordMetric("list_screenings", "error", performance.now() - start, "db_query");
-      return new Response(JSON.stringify({ error: error.message }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return errorResponse("DB_QUERY_FAILED", error.message, 500, traceId);
     }
 
-    // Compute summary counts
-    let items = data || [];
-
-    // Client-side risk filtering (report.riskLevel is inside JSONB)
-    if (riskFilter && ["low", "medium", "high"].includes(riskFilter)) {
-      items = items.filter(
-        (s: { report?: { riskLevel?: string } }) =>
-          s.report?.riskLevel === riskFilter
-      );
-    }
-
+    const items = data || [];
     const totalCount = count || 0;
-    const highCount = (data || []).filter(
-      (s: { report?: { riskLevel?: string } }) => s.report?.riskLevel === "high"
-    ).length;
-    const mediumCount = (data || []).filter(
-      (s: { report?: { riskLevel?: string } }) => s.report?.riskLevel === "medium"
-    ).length;
+
+    // Compute next cursor from last item
+    const nextCursor = items.length === limit ? items[items.length - 1]?.created_at : null;
+
+    // Risk distribution from returned page
+    const riskCounts = { low: 0, medium: 0, high: 0 };
+    for (const s of items) {
+      const r = s.risk_level as string;
+      if (r in riskCounts) riskCounts[r as keyof typeof riskCounts]++;
+    }
 
     await recordMetric("list_screenings", "success", performance.now() - start);
 
     return new Response(
       JSON.stringify({
         items,
-        counts: {
+        pagination: {
           total: totalCount,
-          high_risk: highCount,
-          medium_risk: mediumCount,
-          page,
           limit,
+          next_cursor: nextCursor,
+          has_more: !!nextCursor,
         },
+        risk_summary: riskCounts,
+        trace_id: traceId,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
     console.error("list error:", err);
     await recordMetric("list_screenings", "error", performance.now() - start, "internal");
-    return new Response(JSON.stringify({ error: String(err) }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return errorResponse("INTERNAL_ERROR", String(err), 500, traceId);
   }
 });
