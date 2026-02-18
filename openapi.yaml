@@ -1,0 +1,285 @@
+openapi: 3.0.3
+info:
+  title: PediScreen AI Telemetry API
+  version: "0.1.0"
+  description: |
+    Telemetry and usage API for PediScreen AI.
+    Events are pseudonymized and contain no raw PHI.
+    All endpoints require an API key via the `apikey` header.
+servers:
+  - url: https://{project_id}.supabase.co/functions/v1
+    variables:
+      project_id:
+        default: dnteqdvtfgqyyxhfdqru
+paths:
+  /telemetry:
+    get:
+      summary: Telemetry data by action
+      description: Returns overview, model breakdown, errors, or fallback data.
+      parameters:
+        - in: query
+          name: action
+          required: true
+          schema:
+            type: string
+            enum: [overview, models, errors, fallbacks]
+        - in: query
+          name: range
+          schema:
+            type: string
+            enum: [1h, 24h, 7d, 30d, 90d]
+            default: 7d
+      responses:
+        "200":
+          description: Action-specific payload
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/OverviewResponse"
+                  - $ref: "#/components/schemas/ModelsResponse"
+                  - $ref: "#/components/schemas/ErrorsResponse"
+                  - $ref: "#/components/schemas/FallbacksResponse"
+        "400":
+          description: Unknown action
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorPayload"
+  /metrics_dashboard:
+    get:
+      summary: Metrics dashboard summary
+      description: Lightweight aggregated metrics for the ops dashboard.
+      parameters:
+        - in: query
+          name: range
+          schema:
+            type: string
+            enum: [1h, 24h, 7d, 30d]
+            default: 7d
+      responses:
+        "200":
+          description: Dashboard payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardResponse"
+components:
+  schemas:
+    ErrorPayload:
+      type: object
+      properties:
+        error:
+          type: string
+    OverviewResponse:
+      type: object
+      properties:
+        active_connection:
+          type: boolean
+        last_used:
+          type: string
+          format: date-time
+          nullable: true
+        total_requests:
+          type: integer
+        success_count:
+          type: integer
+        error_count:
+          type: integer
+        fallback_count:
+          type: integer
+        avg_latency_ms:
+          type: integer
+        total_cost_usd:
+          type: number
+        number_of_models:
+          type: integer
+        top_model:
+          $ref: "#/components/schemas/TopModel"
+        timeseries:
+          type: array
+          items:
+            $ref: "#/components/schemas/TimeSeriesPoint"
+        window_minutes:
+          type: integer
+        since:
+          type: string
+          format: date-time
+        last_updated:
+          type: string
+          format: date-time
+    TopModel:
+      type: object
+      nullable: true
+      properties:
+        model_id:
+          type: string
+        calls:
+          type: integer
+    TimeSeriesPoint:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        calls:
+          type: integer
+        errors:
+          type: integer
+        fallbacks:
+          type: integer
+        cost:
+          type: number
+    ModelsResponse:
+      type: object
+      properties:
+        models:
+          type: array
+          items:
+            $ref: "#/components/schemas/ModelAggregate"
+        since:
+          type: string
+          format: date-time
+    ModelAggregate:
+      type: object
+      properties:
+        model_id:
+          type: string
+        provider:
+          type: string
+        calls:
+          type: integer
+        avg_latency_ms:
+          type: integer
+        error_rate:
+          type: number
+          description: Percentage (0-100)
+        fallback_rate:
+          type: number
+          description: Percentage (0-100)
+        cost_estimate_usd:
+          type: number
+        adapters:
+          type: array
+          items:
+            type: string
+        last_used:
+          type: string
+          format: date-time
+    ErrorsResponse:
+      type: object
+      properties:
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/ErrorItem"
+        since:
+          type: string
+          format: date-time
+    ErrorItem:
+      type: object
+      properties:
+        id:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        model_id:
+          type: string
+          nullable: true
+        error_code:
+          type: string
+          nullable: true
+        status_code:
+          type: integer
+        fallback_reason:
+          type: string
+          nullable: true
+        latency_ms:
+          type: integer
+          nullable: true
+        trace_id:
+          type: string
+          nullable: true
+        input_hash:
+          type: string
+          nullable: true
+    FallbacksResponse:
+      type: object
+      properties:
+        fallbacks:
+          type: array
+          items:
+            $ref: "#/components/schemas/FallbackItem"
+        reason_summary:
+          type: object
+          additionalProperties:
+            type: integer
+        since:
+          type: string
+          format: date-time
+    FallbackItem:
+      type: object
+      properties:
+        id:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        model_id:
+          type: string
+          nullable: true
+        fallback_reason:
+          type: string
+          nullable: true
+        screening_id:
+          type: string
+          nullable: true
+        latency_ms:
+          type: integer
+          nullable: true
+        trace_id:
+          type: string
+          nullable: true
+        input_hash:
+          type: string
+          nullable: true
+    DashboardResponse:
+      type: object
+      properties:
+        edge_health:
+          type: object
+          properties:
+            status:
+              type: string
+            uptime_pct:
+              type: number
+            p95_latency_ms:
+              type: integer
+        ai_telemetry:
+          type: object
+          properties:
+            total_calls:
+              type: integer
+            total_cost_usd:
+              type: number
+            model_breakdown:
+              type: array
+              items:
+                type: object
+                properties:
+                  model_id:
+                    type: string
+                  calls:
+                    type: integer
+                  cost:
+                    type: number
+                  fallback_rate:
+                    type: number
+  securitySchemes:
+    apiKey:
+      type: apiKey
+      in: header
+      name: apikey
+security:
+  - apiKey: []
