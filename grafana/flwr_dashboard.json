@@ -1,0 +1,59 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "flwr-pediscreen",
+    "title": "PediScreen FL Monitoring",
+    "timezone": "browser",
+    "schemaVersion": 36,
+    "version": 1,
+    "panels": [
+      {
+        "type": "stat",
+        "title": "Federated Rounds",
+        "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+        "targets": [{ "expr": "sum(fl_rounds_total)", "format": "time_series" }]
+      },
+      {
+        "type": "timeseries",
+        "title": "Client Examples (per client)",
+        "gridPos": { "x": 6, "y": 0, "w": 12, "h": 6 },
+        "targets": [{ "expr": "fl_client_examples_total", "legendFormat": "{{client_id}}" }]
+      },
+      {
+        "type": "timeseries",
+        "title": "Client Loss",
+        "gridPos": { "x": 0, "y": 6, "w": 9, "h": 5 },
+        "targets": [{ "expr": "fl_client_loss", "legendFormat": "{{client_id}}" }]
+      },
+      {
+        "type": "timeseries",
+        "title": "Client Accuracy",
+        "gridPos": { "x": 9, "y": 6, "w": 9, "h": 5 },
+        "targets": [{ "expr": "fl_client_accuracy", "legendFormat": "{{client_id}}" }]
+      },
+      {
+        "type": "stat",
+        "title": "PSI Drift Score",
+        "gridPos": { "x": 0, "y": 11, "w": 6, "h": 3 },
+        "targets": [{ "expr": "avg(psi_value)", "format": "time_series" }],
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "steps": [
+                { "value": 0, "color": "green" },
+                { "value": 0.1, "color": "yellow" },
+                { "value": 0.2, "color": "red" }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "type": "timeseries",
+        "title": "PSI Over Time",
+        "gridPos": { "x": 6, "y": 11, "w": 12, "h": 5 },
+        "targets": [{ "expr": "psi_value", "legendFormat": "{{org_id}}" }]
+      }
+    ]
+  }
+}
