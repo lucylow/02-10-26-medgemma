@@ -1,0 +1,15 @@
+global:
+  scrape_interval: 10s
+
+scrape_configs:
+  - job_name: "flwr_server"
+    static_configs:
+      - targets: ["flwr-server:8000"]
+
+  - job_name: "flwr_clients"
+    static_configs:
+      - targets: ["flwr-client-1:8101", "flwr-client-2:8102"]
+
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["prometheus:9090"]

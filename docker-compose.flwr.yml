@@ -1,0 +1,63 @@
+version: "3.8"
+services:
+  flwr-server:
+    build:
+      context: ./flwr
+    command: ["python", "flwr_server.py"]
+    environment:
+      - NUM_ROUNDS=5
+      - PROM_PORT=8000
+      - SENTRY_DSN=${SENTRY_DSN:-}
+    ports:
+      - "8080:8080"
+      - "8000:8000"
+    depends_on:
+      - prometheus
+
+  flwr-client-1:
+    build:
+      context: ./flwr
+    command: ["python", "flwr_client.py"]
+    environment:
+      - CLIENT_ID=client_1
+      - SERVER_ADDR=flwr-server:8080
+      - PROM_PORT=8101
+      - SENTRY_DSN=${SENTRY_DSN:-}
+    ports:
+      - "8101:8101"
+    depends_on:
+      - flwr-server
+
+  flwr-client-2:
+    build:
+      context: ./flwr
+    command: ["python", "flwr_client.py"]
+    environment:
+      - CLIENT_ID=client_2
+      - SERVER_ADDR=flwr-server:8080
+      - PROM_PORT=8102
+    ports:
+      - "8102:8102"
+    depends_on:
+      - flwr-server
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus/flwr_prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana-oss:10.3.4
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    depends_on:
+      - prometheus
+
+volumes:
+  grafana-storage:
