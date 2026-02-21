@@ -1,0 +1,16 @@
+# Lineage metadata template (model-dev). Attach to each adapter/artifact.
+model_name: ""
+version: ""
+base_model_id: ""
+adapter_id: ""
+dataset_provenance_id: ""
+training_run_id: ""
+preprocessing_steps: []
+train_count: 0
+val_count: 0
+split_seed: null
+created_at: ""
+artifacts:
+  adapter_path: ""
+  provenance_json: ""
+  model_card_path: ""

@@ -1,4 +1,6 @@
-const API_BASE_URL = import.meta.env.VITE_MEDGEMMA_API_URL || 
+import { DEMO_MODE, MOCK_SERVER_URL } from '@/config';
+
+const API_BASE_URL = import.meta.env.VITE_MEDGEMMA_API_URL ||
   (import.meta.env.DEV ? 'http://localhost:5000/api' : 'https://api.pediscreen.ai/v1');
 
 /** Supabase Edge Functions base URL (e.g. https://xxx.supabase.co/functions/v1). When set, uses FormData + multipart. */
@@ -82,12 +84,65 @@ export type ScreeningRequest = {
 };
 
 /**
+ * Map demo-server mock_inference to ScreeningResult report.
+ */
+function mapMockInferenceToReport(mi: {
+  summary?: string[];
+  risk?: string;
+  recommendations?: string[];
+  parent_text?: string;
+  explainability?: { type: string; detail: string; score?: number }[];
+  confidence?: number;
+}): ScreeningResult['report'] {
+  const riskLevel = mapRiskLevel(mi.risk || 'unknown');
+  const summary = Array.isArray(mi.summary) ? mi.summary.join(' ') : (mi.summary || '');
+  return {
+    riskLevel,
+    summary,
+    parentFriendlyExplanation: mi.parent_text,
+    keyFindings: (mi.explainability || []).map((e) => e.detail || e.type),
+    recommendations: mi.recommendations || [],
+    supportingEvidence: {
+      fromParentReport: (mi.explainability || []).filter((e) => e.type === 'text').map((e) => e.detail),
+      fromAssessmentScores: [],
+      fromVisualAnalysis: [],
+    },
+    modelEvidence: (mi.explainability || []).map((e) => ({ type: e.type, content: e.detail, influence: e.score })),
+  };
+}
+
+/**
  * Submit screening to MedGemma API for analysis.
+ * When DEMO_MODE is true, uses demo-server POST /infer with a case_id.
  * When VITE_PEDISCREEN_BACKEND_URL is set, uses FastAPI backend (FormData + x-api-key).
  * When VITE_SUPABASE_FUNCTION_URL is set, uses Supabase Edge Functions (FormData + multipart).
  */
 export const submitScreening = async (request: ScreeningRequest): Promise<ScreeningResult> => {
   try {
+    if (DEMO_MODE && MOCK_SERVER_URL) {
+      const listRes = await fetch(`${MOCK_SERVER_URL}/cases`);
+      const cases = (await listRes.json()) as { case_id: string }[];
+      const caseId = cases?.length ? cases[Math.floor(Math.random() * cases.length)].case_id : 'case-0001';
+      const inferRes = await fetch(`${MOCK_SERVER_URL}/infer`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ case_id: caseId }),
+      });
+      if (!inferRes.ok) throw new Error(await inferRes.text());
+      const mockInference = await inferRes.json();
+      const report = mapMockInferenceToReport(mockInference);
+      return {
+        success: true,
+        screeningId: `demo_${caseId}_${Date.now()}`,
+        modelUsed: true,
+        modelParseOk: true,
+        report,
+        timestamp: new Date().toISOString(),
+        confidence: mockInference.confidence,
+        localProcessing: false,
+      };
+    }
+
     // PediScreen FastAPI backend: use FormData + x-api-key (matches backend/app/api/analyze)
     if (PEDISCREEN_BACKEND_URL) {
       const form = new FormData();
@@ -373,10 +428,30 @@ export type ScreeningListItem = {
 
 /**
  * List screenings from backend.
+ * When DEMO_MODE, uses demo-server GET /cases.
  * PediScreen backend: /api/screenings (x-api-key required).
  * Supabase: /list_screenings when VITE_SUPABASE_FUNCTION_URL is set.
  */
 export const listScreenings = async (params?: { limit?: number; page?: number }): Promise<{ items: ScreeningListItem[] }> => {
+  if (DEMO_MODE && MOCK_SERVER_URL) {
+    const res = await fetch(`${MOCK_SERVER_URL}/cases`);
+    if (!res.ok) return { items: [] };
+    const list = (await res.json()) as { case_id: string; age_months?: number; locale?: string; risk?: string; thumb?: string }[];
+    const limit = params?.limit ?? 50;
+    const page = params?.page ?? 0;
+    const start = page * limit;
+    const items = (list || []).slice(start, start + limit).map((c) => ({
+      id: c.case_id,
+      screening_id: c.case_id,
+      child_age_months: c.age_months ?? 0,
+      domain: null as string | null,
+      observations: null as string | null,
+      image_path: c.thumb ?? null,
+      report: { riskLevel: c.risk },
+      created_at: new Date().toISOString(),
+    }));
+    return { items };
+  }
   if (PEDISCREEN_BACKEND_URL) {
     const limit = params?.limit ?? 50;
     const skip = ((params?.page ?? 0) * limit);
@@ -412,10 +487,26 @@ export const listScreenings = async (params?: { limit?: number; page?: number })
 
 /**
  * Get a single screening by ID.
+ * When DEMO_MODE, uses demo-server GET /case/:id.
  * PediScreen backend: /api/screenings/{id} (x-api-key required).
  * Supabase: /get_screening when VITE_SUPABASE_FUNCTION_URL is set.
  */
 export const getScreening = async (screeningId: string): Promise<ScreeningListItem | null> => {
+  if (DEMO_MODE && MOCK_SERVER_URL) {
+    const res = await fetch(`${MOCK_SERVER_URL}/case/${encodeURIComponent(screeningId)}`);
+    if (!res.ok) return null;
+    const doc = await res.json();
+    return {
+      id: doc.case_id,
+      screening_id: doc.case_id,
+      child_age_months: doc.age_months ?? 0,
+      domain: null,
+      observations: doc.caregiver_text ?? null,
+      image_path: doc.images?.[0] ?? null,
+      report: doc.mock_inference ? { riskLevel: doc.mock_inference.risk } : {},
+      created_at: doc.created_at ?? new Date().toISOString(),
+    };
+  }
   if (PEDISCREEN_BACKEND_URL) {
     const headers: Record<string, string> = {};
     if (API_KEY) headers['x-api-key'] = API_KEY;
@@ -443,16 +534,19 @@ export const getScreening = async (screeningId: string): Promise<ScreeningListIt
 
 /**
  * Check API health status
+ * When DEMO_MODE, checks demo-server /health.
  * Uses Supabase /health edge function when VITE_SUPABASE_FUNCTION_URL is set
  */
 export const checkApiHealth = async (): Promise<{ healthy: boolean; latency?: number }> => {
   try {
     const start = performance.now();
-    const healthUrl = SUPABASE_FUNCTION_URL
-      ? `${SUPABASE_FUNCTION_URL}/health`
-      : PEDISCREEN_BACKEND_URL
-        ? `${PEDISCREEN_BACKEND_URL}/health`
-        : `${API_BASE_URL}/health`;
+    const healthUrl = DEMO_MODE && MOCK_SERVER_URL
+      ? `${MOCK_SERVER_URL}/health`
+      : SUPABASE_FUNCTION_URL
+        ? `${SUPABASE_FUNCTION_URL}/health`
+        : PEDISCREEN_BACKEND_URL
+          ? `${PEDISCREEN_BACKEND_URL}/health`
+          : `${API_BASE_URL}/health`;
     const response = await fetch(healthUrl, {
       method: 'GET',
       signal: AbortSignal.timeout(5000),

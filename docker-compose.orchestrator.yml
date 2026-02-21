@@ -1,0 +1,83 @@
+# docker-compose.orchestrator.yml — Postgres, Redis, FastAPI orchestrator, RQ worker, OTEL collector
+# Run: docker-compose -f docker-compose.orchestrator.yml up --build
+version: "3.8"
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: pediscreen
+      POSTGRES_PASSWORD: pediscreen
+      POSTGRES_DB: pediscreen
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pediscreen"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--save", "60", "1"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  orchestrator:
+    build:
+      context: .
+      dockerfile: Dockerfile.orchestrator
+    image: pediscreen/orchestrator:local
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    environment:
+      DATABASE_URL: postgresql://pediscreen:pediscreen@postgres:5432/pediscreen
+      REDIS_URL: redis://redis:6379/0
+      EDGE_MODEL_URL: ""
+      CLOUD_MODEL_URL: ""
+      API_KEY: "dev-local-apikey"
+      OTEL_COLLECTOR_URL: "http://otel-collector:4318/v1/traces"
+      LOG_LEVEL: "INFO"
+    ports:
+      - "9000:9000"
+    command: uvicorn orchestrator.app.main:app --host 0.0.0.0 --port 9000 --workers 1
+    restart: unless-stopped
+
+  rqworker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    image: pediscreen/rqworker:local
+    depends_on:
+      - orchestrator
+      - redis
+      - postgres
+    environment:
+      DATABASE_URL: postgresql://pediscreen:pediscreen@postgres:5432/pediscreen
+      REDIS_URL: redis://redis:6379/0
+      EDGE_MODEL_URL: ""
+      CLOUD_MODEL_URL: ""
+      LOG_LEVEL: "INFO"
+      OTEL_COLLECTOR_URL: "http://otel-collector:4318/v1/traces"
+      METRICS_PORT: "9090"
+    command: ["rq", "worker", "pedi-screen", "--url", "redis://redis:6379/0"]
+    restart: unless-stopped
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.79.0
+    command: ["--config=/etc/otel-collector-config.yml"]
+    volumes:
+      - ./observability/otel-collector-config.yml:/etc/otel-collector-config.yml
+    ports:
+      - "4318:4318"
+      - "55681:55681"
+
+volumes:
+  pgdata:

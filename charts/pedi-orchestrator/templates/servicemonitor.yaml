@@ -1,0 +1,28 @@
+{{- if .Values.prometheus.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "pedi-orchestrator.fullname" . }}-servicemonitor
+  labels:
+    {{- if .Values.prometheus.serviceMonitor.release }}
+    release: {{ .Values.prometheus.serviceMonitor.release }}
+    {{- end }}
+    app.kubernetes.io/name: {{ include "pedi-orchestrator.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "pedi-orchestrator.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  namespaceSelector:
+    any: true
+  endpoints:
+    - port: http
+      interval: {{ .Values.prometheus.scrapeInterval | default "15s" }}
+      path: {{ .Values.prometheus.scrapePath | default "/metrics" }}
+      honorLabels: true
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+          regex: "false"
+          action: drop
+{{- end }}

@@ -562,6 +562,23 @@ A ready-to-use Helm chart lives in **`deploy/charts/pediagents/`**:
 
 Orchestrator + Agent Registry + Embedder + ModelReasoner (pseudo) + AuditAgent + basic UI hooks + tests + CI.
 
+### Routing orchestrator (improved routing layer)
+
+An additional **routing orchestration** layer is implemented under `orchestrator/app/` and related modules. It provides:
+
+- **POST /route_task** — Validated task submission; idempotency by `idempotency_key`; routing by capability, consent, and locality; sync (fast path) or async (Redis Streams) with `task_id` returned (202 or 200).
+- **POST /register_agent** — Agent registration and heartbeat for discovery.
+- **Router** — `orchestrator/router.py`: capability-based and consent-aware candidate selection, edge preference, optional sync attempt for `analyze_monitor`.
+- **Queue** — `orchestrator/queue.py`: Redis Streams (`tasks:urgent`, `tasks:high`, `tasks:normal`, `tasks:low`); `enqueue_task`, `enqueue_dlq`.
+- **Audit & idempotency** — `orchestrator/db/audit.py`, `orchestrator/db/idempotency.py`: Postgres/SQLite; audit entry per routing decision; idempotency key → task_id.
+- **Workers** — `orchestrator/workers/modelreasoner_worker.py`, `embedder_worker.py` (and entrypoints `modelreasoner/worker.py`, `embedder/worker.py`): XREADGROUP consumer, retries, DLQ.
+- **Schemas** — `orchestrator/schemas/task_schema.json`, `agent_schema.json`.
+- **Policies** — `orchestrator/policies.py`: consent, capability_for, filter_by_consent, prefer_edge.
+- **Tests** — `tests/test_router_policy.py`, `tests/test_idempotency.py`, `tests/test_routing_integration.py`.
+- **Smoke** — `scripts/smoke_test.sh`; **README** — `orchestrator/README.md`.
+
+Run routing API: `uvicorn orchestrator.app.main:app --reload --port 8080`. Create tables: `python orchestrator/scripts/create_tables.py`. See `orchestrator/README.md` for env vars and smoke-test steps.
+
 ---
 
 ## Appendix A — Prompt Templates for ModelReasonerAgent

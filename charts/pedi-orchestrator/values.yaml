@@ -1,0 +1,54 @@
+replicaCount: 1
+
+image:
+  repository: pediscreen/orchestrator
+  tag: latest
+  pullPolicy: IfNotPresent
+
+worker:
+  image:
+    repository: pediscreen/rqworker
+    tag: latest
+    pullPolicy: IfNotPresent
+  replicas: 1
+
+service:
+  type: ClusterIP
+  port: 9000
+
+# Override via --set or values file; do not commit real secrets
+databaseUrl: "postgresql://pediscreen:pediscreen@postgres:5432/pediscreen"
+redisUrl: "redis://redis:6379/0"
+apiKey: "replace-me"
+
+postgresql:
+  enabled: false
+
+redis:
+  enabled: false
+
+resources: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+prometheus:
+  scrape: true
+  scrapePath: /metrics
+  scrapeInterval: 15s
+  serviceMonitor:
+    enabled: false
+    release: prometheus
+
+serviceAccount:
+  create: true
+  name: ""
+
+ingress:
+  enabled: false
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 50

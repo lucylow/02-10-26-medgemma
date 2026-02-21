@@ -1,0 +1,20 @@
+# Phase 1: Recording rules for Grafana and alerting
+# Pre-aggregate error rate, fallback rate, P95 latency
+groups:
+  - name: ai_recording_rules
+    rules:
+      - record: ai_error_rate_5m
+        expr: |
+          increase(ai_inference_errors_total[5m])
+          / max(1, increase(ai_inference_requests_total[5m]))
+
+      - record: ai_fallback_rate_30m
+        expr: |
+          increase(ai_inference_fallbacks_total[30m])
+          / max(1, increase(ai_inference_requests_total[30m]))
+
+      - record: ai_p95_latency
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(ai_inference_latency_seconds_bucket[5m])) by (le, org_id, model_name)
+          )

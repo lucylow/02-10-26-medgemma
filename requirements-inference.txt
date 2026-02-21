@@ -1,10 +1,13 @@
 # Lightweight inference (CPU-friendly for demo / edge)
 # Install: pip install -r requirements-inference.txt
 # No GPU required for running adapter inference with small batches.
+# For embedding extraction: pillow required; torch/transformers optional (for real MedSigLIP).
 
+pillow
+numpy
+pytest
 torch>=2.1.0
 transformers>=4.35.2
-numpy
 faiss-cpu
 onnxruntime
 onnx

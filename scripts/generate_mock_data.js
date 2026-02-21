@@ -92,8 +92,10 @@ for (let i = 1; i <= 50; i++) {
   };
 
   const doc = {
+    schema_version: '1.0',
     case_id: id,
     created_at: new Date().toISOString(),
+    consent_id: 'consent-demo',
     age_months: ageMonths,
     locale,
     caregiver_text,
@@ -118,6 +120,17 @@ for (let i = 1; i <= 50; i++) {
     doc.time_to_referral_days = risk === 'refer' ? 7 + Math.floor(Math.random() * 14) : null;
     doc.D_base = risk !== 'on_track' && Math.random() < 0.4;
   }
+  doc.data_quality = ['synthetic'];
+  doc.provenance = { source: 'demo', origin: 'siteA', collected_by: 'CHW_001' };
+  if (mock_inference.confidence < 0.55) mock_inference.uncertainty_reason = 'Limited caregiver description; consider follow-up questions.';
+  if (i % 4 === 0) {
+    mock_inference.explainability.push({ type: 'image_region', detail: `grip pattern consistent with ${(ageMonths ?? age)}-month drawing`, score: 0.5 + Math.random() * 0.2 });
+  }
+  if (i % 5 === 0) {
+    mock_inference.nearest_neighbors = [
+      { case_id: `case-${String((i % 50) + 1).padStart(4, '0')}`, similarity: 0.75 + Math.random() * 0.15, thumbnail: `thumbnails/thumb_${String((i % 50) + 1).padStart(3, '0')}.svg` },
+    ];
+  }
 
   fs.writeFileSync(path.join(casesDir, `${id}.json`), JSON.stringify(doc, null, 2));
 
@@ -134,6 +147,7 @@ fs.writeFileSync(
   path.join(out, 'index.json'),
   JSON.stringify(indexList, null, 2)
 );
+fs.writeFileSync(path.join(out, 'MOCK_DATA_VERSION.txt'), '1.0\n');
 
 // Placeholder SVG thumbnails (no real photos)
 for (let i = 1; i <= 50; i++) {

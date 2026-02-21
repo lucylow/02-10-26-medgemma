@@ -107,3 +107,45 @@ class ScreeningReportWithMemory(ProcessCaseResponse):
     memory_used: bool = False
     reflections: List[Dict[str, Any]] = Field(default_factory=list)
     longitudinal_insights: Optional[Dict[str, Any]] = None
+
+
+# --- Agent request/response envelopes (multi-agent routing) ---
+
+class ClientInfo(BaseModel):
+    """Client identity for provenance."""
+    app: str = ""
+    version: str = ""
+    user_id: Optional[str] = None
+
+
+class ProvenanceInfo(BaseModel):
+    """Provenance metadata for audit trail."""
+    consent_id: Optional[str] = None
+    submitted_at: Optional[datetime] = None
+
+
+class AgentRequestEnvelope(BaseModel):
+    """Standard JSON envelope for all agent calls (low-latency transport)."""
+    request_id: str = Field(..., min_length=1)
+    case_id: str = Field(default="")
+    client: Optional[ClientInfo] = None
+    task: str = Field(default="analyze_case", description="Semantic task name")
+    capability: List[str] = Field(default_factory=list, description="Optional capability hints")
+    priority: Literal["low", "normal", "high"] = "normal"
+    timeout_ms: int = Field(default=5000, ge=100, le=120_000)
+    payload: Dict[str, Any] = Field(default_factory=dict)
+    provenance: Optional[ProvenanceInfo] = None
+
+
+class AgentResponseEnvelope(BaseModel):
+    """Standard agent response envelope for provenance and audit."""
+    request_id: str
+    agent_id: str
+    model_version: str = ""
+    adapter_id: str = ""
+    response_ts: Optional[datetime] = None
+    duration_ms: Optional[int] = None
+    result: Dict[str, Any] = Field(default_factory=dict)
+    confidence: float = Field(default=0.0, ge=0.0, le=1.0)
+    evidence: List[str] = Field(default_factory=list)
+    logs: Dict[str, List[str]] = Field(default_factory=lambda: {"warnings": [], "notes": []})

@@ -5,11 +5,12 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Activity, AlertTriangle, Brain, CheckCircle2, Clock, DollarSign, RefreshCw, Wifi, WifiOff, Zap } from "lucide-react";
+import { Activity, AlertTriangle, Brain, CheckCircle2, Clock, DollarSign, RefreshCw, Scale, Wifi, WifiOff, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { OverviewCard } from "@/components/charts/OverviewCard";
 import { UsageTimeseries } from "@/components/charts/UsageTimeseries";
 import { ModelTable } from "@/components/charts/ModelTable";
+import { FairnessBarChart, type FairnessDataPoint } from "@/components/charts/FairnessBarChart";
 
 interface OverviewData {
   active_connection: boolean;
@@ -100,7 +101,44 @@ export default function Telemetry() {
     }
   };
 
+  const fetchFairness = async () => {
+    if (!BACKEND_URL) {
+      setFairnessData([]);
+      return;
+    }
+    setFairnessLoading(true);
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/telemetry/fairness?limit=200`, {
+        headers: { "x-api-key": API_KEY },
+      });
+      const json = await res.json();
+      const items: FairnessItem[] = json.items || [];
+      // Aggregate by group_value (latest per group for chart)
+      const byGroup = new Map<string, { fpr: number; fnr: number }>();
+      for (const row of items) {
+        const g = row.group_value || "unknown";
+        if (!byGroup.has(g)) {
+          byGroup.set(g, {
+            fpr: row.false_positive_rate ?? 0,
+            fnr: row.false_negative_rate ?? 0,
+          });
+        }
+      }
+      const chartData: FairnessDataPoint[] = Array.from(byGroup.entries()).map(([group, v]) => ({
+        group,
+        false_positive_rate: v.fpr,
+        false_negative_rate: v.fnr,
+      }));
+      setFairnessData(chartData);
+    } catch {
+      setFairnessData([]);
+    } finally {
+      setFairnessLoading(false);
+    }
+  };
+
   useEffect(() => { fetchData(); }, [range]);
+  useEffect(() => { if (tab === "fairness") fetchFairness(); }, [tab]);
 
   const successRate = overview && overview.total_requests > 0
     ? Math.round((overview.success_count / overview.total_requests) * 10000) / 100
@@ -330,6 +368,24 @@ export default function Telemetry() {
                 </p>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Bias & Fairness tab (Phase 4) */}
+          <TabsContent value="fairness" className="mt-4">
+            {fairnessLoading ? (
+              <div className="flex items-center justify-center py-12 text-muted-foreground">
+                Loading fairness metrics…
+              </div>
+            ) : (
+              <FairnessBarChart
+                data={fairnessData}
+                title="Fairness metrics by protected group (FPR / FNR)"
+                height={340}
+              />
+            )}
+            <p className="text-xs text-muted-foreground mt-2">
+              False positive and false negative rates by group. Monitor for demographic parity and equalized odds.
+            </p>
           </TabsContent>
         </Tabs>
       </main>

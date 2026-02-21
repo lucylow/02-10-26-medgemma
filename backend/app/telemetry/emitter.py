@@ -23,7 +23,7 @@ def _get_metrics():
     global _INFER_REQUESTS, _INFER_ERRORS, _INFER_FALLBACKS, _LATENCY_HIST, _COST_GAUGE
     if _INFER_REQUESTS is None:
         try:
-            from prometheus_client import Counter, Histogram, Gauge
+            from prometheus_client import Counter, Histogram
             _INFER_REQUESTS = Counter(
                 "ai_inference_requests_total",
                 "Total AI inference requests",
@@ -45,7 +45,7 @@ def _get_metrics():
                 ["org_id", "model_name"],
                 buckets=(0.1, 0.25, 0.5, 1.0, 2.0, 5.0, 10.0),
             )
-            _COST_GAUGE = Gauge(
+            _COST_COUNTER = Counter(
                 "ai_cost_usd_total",
                 "Cumulative AI cost USD (per org)",
                 ["org_id"],
@@ -149,7 +149,7 @@ def _emit_to_db(envelope: Dict[str, Any]) -> None:
 
 def _emit_to_prometheus(envelope: Dict[str, Any]) -> None:
     """Record metrics. Labels are bounded."""
-    req, err, fall, hist, cost = _get_metrics()
+    req, err, fall, hist, cost_counter = _get_metrics()
     if req is None:
         return
     org = _safe_label(envelope.get("org_id"))
@@ -158,7 +158,7 @@ def _emit_to_prometheus(envelope: Dict[str, Any]) -> None:
     hist.labels(org_id=org, model_name=model).observe(
         (envelope.get("latency_ms") or 0) / 1000.0
     )
-    cost.labels(org_id=org).inc(envelope.get("cost_usd") or 0)
+    cost.labels(org_id=org).inc(float(envelope.get("cost_usd") or 0))
     if not envelope.get("success"):
         ec = _safe_label(envelope.get("error_code"), max_len=32)
         err.labels(org_id=org, model_name=model, error_code=ec).inc()

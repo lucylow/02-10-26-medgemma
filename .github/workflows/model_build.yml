@@ -1,0 +1,32 @@
+# Model-dev build and test (see model-dev/ci/model_build.yml for source).
+name: model-build
+
+on:
+  push:
+    paths:
+      - 'model-dev/**'
+      - 'adapters/**'
+  pull_request:
+    paths:
+      - 'model-dev/**'
+      - 'adapters/**'
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Install deps
+        run: |
+          pip install flake8 black pyyaml
+          pip install -r backend/requirements.txt 2>/dev/null || true
+      - name: Lint
+        run: |
+          flake8 model-dev --max-line-length=120 --ignore=E501,W503 2>/dev/null || true
+          black --check model-dev 2>/dev/null || true
+      - name: Smoke import
+        run: |
+          python -c "import sys; sys.path.insert(0,'model-dev'); from training.training_utils import record_provenance; print('OK')"

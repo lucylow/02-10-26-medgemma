@@ -16,4 +16,14 @@
 #   access_restrictions: none
 
 # Placeholder: add your datasets here. Training should reference registry id via --dataset_provenance_id.
-datasets: []
+datasets:
+  - id: pedirad-8k
+    description: Pediatric extremity X-rays (hand/wrist/forearm), 8K samples, fracture + bone age (Greulich-Pyle)
+    source: internal / PACS
+    license: Internal use / data agreement
+    population: Pediatric 2mo–12yrs, CHW deployment focus
+    collection_date_range: N/A
+    consent_policy: Per institutional IRB
+    preprocessing_steps: ["DICOM→JPG 512×512", "bone window", "stratified 80/10/10", "clinical annotations"]
+    sample_sizes_per_subgroup: { "train": 6000, "val": 1000, "test": 1000 }
+    access_restrictions: PHI-safe; use hashes only in logs

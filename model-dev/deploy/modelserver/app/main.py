@@ -1,171 +1,190 @@
+# model-dev/deploy/modelserver/app/main.py
 """
-Inference API for MedGemma-like models: embed-server + reasoner-server (model-dev).
+FastAPI inference server exposing endpoints for:
+- /health
+- /info
+- /infer_embedding  (accepts precomputed image embedding base64 + shape)
+- /infer_text       (text-only path)
+- /metrics (optional / basic)
 
-Purpose: Stable contract for agents and orchestrator — /embed and /infer with
-validation, consent checks, health, rate limiting, and X-Trace-Id pass-through.
-Inputs: POST /embed (image_b64 or image_ref), POST /infer (case_id, age_months, observations, embedding_b64).
-Outputs: JSON per Page 7 contract; explainability.FAISS_neighbors when index exists.
-
-Usage:
-  uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+This is a minimal but robust skeleton for local/dev testing or to extend for production:
+- strong input validation with Pydantic
+- careful error handling and logging
+- simple provenance fields in responses
 """
+
 from __future__ import annotations
 
 import base64
+import json
 import logging
-import time
-from typing import Any, Dict, List, Optional
+import os
+import sys
+from pathlib import Path
+from typing import List, Optional
 
-from fastapi import FastAPI, Header, HTTPException, Request
-from pydantic import BaseModel, Field
+import numpy as np
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field, constr
 
-from app.medgemma_service import medgemma_service
+# Ensure app dir is on path so "from medgemma_service import ..." works from any cwd
+_APP_DIR = Path(__file__).resolve().parent
+if str(_APP_DIR) not in sys.path:
+    sys.path.insert(0, str(_APP_DIR))
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+from medgemma_service import MedGemmaService
 
-app = FastAPI(title="MedGemma Model Server", version="0.1.0")
+logger = logging.getLogger("modelserver")
+logger.setLevel(logging.INFO)
+if not logger.handlers:
+    ch = logging.StreamHandler()
+    ch.setFormatter(
+        logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
+    )
+    logger.addHandler(ch)
 
-# ---------------------------------------------------------------------------
-# Request/Response schemas (Page 7 contract)
-# ---------------------------------------------------------------------------
+# Config from env
+MODEL_PATH = os.environ.get("MEDGEMMA_MODEL_PATH", None)
+PEFT_ADAPTER = os.environ.get("PEFT_ADAPTER_PATH", None)
+DEVICE = os.environ.get("MODEL_DEVICE", None)  # e.g., "cuda" or "cpu"
+MAX_PAYLOAD_BYTES = int(
+    os.environ.get("MAX_PAYLOAD_BYTES", "2_000_000")
+)  # 2MB default guard
 
+# Instantiate service (lazy load inside)
+service = MedGemmaService(
+    model_name=MODEL_PATH, device=DEVICE, use_peft_adapter=PEFT_ADAPTER
+)
 
-class EmbedRequest(BaseModel):
-    """POST /embed body."""
-    case_id: str = Field(..., description="Case identifier")
-    image_b64: Optional[str] = Field(None, description="Base64 image")
-    image_ref: Optional[str] = Field(None, description="Reference to image (e.g. URL or storage path)")
-    shape_hint: Optional[List[int]] = Field(None, description="Optional shape hint [H, W]")
-
-
-class EmbedResponse(BaseModel):
-    """Embed response."""
-    embedding_b64: str = Field(..., description="Base64 float32 embedding")
-    shape: List[int] = Field(..., description="e.g. [1, 256]")
-    emb_version: str = Field("medsiglip-v1", description="Encoder version")
-
-
-class InferRequest(BaseModel):
-    """POST /infer body."""
-    case_id: str = Field(..., description="Case identifier")
-    age_months: int = Field(..., ge=0, le=240, description="Child age in months")
-    observations: str = Field("", description="Caregiver observations / context")
-    embedding_b64: str = Field(..., description="Base64 float32 embedding")
-    idempotency_key: Optional[str] = Field(None)
-    consent_id: Optional[str] = Field(None, description="Required if raw image was used for embedding")
-    consent_given: bool = Field(False, description="Explicit consent for this inference")
+app = FastAPI(title="PediScreen MedGemma Model Server")
 
 
-class InferResponse(BaseModel):
-    """Infer response with explainability."""
-    text_summary: str = Field("", description="Clinical summary text")
-    risk: str = Field("low", description="low | monitor | high")
-    recommendations: List[str] = Field(default_factory=list)
-    model_version: str = Field("medgemma-adapter-v1")
-    adapter_id: Optional[str] = None
-    inference_time_s: float = Field(0.0)
-    explainability: Dict[str, Any] = Field(default_factory=dict, description="FAISS_neighbors, etc.")
+class InferEmbeddingRequest(BaseModel):
+    case_id: Optional[str] = Field(
+        None, description="Optional case identifier (pseudonymized preferred)"
+    )
+    age_months: Optional[int] = Field(
+        None, description="Child age in months"
+    )
+    observations: Optional[str] = Field(
+        None, description="Optional caregiver / CHW textual observations"
+    )
+    embedding_b64: constr(min_length=1) = Field(
+        ..., description="Base64-encoded float32 bytes of embedding"
+    )
+    shape: List[int] = Field(
+        ...,
+        description="Shape of the embedding array (e.g. [1,256] or [1,1,256])",
+    )
+    max_new_tokens: Optional[int] = 256
+    temperature: Optional[float] = 0.0
 
 
-# ---------------------------------------------------------------------------
-# Consent: fail-fast if raw image without consent (Page 15)
-# ---------------------------------------------------------------------------
-
-E_CONSENT_REQUIRED = "E_CONSENT_REQUIRED"
-
-
-def _require_consent_for_raw_image(image_b64: Optional[str], consent_given: bool) -> None:
-    """If raw image is provided, consent must be given."""
-    if image_b64 and not consent_given:
-        raise HTTPException(status_code=403, detail=E_CONSENT_REQUIRED)
+class InferTextRequest(BaseModel):
+    case_id: Optional[str] = None
+    age_months: Optional[int] = None
+    observations: Optional[str] = None
+    max_new_tokens: Optional[int] = 256
+    temperature: Optional[float] = 0.0
 
 
-# ---------------------------------------------------------------------------
-# Endpoints
-# ---------------------------------------------------------------------------
+@app.on_event("startup")
+def startup_event():
+    # Optionally trigger model load to warm pools / reduce first-call latency.
+    try:
+        logger.info("Startup: attempting to warm model (non-blocking load).")
+        service.load_model()
+    except Exception as e:
+        logger.exception("Startup load failed (non-fatal): %s", e)
 
 
 @app.get("/health")
 def health():
-    """Health check for k8s and load balancers."""
-    return {"status": "ok", "service": "medgemma-modelserver"}
+    return {
+        "status": "ok",
+        "model_loaded": service.loaded,
+        "model_version": service.model_name,
+    }
 
 
-@app.post("/embed", response_model=EmbedResponse)
-async def embed(
-    body: EmbedRequest,
-    request: Request,
-    x_trace_id: Optional[str] = Header(None, alias="X-Trace-Id"),
-):
-    """
-    Compute embedding from image. Returns standardized embedding_b64, shape, emb_version.
-    Consent required if using raw image (image_b64). Pass consent_given in header or body if needed.
-    """
-    trace_id = x_trace_id or request.headers.get("trace_id") or "no-trace-id"
-    logger.info("embed request case_id=%s trace_id=%s", body.case_id, trace_id)
-    # Consent: embed with raw image should be gated; here we only have image_b64/image_ref
-    # So we allow by default for embed; infer will check consent_id/consent_given when needed
-    start = time.perf_counter()
+@app.get("/info")
+def info():
+    return {
+        "service": "PediScreen MedGemma Model Server",
+        "model_version": service.model_name,
+        "device": str(service.device),
+        "peft_adapter": service.adapter,
+    }
+
+
+@app.post("/infer_embedding")
+def infer_embedding(req: InferEmbeddingRequest):
+    # Validate payload size conservatively (prevent very large base64 blobs)
+    raw_len = len(req.embedding_b64)
+    if raw_len > MAX_PAYLOAD_BYTES:
+        raise HTTPException(status_code=413, detail="Payload too large")
+
     try:
-        out = await medgemma_service.embed_image(
-            case_id=body.case_id,
-            image_b64=body.image_b64,
-            image_ref=body.image_ref,
-            shape_hint=body.shape_hint,
+        # decode base64 -> numpy float32
+        raw = base64.b64decode(req.embedding_b64)
+        emb = np.frombuffer(raw, dtype=np.float32)
+        try:
+            emb = emb.reshape(tuple(req.shape))
+        except Exception as e:
+            raise HTTPException(
+                status_code=400, detail=f"shape mismatch or invalid shape: {e}"
+            )
+
+        # call service
+        result = service.infer(
+            precomputed_image_emb=emb,
+            age_months=req.age_months,
+            observations=req.observations,
+            max_new_tokens=req.max_new_tokens or 256,
+            temperature=req.temperature or 0.0,
         )
-        out["inference_time_s"] = time.perf_counter() - start
-        return EmbedResponse(
-            embedding_b64=out["embedding_b64"],
-            shape=out["shape"],
-            emb_version=out.get("emb_version", "medsiglip-v1"),
-        )
+
+        return {"success": True, "case_id": req.case_id, "result": result}
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.exception("embed failed: %s", e)
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.exception("Error in /infer_embedding: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@app.post("/infer", response_model=InferResponse)
-async def infer(
-    body: InferRequest,
-    request: Request,
-    x_trace_id: Optional[str] = Header(None, alias="X-Trace-Id"),
-):
-    """
-    Run reasoning with precomputed embedding. Returns summary, risk, recommendations,
-    model_version, adapter_id, and explainability (e.g. FAISS_neighbors).
-    """
-    trace_id = x_trace_id or request.headers.get("trace_id") or "no-trace-id"
-    logger.info("infer request case_id=%s trace_id=%s", body.case_id, trace_id)
-    # Consent: if client indicates raw image was used, require consent_id or consent_given
-    if not body.consent_given and body.consent_id is None:
-        # Optional: enforce only when you know embedding came from raw image (e.g. from same-session embed)
-        # For now we do not block; document that clients must send consent when required.
-        pass
-    start = time.perf_counter()
+@app.post("/infer_text")
+def infer_text(req: InferTextRequest):
     try:
-        out = await medgemma_service.infer_case(
-            case_id=body.case_id,
-            age_months=body.age_months,
-            observations=body.observations,
-            embedding_b64=body.embedding_b64,
-            idempotency_key=body.idempotency_key,
-            trace_id=trace_id,
+        result = service.infer(
+            precomputed_image_emb=None,
+            age_months=req.age_months,
+            observations=req.observations,
+            max_new_tokens=req.max_new_tokens or 256,
+            temperature=req.temperature or 0.0,
         )
-        out["inference_time_s"] = time.perf_counter() - start
-        return InferResponse(
-            text_summary=out.get("text_summary", ""),
-            risk=out.get("risk", "low"),
-            recommendations=out.get("recommendations", []),
-            model_version=out.get("model_version", "medgemma-adapter-v1"),
-            adapter_id=out.get("adapter_id"),
-            inference_time_s=out.get("inference_time_s", 0.0),
-            explainability=out.get("explainability", {}),
-        )
-    except ValueError as e:
-        if E_CONSENT_REQUIRED in str(e):
-            raise HTTPException(status_code=403, detail=E_CONSENT_REQUIRED)
-        raise HTTPException(status_code=400, detail=str(e))
+        return {"success": True, "case_id": req.case_id, "result": result}
     except Exception as e:
-        logger.exception("infer failed: %s", e)
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.exception("Error in /infer_text: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@app.exception_handler(Exception)
+async def generic_exception_handler(request: Request, exc: Exception):
+    logger.exception("Unhandled exception for request %s: %s", request.url, exc)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Unexpected server error"},
+    )
+
+
+# Optional minimal health & readiness probe endpoints for k8s
+@app.get("/ready")
+def ready():
+    # ready if model loaded (or if in fallback mode we still return ready=True)
+    return {"ready": True, "model_loaded": service.loaded}
+
+
+# For quick local debugging you can run:
+# From repo root:  uvicorn app.main:app --app-dir model-dev/deploy/modelserver --host 0.0.0.0 --port 8000 --reload
+# From app dir:   cd model-dev/deploy/modelserver/app && uvicorn main:app --host 0.0.0.0 --port 8000 --reload

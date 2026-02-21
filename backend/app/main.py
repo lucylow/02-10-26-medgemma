@@ -12,6 +12,7 @@ from app.core.logger import logger
 from app.core.disclaimers import API_DISCLAIMER_HEADER
 from app.core.legal_middleware import LegalMiddleware
 from app.core.request_id_middleware import RequestIDMiddleware, get_request_id
+from app.middleware.phi_guard import PHIGuardMiddleware
 from app.api import (
     analyze,
     stream_analyze,
@@ -27,6 +28,7 @@ from app.api import (
     citations,
     infra,
     fhir,
+    epic_fhir,
     consent,
     dsr,
     embed,
@@ -34,6 +36,7 @@ from app.api import (
     data_quality,
     interoperability,
     feedback,
+    telemetry,
 )
 from app.errors import ErrorResponse, ErrorCodes
 from app.utils.error_formatter import api_error
@@ -99,6 +102,8 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 # Request ID first so all downstream code has request.state.request_id
 app.add_middleware(RequestIDMiddleware)
+# HIPAA: block PHI from entering AI/telemetry routes (strict schema enforcement)
+app.add_middleware(PHIGuardMiddleware)
 # Legal middleware: audit, PHI enforcement, disclaimer, policy scan
 app.add_middleware(LegalMiddleware)
 
@@ -143,6 +148,7 @@ app.include_router(citations.router)
 app.include_router(infra.router)
 app.include_router(fhir.router)
 app.include_router(epic_fhir.router)
+app.include_router(telemetry.router)
 app.include_router(consent.router)
 app.include_router(dsr.router)
 app.include_router(embed.router)

@@ -1,0 +1,47 @@
+# Phase 1: AI telemetry alert rules
+# Load in Prometheus: rule_files: [ "prometheus/ai_alerts.yml" ]
+groups:
+  - name: ai_alerts
+    rules:
+      - alert: AIErrorRateSpike
+        expr: |
+          increase(ai_inference_errors_total[15m])
+          / max(1, increase(ai_inference_requests_total[15m])) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "AI error rate spike ({{ $labels.org_id | default \"unknown\" }})"
+          description: "Error rate >5% over last 15m for org {{ $labels.org_id }}"
+
+      - alert: AIFallbackRateHigh
+        expr: |
+          increase(ai_inference_fallbacks_total[30m])
+          / max(1, increase(ai_inference_requests_total[30m])) > 0.02
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High fallback rate (>2%)"
+          description: "Fallback model used >2% of calls in last 30m."
+
+      - alert: AILongLatencyP95
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(ai_inference_latency_seconds_bucket[5m])) by (le, org_id, model_name)
+          ) > 5
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "P95 latency > 5s"
+          description: "95th percentile latency exceeded 5 seconds."
+
+      - alert: AIDailyCostThreshold
+        expr: increase(ai_cost_usd_total[24h]) > 100
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "Daily AI cost > $100"
+          description: "Daily AI spend for org exceeded threshold."

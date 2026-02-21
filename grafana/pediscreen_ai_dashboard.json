@@ -1,0 +1,122 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "pediscreen-ai-fda",
+    "title": "PediScreen AI — FDA-Grade Observability",
+    "timezone": "browser",
+    "schemaVersion": 38,
+    "version": 1,
+    "description": "AI request rate, drift PSI, federated loss, bias metrics, latency, cost. Hospital-grade → FDA-grade.",
+    "panels": [
+      {
+        "type": "stat",
+        "title": "AI request rate (24h)",
+        "gridPos": {"x": 0, "y": 0, "w": 4, "h": 4},
+        "targets": [{"expr": "sum(increase(ai_inference_requests_total[24h]))", "refId": "A"}],
+        "fieldConfig": {"defaults": {"unit": "short"}}
+      },
+      {
+        "type": "stat",
+        "title": "Error rate (5m)",
+        "gridPos": {"x": 4, "y": 0, "w": 4, "h": 4},
+        "targets": [{"expr": "sum(rate(ai_inference_errors_total[5m])) / max(1, sum(rate(ai_inference_requests_total[5m])))", "refId": "A"}],
+        "fieldConfig": {"defaults": {"unit": "percentunit", "min": 0, "max": 1}}
+      },
+      {
+        "type": "stat",
+        "title": "P95 latency (s)",
+        "gridPos": {"x": 8, "y": 0, "w": 4, "h": 4},
+        "targets": [{"expr": "histogram_quantile(0.95, sum(rate(ai_inference_latency_seconds_bucket[5m])) by (le))", "refId": "A"}],
+        "fieldConfig": {"defaults": {"unit": "s"}}
+      },
+      {
+        "type": "stat",
+        "title": "Daily cost (24h) USD",
+        "gridPos": {"x": 12, "y": 0, "w": 4, "h": 4},
+        "targets": [{"expr": "sum(increase(ai_cost_usd_total[24h]))", "refId": "A"}],
+        "fieldConfig": {"defaults": {"unit": "currencyUSD"}}
+      },
+      {
+        "type": "stat",
+        "title": "PSI drift (current)",
+        "gridPos": {"x": 16, "y": 0, "w": 4, "h": 4},
+        "targets": [{"expr": "ai_embedding_psi", "refId": "A"}],
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 0.1}, {"color": "red", "value": 0.25}]}
+          }
+        }
+      },
+      {
+        "type": "timeseries",
+        "title": "Embedding Drift (PSI)",
+        "gridPos": {"x": 0, "y": 4, "w": 12, "h": 6},
+        "targets": [{"expr": "ai_embedding_psi", "legendFormat": "{{feature_name}}", "refId": "A"}],
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 0.1}, {"color": "red", "value": 0.25}]},
+            "unit": "short"
+          }
+        }
+      },
+      {
+        "type": "timeseries",
+        "title": "Federated learning loss",
+        "gridPos": {"x": 12, "y": 4, "w": 12, "h": 6},
+        "targets": [{"expr": "flwr_training_loss", "legendFormat": "loss", "refId": "A"}, {"expr": "flwr_eval_loss", "legendFormat": "eval_loss", "refId": "B"}],
+        "fieldConfig": {"defaults": {"unit": "short"}}
+      },
+      {
+        "type": "timeseries",
+        "title": "AI request rate (per minute)",
+        "gridPos": {"x": 0, "y": 10, "w": 12, "h": 5},
+        "targets": [
+          {"expr": "sum(rate(ai_inference_requests_total[1m])) * 60", "legendFormat": "Requests", "refId": "A"},
+          {"expr": "sum(rate(ai_inference_errors_total[1m])) * 60", "legendFormat": "Errors", "refId": "B"}
+        ],
+        "fieldConfig": {"defaults": {"unit": "short"}}
+      },
+      {
+        "type": "timeseries",
+        "title": "Latency percentiles",
+        "gridPos": {"x": 12, "y": 10, "w": 12, "h": 5},
+        "targets": [
+          {"expr": "histogram_quantile(0.5, sum(rate(ai_inference_latency_seconds_bucket[5m])) by (le))", "legendFormat": "P50", "refId": "A"},
+          {"expr": "histogram_quantile(0.9, sum(rate(ai_inference_latency_seconds_bucket[5m])) by (le))", "legendFormat": "P90", "refId": "B"},
+          {"expr": "histogram_quantile(0.95, sum(rate(ai_inference_latency_seconds_bucket[5m])) by (le))", "legendFormat": "P95", "refId": "C"},
+          {"expr": "histogram_quantile(0.99, sum(rate(ai_inference_latency_seconds_bucket[5m])) by (le))", "legendFormat": "P99", "refId": "D"}
+        ],
+        "fieldConfig": {"defaults": {"unit": "s"}}
+      },
+      {
+        "type": "barchart",
+        "title": "Bias metrics by demographic",
+        "gridPos": {"x": 0, "y": 15, "w": 12, "h": 6},
+        "targets": [
+          {"expr": "ai_bias_demographic_parity", "legendFormat": "parity {{group}}", "refId": "A"},
+          {"expr": "ai_bias_equalized_odds", "legendFormat": "equalized_odds {{group}}", "refId": "B"}
+        ],
+        "fieldConfig": {"defaults": {"unit": "short"}}
+      },
+      {
+        "type": "timeseries",
+        "title": "Cost tracking (USD)",
+        "gridPos": {"x": 12, "y": 15, "w": 12, "h": 6},
+        "targets": [{"expr": "sum(increase(ai_cost_usd_total[1h]))", "legendFormat": "Hourly cost", "refId": "A"}, {"expr": "sum(ai_cost_usd_total)", "legendFormat": "Cumulative", "refId": "B"}],
+        "fieldConfig": {"defaults": {"unit": "currencyUSD"}}
+      },
+      {
+        "type": "barchart",
+        "title": "Model usage (24h)",
+        "gridPos": {"x": 0, "y": 21, "w": 12, "h": 5},
+        "targets": [{"expr": "sum(increase(ai_inference_requests_total[24h])) by (model_name)", "legendFormat": "{{model_name}}", "refId": "A"}]
+      },
+      {
+        "type": "table",
+        "title": "Recent telemetry (Postgres)",
+        "gridPos": {"x": 12, "y": 21, "w": 12, "h": 5},
+        "description": "Datasource: Postgres. Query: SELECT created_at, model_name, latency_ms, success, fallback_used FROM ai_events ORDER BY created_at DESC LIMIT 50"
+      }
+    ]
+  }
+}

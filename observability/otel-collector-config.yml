@@ -1,0 +1,33 @@
+# OpenTelemetry Collector — production-ready
+# Accepts OTLP HTTP/GRPC; logs to stdout. To forward, add otlphttp exporter with a valid endpoint.
+receivers:
+  otlp:
+    protocols:
+      http:
+      grpc:
+
+exporters:
+  logging:
+    loglevel: info
+  # Uncomment and set endpoint to forward to another collector or vendor backend:
+  # otlphttp:
+  #   endpoint: "https://ingest.example.com:4318"
+
+processors:
+  batch:
+    timeout: 5s
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 512
+    spike_limit_mib: 256
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [logging]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [logging]

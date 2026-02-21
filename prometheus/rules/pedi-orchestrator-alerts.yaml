@@ -1,0 +1,49 @@
+# Prometheus alerting rules for PediScreen Orchestrator
+# Use with Prometheus Operator or raw Prometheus config: rule_files: [ "prometheus/rules/*.yaml" ]
+groups:
+  - name: pedi-orchestrator.rules
+    rules:
+      - alert: HighJobQueueLength
+        expr: pedi_orch_queue_length > 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: High job queue length on PediScreen Orchestrator
+          description: "Queue length is > 100 for > 5 minutes. Check RQ workers and Redis."
+
+      - alert: HighInferenceLatency
+        expr: histogram_quantile(0.95, sum(rate(pedi_orch_inference_duration_seconds_bucket[5m])) by (le)) > 5
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: Inference latency high (p95 > 5s)
+          description: "P95 inference latency exceeded 5s"
+
+      - alert: HighJobFailureRate
+        expr: increase(pedi_orch_jobs_failed_total[15m]) > 5
+        for: 3m
+        labels:
+          severity: critical
+        annotations:
+          summary: Increased job failure rate
+          description: "More than 5 job failures in the last 15m."
+
+      - alert: LowWorkerCount
+        expr: sum(pedi_orch_worker_count) < 1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: No active workers
+          description: "No RQ workers reporting metrics; check worker pods."
+
+      - alert: PostgresErrors
+        expr: increase(pedi_orch_db_errors_total[5m]) > 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: DB errors detected by orchestrator
+          description: "One or more DB errors reported in last 5m; investigate."

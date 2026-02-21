@@ -1,0 +1,22 @@
+# Dockerfile.worker
+FROM python:3.10-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+WORKDIR /worker
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements-compose.txt /worker/requirements.txt
+RUN pip install --no-cache-dir -r /worker/requirements.txt
+
+COPY orchestrator /worker/orchestrator
+COPY modelreasoner /worker/modelreasoner
+
+ENV PYTHONPATH=/worker
+# no exposed ports for worker (metrics via prometheus client)
+CMD ["rq", "worker", "pedi-screen", "--url", "redis://redis:6379/0"]

@@ -119,6 +119,12 @@ pediscreen-ai/
 └── requirements.txt       # Dependencies
 ```
 
+## Cursor / Kaggle deployment
+
+For a **single-prompt deployment** targeting the MedGemma Impact Challenge (Kaggle Gold), use the Composer prompt in **[docs/CURSOR_PROMPT_KAGGLE_PEDISCREEN_FINAL.md](docs/CURSOR_PROMPT_KAGGLE_PEDISCREEN_FINAL.md)**. It aligns with this repo (backend + `mobile-app/`), fixes pipeline and cache APIs, and includes Replit + Expo steps and an execution checklist.
+
+---
+
 ## Lovable Cloud & Supabase Integration
 
 PediScreen AI is configured for deployment on Lovable Cloud with Supabase:
@@ -205,6 +211,33 @@ curl -X POST http://localhost:8000/api/infer \
 ```
 Note: `embedding_b64` must be base64-encoded float32 bytes; length must match `prod(shape)*4`.
 See [docs/api.md](docs/api.md) for full contract and embedding format.
+
+### Embeddings & Preprocessing
+
+This repo includes a small, testable embedding pipeline to generate L2-normalized embeddings suitable for downstream multimodal models.
+
+**Quick demo (CPU-only):**
+```bash
+# create synthetic images
+python -m data.synth_images --out_dir data/synth --n 3
+
+# extract a pseudo-embedding (deterministic fallback)
+python -m preprocess.embed -i data/synth/synth_000.png -o /tmp/emb.npy
+
+# check shape
+python - <<PY
+import numpy as np
+e = np.load("/tmp/emb.npy")
+print(e.shape, e.dtype, e.mean(), e.std())
+PY
+```
+
+If you have a MedSigLIP-like model available:
+```bash
+python -m preprocess.embed -i data/synth/synth_000.png -o /tmp/emb_real.npy -m <hf-model-or-path>
+```
+
+Note: real model extraction requires `transformers` and `torch` and is GPU-friendly; the CLI falls back to a deterministic pseudo-embedding in CI or demo environments. See `requirements-inference.txt` for optional dependencies.
 
 ### 2. Frontend (Web/Mobile)
 The frontend is a React-based web app (scaffolded for high-fidelity prototyping).

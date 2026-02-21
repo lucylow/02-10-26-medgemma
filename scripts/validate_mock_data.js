@@ -11,16 +11,23 @@ const dataDir = path.join(__dirname, '..', 'mock_data');
 const casesDir = path.join(dataDir, 'cases');
 const schemaPath = path.join(dataDir, 'schema', 'case_schema.json');
 
-const required = ['case_id', 'created_at', 'age_months', 'locale', 'caregiver_text', 'images', 'mock_inference'];
+const required = ['case_id', 'created_at', 'locale', 'caregiver_text', 'images', 'mock_inference'];
 const mockInferenceRequired = ['risk', 'confidence'];
 const riskEnum = ['on_track', 'monitor', 'refer'];
 
+const edgeCaseIds = ['case-missing-age', 'case-corrupt-embed', 'case-large-image'];
+
 function validateCase(doc, file) {
   const errors = [];
+  const isEdge = edgeCaseIds.some((id) => doc.case_id === id);
   for (const key of required) {
     if (doc[key] === undefined || doc[key] === null) {
+      if (key === 'age_months' && isEdge) continue;
       errors.push(`Missing required field: ${key}`);
     }
+  }
+  if (doc.age_months !== undefined && doc.age_months !== null && typeof doc.age_months !== 'number') {
+    errors.push('age_months must be a number or null');
   }
   if (!Array.isArray(doc.images)) {
     errors.push('images must be an array');

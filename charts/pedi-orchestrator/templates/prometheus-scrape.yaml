@@ -1,0 +1,19 @@
+{{- if .Values.prometheus.scrape }}
+# Annotations on deployments are sufficient for Prometheus scrape when using pod-based discovery.
+# Optional: ServiceMonitor for Prometheus Operator (uncomment if you use it).
+# apiVersion: monitoring.coreos.com/v1
+# kind: ServiceMonitor
+# metadata:
+#   name: {{ include "pedi-orchestrator.fullname" . }}
+#   labels:
+#     app.kubernetes.io/name: {{ include "pedi-orchestrator.name" . }}
+# spec:
+#   selector:
+#     matchLabels:
+#       app.kubernetes.io/name: {{ include "pedi-orchestrator.name" . }}
+#       component: orchestrator
+#   endpoints:
+#     - port: http
+#       path: {{ .Values.prometheus.scrapePath }}
+#       interval: {{ .Values.prometheus.scrapeInterval }}
+{{- end }}

@@ -1,0 +1,80 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "medgemma-ai-phase1",
+    "title": "MedGemma AI Phase 1 — Telemetry & Alerts",
+    "timezone": "browser",
+    "schemaVersion": 38,
+    "version": 1,
+    "panels": [
+      {
+        "type": "stat",
+        "title": "Total requests (24h)",
+        "gridPos": { "x": 0, "y": 0, "w": 4, "h": 4 },
+        "targets": [{ "expr": "sum(increase(ai_inference_requests_total[24h]))", "refId": "A" }],
+        "fieldConfig": { "defaults": { "unit": "short" } }
+      },
+      {
+        "type": "stat",
+        "title": "Error rate (5m)",
+        "gridPos": { "x": 4, "y": 0, "w": 4, "h": 4 },
+        "targets": [{ "expr": "sum(rate(ai_inference_errors_total[5m])) / max(1, sum(rate(ai_inference_requests_total[5m])))", "refId": "A" }],
+        "fieldConfig": { "defaults": { "unit": "percentunit", "min": 0, "max": 1 } }
+      },
+      {
+        "type": "stat",
+        "title": "Fallback rate (30m)",
+        "gridPos": { "x": 8, "y": 0, "w": 4, "h": 4 },
+        "targets": [{ "expr": "sum(increase(ai_inference_fallbacks_total[30m])) / max(1, sum(increase(ai_inference_requests_total[30m])))", "refId": "A" }],
+        "fieldConfig": { "defaults": { "unit": "percentunit" } }
+      },
+      {
+        "type": "stat",
+        "title": "P95 latency (s)",
+        "gridPos": { "x": 12, "y": 0, "w": 4, "h": 4 },
+        "targets": [{ "expr": "histogram_quantile(0.95, sum(rate(ai_inference_latency_seconds_bucket[5m])) by (le))", "refId": "A" }],
+        "fieldConfig": { "defaults": { "unit": "s" } }
+      },
+      {
+        "type": "stat",
+        "title": "Daily cost (24h) USD",
+        "gridPos": { "x": 16, "y": 0, "w": 4, "h": 4 },
+        "targets": [{ "expr": "sum(increase(ai_cost_usd_total[24h]))", "refId": "A" }],
+        "fieldConfig": { "defaults": { "unit": "currencyUSD" } }
+      },
+      {
+        "type": "timeseries",
+        "title": "Requests / Errors / Fallbacks per minute",
+        "gridPos": { "x": 0, "y": 4, "w": 12, "h": 6 },
+        "targets": [
+          { "expr": "sum(rate(ai_inference_requests_total[1m])) * 60", "legendFormat": "Requests", "refId": "A" },
+          { "expr": "sum(rate(ai_inference_errors_total[1m])) * 60", "legendFormat": "Errors", "refId": "B" },
+          { "expr": "sum(rate(ai_inference_fallbacks_total[1m])) * 60", "legendFormat": "Fallbacks", "refId": "C" }
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "Latency percentiles",
+        "gridPos": { "x": 12, "y": 4, "w": 12, "h": 6 },
+        "targets": [
+          { "expr": "histogram_quantile(0.5, sum(rate(ai_inference_latency_seconds_bucket[5m])) by (le))", "legendFormat": "P50", "refId": "A" },
+          { "expr": "histogram_quantile(0.9, sum(rate(ai_inference_latency_seconds_bucket[5m])) by (le))", "legendFormat": "P90", "refId": "B" },
+          { "expr": "histogram_quantile(0.95, sum(rate(ai_inference_latency_seconds_bucket[5m])) by (le))", "legendFormat": "P95", "refId": "C" },
+          { "expr": "histogram_quantile(0.99, sum(rate(ai_inference_latency_seconds_bucket[5m])) by (le))", "legendFormat": "P99", "refId": "D" }
+        ]
+      },
+      {
+        "type": "barchart",
+        "title": "Model usage (24h)",
+        "gridPos": { "x": 0, "y": 10, "w": 12, "h": 6 },
+        "targets": [{ "expr": "sum(increase(ai_inference_requests_total[24h])) by (model_name)", "legendFormat": "{{model_name}}", "refId": "A" }]
+      },
+      {
+        "type": "table",
+        "title": "Recent telemetry events (Postgres)",
+        "gridPos": { "x": 12, "y": 10, "w": 12, "h": 6 },
+        "description": "Configure a Postgres datasource and query: SELECT created_at, model_name, latency_ms, success, fallback_used FROM ai_events ORDER BY created_at DESC LIMIT 50"
+      }
+    ]
+  }
+}

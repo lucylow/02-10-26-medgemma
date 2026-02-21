@@ -1,0 +1,39 @@
+# Example: add the nginx-mtls-sidecar to your orchestrator Deployment.
+# Mount TLS certs via Secret (orchestrator-tls) and nginx.conf via ConfigMap (orchestrator-nginx-config).
+# orchestrator-tls must include: tls.crt, tls.key, ca.crt
+---
+# Pod template snippet — add these containers and volumes to the orchestrator Deployment
+containers:
+  - name: orchestrator
+    image: pediscreen/orchestrator:prod
+    ports:
+      - containerPort: 9000
+    env:
+      - name: DATABASE_URL
+        valueFrom:
+          secretKeyRef:
+            name: orchestrator-secret
+            key: database_url
+
+  - name: nginx-mtls-sidecar
+    image: nginx:1.23-alpine
+    ports:
+      - containerPort: 8443
+    volumeMounts:
+      - name: nginx-certs
+        mountPath: /etc/nginx/certs
+        readOnly: true
+      - name: nginx-conf
+        mountPath: /etc/nginx/nginx.conf
+        subPath: nginx.conf
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+volumes:
+  - name: nginx-certs
+    secret:
+      secretName: orchestrator-tls
+  - name: nginx-conf
+    configMap:
+      name: orchestrator-nginx-config

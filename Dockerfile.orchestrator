@@ -1,14 +1,30 @@
-# Dockerfile for root orchestrator with memory layer
+# Dockerfile.orchestrator
 FROM python:3.10-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
 WORKDIR /app
 
-# Backend for AIModelManager when available
-COPY backend/ ./backend/
-COPY app/ ./app/
-COPY orchestrator/ ./orchestrator/
+# system deps for common libs
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    gcc \
+    libpq-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-cache-dir -r orchestrator/requirements.txt
+# copy and install python deps (use slim requirements for orchestrator)
+COPY requirements-compose.txt /app/requirements.txt
+RUN pip install --no-cache-dir -r /app/requirements.txt
 
-ENV PYTHONPATH=/app:/app/backend
-EXPOSE 7000
-CMD ["uvicorn", "orchestrator.main:app", "--host", "0.0.0.0", "--port", "7000"]
+# application code
+COPY orchestrator /app/orchestrator
+COPY modelreasoner /app/modelreasoner
+
+ENV PATH="/app:${PATH}"
+EXPOSE 9000
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s CMD curl -fsS http://localhost:9000/health || exit 1
+
+CMD ["uvicorn", "orchestrator.app.main:app", "--host", "0.0.0.0", "--port", "9000", "--workers", "1"]

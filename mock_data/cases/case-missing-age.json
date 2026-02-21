@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "case_id": "case-missing-age",
+  "created_at": "2026-02-14T12:00:00Z",
+  "consent_id": "consent-demo",
+  "age_months": null,
+  "locale": "en-US",
+  "caregiver_text": "Parent did not provide age. Child seems to point and babble.",
+  "images": ["thumbnails/thumb_001.svg"],
+  "embedding_b64": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+  "emb_version": "medsiglip-v1",
+  "mock_inference": {
+    "summary": ["Age required for screening interpretation."],
+    "risk": "on_track",
+    "recommendations": ["Please provide child age in months to complete screening."],
+    "parent_text": "We need your child's age to give you the best result. Please add it and try again.",
+    "explainability": [{"type": "text", "detail": "Age missing; screening requires age_months", "score": 0}],
+    "confidence": 0,
+    "uncertainty_reason": "Age not provided; risk level cannot be reliably determined.",
+    "adapter_id": "mock/pediscreen_v1",
+    "model_id": "mock/medgemma"
+  },
+  "audit_log": [],
+  "data_quality": ["synthetic"],
+  "provenance": {"source": "demo", "origin": "test", "collected_by": "CHW_001"}
+}

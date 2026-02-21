@@ -1,0 +1,81 @@
+# values.prod.yaml — GKE / EKS production (replace PLACEHOLDERS)
+replicaCount: 2
+
+image:
+  repository: gcr.io/your-project/pediorch/orchestrator
+  tag: v1.0.0
+  pullPolicy: IfNotPresent
+
+worker:
+  image:
+    repository: gcr.io/your-project/pediorch/worker
+    tag: v1.0.0
+    pullPolicy: IfNotPresent
+  replicas: 2
+
+service:
+  type: ClusterIP
+  port: 9000
+
+resources:
+  requests:
+    cpu: "250m"
+    memory: "512Mi"
+  limits:
+    cpu: "1000m"
+    memory: "2Gi"
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# GPU node pool: label nodes with k8s.gpu=true and use below for worker/model pods if needed
+gpu:
+  enabled: false
+  nodeSelector:
+    k8s.gpu: "true"
+  tolerations:
+    - key: nvidia.com/gpu
+      operator: Exists
+      effect: NoSchedule
+  resources:
+    limits:
+      nvidia.com/gpu: 1
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 50
+
+# GKE Workload Identity — set gcpServiceAccount and annotate k8s SA
+workloadIdentity:
+  enabled: false
+  gcpServiceAccount: "projects/<GCP_PROJECT>/serviceAccounts/<GCP_SERVICE_ACCOUNT_EMAIL>"
+
+# EKS IRSA — set iamRoleArn and annotate k8s SA (e.g. via eksctl/terraform)
+eks:
+  irsa:
+    enabled: false
+    iamRoleArn: "arn:aws:iam::<AWS_ACCOUNT_ID>:role/<EKS_IRSA_ROLE>"
+
+serviceAccount:
+  create: true
+  name: pedi-orch-sa
+  # Use one of the following per cluster (do not commit real values):
+  # GKE: iam.gke.io/gke-service-account: "<GCP_SERVICE_ACCOUNT_EMAIL>"
+  # EKS: eks.amazonaws.com/role-arn: "arn:aws:iam::<ACCOUNT>:role/<ROLE>"
+  annotations: {}
+
+prometheus:
+  scrape: true
+  scrapePath: /metrics
+  scrapeInterval: 15s
+  serviceMonitor:
+    enabled: true
+    release: prometheus
+
+# Store secrets externally (KMS, ExternalSecrets, --set); do not put real values here
+secrets:
+  useK8sSecret: true
+  secretName: pedi-orch-secret

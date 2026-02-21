@@ -57,6 +57,45 @@ def log_inference_audit(
         "fallback_used": fallback_used,
         "error": error_msg,
     }
+    _append_audit_event(event)
+
+
+def log_inference_audit_expanded(
+    request_id: str,
+    case_id: str,
+    model_id: str,
+    adapter_id: Optional[str] = None,
+    prompt_version: Optional[str] = None,
+    tool_chain: Optional[list] = None,
+    confidence: Optional[float] = None,
+    clinician_override: bool = False,
+    success: bool = True,
+    fallback_used: bool = False,
+    error_msg: Optional[str] = None,
+) -> None:
+    """
+    Expanded audit entry for HAI/MCP pipeline (PAGE 13).
+    Stores model_id, adapter_id, prompt_version, tool_chain, confidence, clinician_override.
+    """
+    event = {
+        "timestamp": _now_iso(),
+        "ts": time.time(),
+        "request_id": request_id,
+        "case_id": case_id,
+        "model_id": model_id or "",
+        "adapter_id": adapter_id,
+        "prompt_version": prompt_version,
+        "tool_chain": tool_chain or [],
+        "confidence": confidence,
+        "clinician_override": clinician_override,
+        "success": success,
+        "fallback_used": fallback_used,
+        "error": error_msg,
+    }
+    _append_audit_event(event)
+
+
+def _append_audit_event(event: dict) -> None:
     path = os.getenv("AUDIT_LOG_PATH", INFERENCE_AUDIT_PATH)
     try:
         os.makedirs(os.path.dirname(path) or ".", exist_ok=True)

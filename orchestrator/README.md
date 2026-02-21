@@ -20,6 +20,15 @@ Resilient, auditable routing layer that dispatches work to AI agents (embedder, 
 - **Sync path:** For `analyze_monitor`, the router attempts a short timeout call to a candidate; on success returns result immediately.
 - **Async path:** Otherwise the task is enqueued to the priority stream and `task_id` returned.
 
+## Dependencies
+
+- FastAPI, uvicorn, pydantic, httpx
+- redis (Redis Streams)
+- sqlalchemy (audit and idempotency store)
+- prometheus_client (optional, for `/metrics`)
+
+Install: `pip install fastapi uvicorn pydantic httpx redis sqlalchemy prometheus_client`
+
 ## Quick start (local)
 
 1. **Redis and DB**

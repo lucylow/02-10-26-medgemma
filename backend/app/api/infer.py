@@ -3,7 +3,9 @@
 Privacy-first inference endpoint for precomputed embeddings (design spec Section 16.1).
 Accepts embedding_b64 + metadata; raw images never leave device.
 Returns structured InferenceExplainable for AI explainability & trust.
+Epic Production Pilot: optional safe_inference guardrail (drift/bias/OOM → rule-based fallback).
 """
+import hashlib
 import time
 import uuid
 from typing import Any, Dict, List, Optional  # noqa: F401 Dict used in _mock_inference
@@ -67,6 +69,28 @@ class InferRequest(BaseModel):
     user_id_pseudonym: Optional[str] = Field(None, description="Pseudonymized user ID")
 
 
+def _mock_inference(case_id: str) -> Dict[str, Any]:
+    """
+    Deterministic mock result when MedGemma is not configured (demos / degraded mode).
+    Same case_id yields same risk/summary. Used by MOCK_FALLBACK and safe_inference fallback.
+    """
+    seed = hashlib.sha256(case_id.encode()).digest()
+    risks: List[str] = ["low", "monitor", "high", "refer"]
+    risk = risks[seed[0] % len(risks)]
+    return {
+        "summary": [f"Mock summary for {case_id}."],
+        "risk": risk,
+        "recommendations": (
+            ["Return for recheck in 3 months"] if risk != "low" else ["Continue routine monitoring"]
+        ),
+        "explain": "Model unavailable; returned mock result.",
+        "confidence": 0.5,
+        "evidence": [],
+        "reasoning_chain": ["Mock fallback used."],
+        "model_provenance": {"note": "mock_fallback"},
+    }
+
+
 @router.post("/infer", responses=_infer_responses)
 async def infer_endpoint(
     req: InferRequest,
@@ -78,7 +102,42 @@ async def infer_endpoint(
     Privacy-first: raw images never leave device; client sends L2-normalized embedding only.
     Returns structured result with full provenance and explainability (reasoning_chain, evidence, confidence).
     """
+    start_ns = time.perf_counter_ns()
     request_id = get_request_id(request)
+    org_id = getattr(request.state, "org_id", None) or "default"
+    # Optional: HAI pipeline (model registry + MCP tools + calibration + expanded audit)
+    if getattr(settings, "USE_HAI_PIPELINE", False):
+        try:
+            from app.services.inference_controller import run_inference_sync
+            result = run_inference_sync(
+                case_id=req.case_id,
+                age_months=req.age_months,
+                observations=req.observations,
+                embedding_b64=req.embedding_b64,
+                shape=req.shape,
+                emb_version=req.emb_version,
+                request_id=request_id,
+            )
+            return {
+                "case_id": req.case_id,
+                "result": {
+                    "summary": result.get("summary", []),
+                    "risk": result.get("risk", "monitor"),
+                    "recommendations": result.get("recommendations", []),
+                    "explain": result.get("parent_text") or "",
+                    "confidence": result.get("confidence", 0.5),
+                    "evidence": result.get("evidence", []),
+                    "reasoning_chain": result.get("reasoning_chain", []),
+                    "model_provenance": {"model_id": result.get("model_id"), "prompt_version": result.get("prompt_version"), "tool_chain": result.get("tool_chain", [])},
+                },
+                "provenance": {"model_id": result.get("model_id"), "tool_chain": result.get("tool_chain")},
+                "inference_time_ms": result.get("inference_time_ms", 0),
+                "fallback_used": result.get("fallback", False),
+            }
+        except Exception as e:
+            logger.exception("HAI pipeline failed: %s", e)
+            # Fall through to legacy path or mock
+            pass
     svc = _get_medgemma_svc()
     if not svc:
         if getattr(settings, "MOCK_FALLBACK", True):
@@ -124,16 +183,31 @@ async def infer_endpoint(
             status_code=503,
         )
     try:
-        result = await svc.infer_with_precomputed_embedding(
-            case_id=req.case_id,
-            age_months=req.age_months,
-            observations=req.observations,
-            embedding_b64=req.embedding_b64,
-            shape=req.shape,
-            emb_version=req.emb_version,
-            consent_id=req.consent_id,
-            user_id_pseudonym=req.user_id_pseudonym,
-        )
+        use_safe_fallback = getattr(settings, "EPIC_PILOT_SAFE_FALLBACK", False)
+        if use_safe_fallback:
+            from app.services.safe_inference import safe_inference
+            result = await safe_inference(
+                svc.infer_with_precomputed_embedding,
+                case_id=req.case_id,
+                age_months=req.age_months,
+                observations=req.observations,
+                embedding_b64=req.embedding_b64,
+                shape=req.shape,
+                emb_version=req.emb_version,
+                consent_id=req.consent_id,
+                user_id_pseudonym=req.user_id_pseudonym,
+            )
+        else:
+            result = await svc.infer_with_precomputed_embedding(
+                case_id=req.case_id,
+                age_months=req.age_months,
+                observations=req.observations,
+                embedding_b64=req.embedding_b64,
+                shape=req.shape,
+                emb_version=req.emb_version,
+                consent_id=req.consent_id,
+                user_id_pseudonym=req.user_id_pseudonym,
+            )
         prov = result.get("provenance", {})
         res = result.get("result", {})
         log_inference_audit(

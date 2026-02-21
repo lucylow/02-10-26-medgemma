@@ -5,6 +5,7 @@ Validates payload, idempotency, routes via Router, persists audit, enqueues or r
 import datetime
 import json
 import logging
+import os
 import uuid
 from typing import Any, Dict, Optional
 
@@ -22,6 +23,35 @@ from orchestrator.router import Router
 logger = logging.getLogger("orchestrator.routing")
 
 app = FastAPI(title="PediScreen Routing Orchestrator", version="0.1.0")
+
+
+def _init_otel_and_logging():
+    """OpenTelemetry tracing + structured JSON logging (optional)."""
+    otel_url = os.environ.get("OTEL_COLLECTOR_URL")
+    if otel_url:
+        try:
+            from opentelemetry import trace
+            from opentelemetry.sdk.resources import Resource
+            from opentelemetry.sdk.trace import TracerProvider
+            from opentelemetry.sdk.trace.export import BatchSpanProcessor
+            from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+            from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+            base = otel_url.rstrip("/").rsplit("/v1/", 1)[0] if "/v1/" in otel_url else otel_url.rstrip("/")
+            resource = Resource.create({"service.name": "pedi-orchestrator"})
+            provider = TracerProvider(resource=resource)
+            trace.set_tracer_provider(provider)
+            provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter(endpoint=base)))
+            FastAPIInstrumentor.instrument_app(app)
+            logger.info("OpenTelemetry tracing enabled: %s", base)
+        except ImportError:
+            logger.debug("OTEL deps not installed, skipping tracing")
+    try:
+        from pythonjsonlogger import jsonlogger
+        handler = logging.StreamHandler()
+        handler.setFormatter(jsonlogger.JsonFormatter("%(asctime)s %(name)s %(levelname)s %(message)s"))
+        logging.getLogger().handlers = [handler]
+    except ImportError:
+        pass
 
 # Pluggable for tests
 router = Router()
@@ -133,7 +163,7 @@ async def get_task(task_id: str):
 @app.post("/register_agent")
 async def register_agent(
     agent_id: str,
-    capabilities: str,  # comma-separated
+    capabilities: str,  # comma-separated (query or form)
     endpoint: str,
     location: str = "cloud",
     supports_raw_media: bool = False,
@@ -141,13 +171,13 @@ async def register_agent(
     """Agents call this on startup to register and appear in routing."""
     caps = [c.strip() for c in capabilities.split(",") if c.strip()]
     router.registry.register(
-        agent_id=body.agent_id,
+        agent_id=agent_id,
         capabilities=caps,
-        endpoint=body.endpoint,
-        location=body.location,
-        supports_raw_media=body.supports_raw_media,
+        endpoint=endpoint,
+        location=location,
+        supports_raw_media=supports_raw_media,
     )
-    return {"status": "ok", "agent_id": body.agent_id}
+    return {"status": "ok", "agent_id": agent_id}
 
 
 @app.get("/health")
@@ -165,6 +195,7 @@ try:
     orchestrator_tasks_failed_total = Counter("orchestrator_tasks_failed_total", "Tasks failed", ["reason"])
     orchestrator_queue_size = Gauge("orchestrator_queue_size", "Queue length", ["queue"])
     orchestrator_sync_attempts_total = Counter("orchestrator_sync_attempts_total", "Sync attempts", ["outcome"])
+    pedi_orch_queue_length = Gauge("pedi_orch_queue_length", "RQ job queue length (pedi-screen)")
 
     @app.get("/metrics")
     def metrics():
@@ -173,6 +204,29 @@ try:
                 orchestrator_queue_size.labels(queue=stream).set(stream_length(stream))
             except Exception:
                 pass
+        try:
+            from orchestrator.queue_rq import queue
+            pedi_orch_queue_length.set(len(queue))
+        except Exception:
+            pass
         return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 except ImportError:
     pass
+
+# ----- Startup: OTEL + logging, then RQ tables -----
+@app.on_event("startup")
+def _startup():
+    _init_otel_and_logging()
+    try:
+        from orchestrator.models import init_db
+        init_db()
+        logger.info("RQ orchestrator tables initialized.")
+    except ImportError:
+        pass
+
+# ----- RQ-based orchestrator API (submit / status / jobs) -----
+try:
+    from orchestrator.api_router import router as api_router
+    app.include_router(api_router, prefix="/api", tags=["orchestrator"])
+except ImportError as e:
+    logger.warning("RQ orchestrator not loaded (missing deps?): %s", e)

@@ -76,3 +76,19 @@ def get_drift_status() -> dict:
         "current_mean": float(np.mean(_emb_queue)),
         "baseline_mean": _baseline_mean,
     }
+
+
+def get_effective_drift_psi(threshold: float = 0.25) -> float:
+    """
+    Effective drift score for guardrails (PSI-like).
+    Uses relative shift of embedding norm mean vs baseline; compatible with
+    telemetry PSI when both are configured. Return value > threshold
+    indicates significant drift (e.g. > 0.25 → trigger fallback).
+    """
+    status = get_drift_status()
+    current = status.get("current_mean")
+    baseline = status.get("baseline_mean")
+    if current is None or baseline is None or baseline == 0:
+        return 0.0
+    relative_shift = abs(float(current) - float(baseline)) / (float(baseline) + 1e-12)
+    return relative_shift

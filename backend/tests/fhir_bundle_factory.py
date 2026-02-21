@@ -133,9 +133,15 @@ def generate_test_diagnostic_report_bundle(
         },
         "result": [{"reference": ref} for ref in result_refs],
     }
-    entry = BundleEntry(resource=report_data)
-    bundle = Bundle(type="collection", entry=[entry])
-    return _serialize(bundle)
+    if _FHIR_AVAILABLE:
+        entry = BundleEntry(resource=report_data)
+        bundle = Bundle(type="collection", entry=[entry])
+        return _serialize(bundle)
+    return {
+        "resourceType": "Bundle",
+        "type": "collection",
+        "entry": [{"resource": report_data}],
+    }
 
 
 def generate_test_pediatric_cohort_bundle(
@@ -156,6 +162,12 @@ def generate_test_pediatric_cohort_bundle(
             gender=gender,
             birth_date=birth_date,
         )
-        entries.append(BundleEntry(resource=_serialize(patient)))
-    bundle = Bundle(type="collection", entry=entries)
-    return _serialize(bundle)
+        entries.append({"resource": patient} if not _FHIR_AVAILABLE else BundleEntry(resource=patient))
+    if _FHIR_AVAILABLE:
+        bundle = Bundle(type="collection", entry=entries)
+        return _serialize(bundle)
+    return {
+        "resourceType": "Bundle",
+        "type": "collection",
+        "entry": entries,
+    }

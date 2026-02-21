@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "case_id": "case-large-image",
+  "created_at": "2026-02-14T12:00:00Z",
+  "consent_id": "consent-demo",
+  "age_months": 36,
+  "locale": "en-US",
+  "caregiver_text": "Very large image upload test; UI should show size limit or progress.",
+  "images": ["thumbnails/thumb_001.svg"],
+  "embedding_b64": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+  "emb_version": "medsiglip-v1",
+  "mock_inference": {
+    "summary": ["Image was downsampled due to size limit; analysis completed."],
+    "risk": "on_track",
+    "recommendations": ["For best results use images under 5MB."],
+    "parent_text": "Your image was a bit large; we used a smaller version. Result is still valid.",
+    "explainability": [{"type": "image_region", "detail": "Large image downsampled; quality may vary", "score": 0.6}],
+    "confidence": 0.65,
+    "adapter_id": "mock/pediscreen_v1",
+    "model_id": "mock/medgemma"
+  },
+  "audit_log": [],
+  "data_quality": ["synthetic"],
+  "provenance": {"source": "demo", "origin": "test", "collected_by": "CHW_001"}
+}

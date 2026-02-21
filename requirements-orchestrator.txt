@@ -1,0 +1,10 @@
+# requirements-orchestrator.txt — RQ-based orchestrator + routing orchestrator
+fastapi>=0.95.2
+uvicorn[standard]>=0.22.0
+sqlalchemy>=1.4
+pydantic>=1.10
+requests>=2.28.0
+redis>=4.5.0
+rq>=1.11.0
+pytest>=7.0
+httpx>=0.24.0

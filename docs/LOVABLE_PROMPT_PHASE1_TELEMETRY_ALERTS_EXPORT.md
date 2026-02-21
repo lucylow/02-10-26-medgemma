@@ -163,3 +163,25 @@ OpenAPI: Add these paths and a schema for `AiEvent` (all fields of `ai_events` a
 - [ ] **CI:** GitHub Actions job with Postgres service, run migrations and pytest.
 
 Use this document as the single Phase 1 task in Lovable or Cursor; implement in the order above for minimal dependencies. If you want a specific artifact (migration, FastAPI handlers, Prometheus YAML, Grafana JSON) as a ready-to-commit file, request it by name.
+
+---
+
+## Implemented artifacts (ready-to-commit)
+
+The following were added in-repo and can be committed as-is:
+
+| Artifact | Path |
+|----------|------|
+| Prompt (this doc) | `docs/LOVABLE_PROMPT_PHASE1_TELEMETRY_ALERTS_EXPORT.md` |
+| Migration: ai_events | `supabase/migrations/20250220000000_create_ai_events.sql` |
+| Migration: exports | `supabase/migrations/20250220000001_create_exports_table.sql` |
+| Migration: alert_ack | `supabase/migrations/20250220000002_create_alert_acknowledgements.sql` |
+| Telemetry emitter | `backend/app/telemetry/emitter.py` (+ `__init__.py`) |
+| Wire infer + analyze | `backend/app/api/infer.py`, `backend/app/api/analyze.py` |
+| Prometheus /metrics | `backend/app/api/health.py` |
+| Alert rules | `prometheus/ai_alerts.yml` |
+| Recording rules | `prometheus/ai_recording_rules.yml` |
+| Telemetry API | `backend/app/api/telemetry.py` (events, stream, export, alerts) |
+| Grafana dashboard | `grafana/medgemma_ai_phase1_dashboard.json` |
+| Backend dep | `backend/requirements.txt` (prometheus_client) |
+| Main router | `backend/app/main.py` (telemetry router + epic_fhir import) |

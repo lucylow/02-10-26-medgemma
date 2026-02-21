@@ -1,0 +1,13 @@
+# Model server (dev) — model-dev/deploy/modelserver
+fastapi>=0.95.2
+uvicorn[standard]>=0.22.0
+numpy>=1.24
+pydantic>=1.10
+torch>=1.12.0
+transformers>=4.30.0
+datasets>=2.6.1
+peft>=0.5.0
+
+# Optional: CPU-only dev works with small models (e.g. gpt2).
+# For MedGemma: CUDA-enabled PyTorch, accelerate, bitsandbytes, and
+# transformers versions compatible with the model.

@@ -14,6 +14,9 @@ interface ImportMetaEnv {
   readonly VITE_ANALYTICS_ENDPOINT?: string;
   readonly VITE_SENTRY_DSN?: string;
   readonly VITE_ASSEMBLYAI_KEY?: string;
+  readonly VITE_DEMO_MODE?: string;
+  readonly VITE_DEMO?: string;
+  readonly VITE_MOCK_SERVER_URL?: string;
 }
 
 interface ImportMeta {
