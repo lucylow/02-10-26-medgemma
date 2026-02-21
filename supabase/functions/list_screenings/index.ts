@@ -1,59 +1,39 @@
 // supabase/functions/list_screenings/index.ts
 /**
- * List screenings with cursor pagination, filtering, and summary counts.
- * Supports: cursor (created_at ISO), limit, risk filter, since/from/to.
- * Standardized error responses with trace propagation.
+ * GET /list_screenings — Paginated screening list with filtering.
+ * Cursor pagination, time-range, risk filter, mock exclusion.
+ * Rate-limited and traced.
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
-
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-  auth: { persistSession: false },
-});
-
-function errorResponse(code: string, message: string, status: number, traceId: string) {
-  return new Response(
-    JSON.stringify({ error_code: code, message, trace_id: traceId }),
-    { status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-  );
-}
-
-async function recordMetric(handler: string, status: string, latencyMs: number, errorCode?: string) {
-  try {
-    await supabase.from("edge_metrics").insert({
-      handler, status, latency_ms: Math.round(latencyMs), error_code: errorCode || null,
-    });
-  } catch (e) {
-    console.error("metric insert failed:", e);
-  }
-}
+import {
+  corsResponse, supabase, errorResponse, jsonResponse,
+  extractTraceId, recordMetric,
+  checkRateLimit, rateLimitHeaders, rateLimitKey,
+} from "../_shared/mod.ts";
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return corsResponse();
 
   const start = performance.now();
-  const traceId = req.headers.get("x-request-id") || crypto.randomUUID();
+  const traceId = extractTraceId(req);
+  const rl = checkRateLimit(rateLimitKey(req), 60);
+  const rlH = rateLimitHeaders(rl);
+
+  if (!rl.allowed) {
+    await recordMetric("list_screenings", "rate_limited", performance.now() - start, "RATE_LIMITED");
+    return errorResponse("RATE_LIMITED", "Too many requests", 429, traceId, { ...rlH, "Retry-After": "60" });
+  }
 
   try {
     if (req.method !== "GET") {
-      return errorResponse("METHOD_NOT_ALLOWED", "Only GET is supported", 405, traceId);
+      return errorResponse("METHOD_NOT_ALLOWED", "Only GET is supported", 405, traceId, rlH);
     }
 
     const url = new URL(req.url);
     const limit = Math.min(100, Math.max(1, Number(url.searchParams.get("limit") || "50")));
-    const cursor = url.searchParams.get("cursor"); // ISO timestamp for cursor pagination
-    const page = Number(url.searchParams.get("page") || "0"); // legacy offset pagination
+    const cursor = url.searchParams.get("cursor");
+    const page = Number(url.searchParams.get("page") || "0");
     const riskFilter = url.searchParams.get("risk");
     const since = url.searchParams.get("since") || url.searchParams.get("from");
     const until = url.searchParams.get("to");
@@ -62,80 +42,57 @@ serve(async (req) => {
 
     let query = supabase
       .from("screenings")
-      .select("*", { count: "exact" })
+      .select("screening_id, child_age_months, domain, risk_level, confidence, status, model_id, adapter_id, is_mock, created_at, input_hash", { count: "exact" })
       .order("created_at", { ascending: false });
 
-    // Cursor pagination (preferred over offset)
     if (cursor) {
       query = query.lt("created_at", cursor);
     } else if (page > 0) {
       query = query.range(page * limit, page * limit + limit - 1);
     }
 
-    // Time filters
     if (lastHour) {
       query = query.gte("created_at", new Date(Date.now() - 60 * 60 * 1000).toISOString());
     } else if (since) {
       query = query.gte("created_at", since);
     }
-    if (until) {
-      query = query.lte("created_at", until);
-    }
+    if (until) query = query.lte("created_at", until);
 
-    // Risk filter at DB level using the risk_level column
-    if (riskFilter && ["low", "medium", "high"].includes(riskFilter)) {
+    if (riskFilter && ["low", "medium", "high", "monitor", "refer"].includes(riskFilter)) {
       query = query.eq("risk_level", riskFilter);
     }
-
-    // Mock filter
-    if (excludeMock) {
-      query = query.eq("is_mock", false);
-    }
-
-    if (!cursor || page === 0) {
-      query = query.limit(limit);
-    }
+    if (excludeMock) query = query.eq("is_mock", false);
+    if (!cursor || page === 0) query = query.limit(limit);
 
     const { data, error, count } = await query;
 
     if (error) {
-      console.error("list query error:", error);
+      console.error("[list_screenings] query error:", error);
       await recordMetric("list_screenings", "error", performance.now() - start, "db_query");
-      return errorResponse("DB_QUERY_FAILED", error.message, 500, traceId);
+      return errorResponse("DB_QUERY_FAILED", error.message, 500, traceId, rlH);
     }
 
     const items = data || [];
-    const totalCount = count || 0;
-
-    // Compute next cursor from last item
     const nextCursor = items.length === limit ? items[items.length - 1]?.created_at : null;
 
     // Risk distribution from returned page
-    const riskCounts = { low: 0, medium: 0, high: 0 };
+    const riskCounts: Record<string, number> = {};
     for (const s of items) {
-      const r = s.risk_level as string;
-      if (r in riskCounts) riskCounts[r as keyof typeof riskCounts]++;
+      const r = (s.risk_level as string) || "unknown";
+      riskCounts[r] = (riskCounts[r] || 0) + 1;
     }
 
-    await recordMetric("list_screenings", "success", performance.now() - start);
+    recordMetric("list_screenings", "success", performance.now() - start).catch(() => {});
 
-    return new Response(
-      JSON.stringify({
-        items,
-        pagination: {
-          total: totalCount,
-          limit,
-          next_cursor: nextCursor,
-          has_more: !!nextCursor,
-        },
-        risk_summary: riskCounts,
-        trace_id: traceId,
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return jsonResponse({
+      items,
+      pagination: { total: count || 0, limit, next_cursor: nextCursor, has_more: !!nextCursor },
+      risk_summary: riskCounts,
+      trace_id: traceId,
+    }, 200, { ...rlH, "Cache-Control": "private, max-age=5" });
   } catch (err) {
-    console.error("list error:", err);
-    await recordMetric("list_screenings", "error", performance.now() - start, "internal");
-    return errorResponse("INTERNAL_ERROR", String(err), 500, traceId);
+    console.error("[list_screenings] error:", err);
+    recordMetric("list_screenings", "error", performance.now() - start, "internal").catch(() => {});
+    return errorResponse("INTERNAL_ERROR", String(err), 500, traceId, rlH);
   }
 });

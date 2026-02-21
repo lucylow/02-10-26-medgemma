@@ -1,0 +1,71 @@
+{
+  "annotations": { "list": [] },
+  "title": "PediScreen AI — Edge Telemetry",
+  "uid": "pediscreen-edge-v3",
+  "schemaVersion": 36,
+  "version": 1,
+  "timezone": "browser",
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Total Requests (1h)",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "targets": [{ "expr": "sum(increase(edge_requests_total[1h]))", "format": "time_series" }]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Error Rate",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "targets": [{ "expr": "sum(increase(edge_errors_total[1h])) / sum(increase(edge_requests_total[1h]))", "format": "time_series" }],
+      "fieldConfig": { "defaults": { "unit": "percentunit", "thresholds": { "steps": [{ "value": 0, "color": "green" }, { "value": 0.01, "color": "yellow" }, { "value": 0.05, "color": "red" }] } } }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Fallback Rate",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "targets": [{ "expr": "sum(increase(edge_fallback_total[1h])) / sum(increase(edge_requests_total[1h]))", "format": "time_series" }],
+      "fieldConfig": { "defaults": { "unit": "percentunit", "thresholds": { "steps": [{ "value": 0, "color": "green" }, { "value": 0.03, "color": "yellow" }, { "value": 0.1, "color": "red" }] } } }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "PSI Drift Score",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "targets": [{ "expr": "avg(psi_value)", "format": "time_series" }],
+      "fieldConfig": { "defaults": { "thresholds": { "steps": [{ "value": 0, "color": "green" }, { "value": 0.1, "color": "yellow" }, { "value": 0.2, "color": "red" }] } } }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Request Volume by Handler",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "targets": [{ "expr": "sum by(service) (increase(edge_requests_total[5m]))", "legendFormat": "{{service}}" }]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "P95 Latency by Model",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "targets": [{ "expr": "histogram_quantile(0.95, sum(rate(edge_latency_bucket[5m])) by (le, model_id))", "legendFormat": "{{model_id}}" }],
+      "fieldConfig": { "defaults": { "unit": "ms" } }
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Fallback Events Over Time",
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 12 },
+      "targets": [{ "expr": "sum by(fallback_to) (increase(edge_fallback_total[5m]))", "legendFormat": "{{fallback_to}}" }]
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "PSI Drift Timeline",
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 12 },
+      "targets": [{ "expr": "psi_value", "legendFormat": "{{model_id}}" }],
+      "fieldConfig": { "defaults": { "thresholds": { "steps": [{ "value": 0, "color": "green" }, { "value": 0.2, "color": "red" }] } } }
+    }
+  ]
+}
