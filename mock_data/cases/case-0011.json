@@ -1,0 +1,36 @@
+{
+  "case_id": "case-0011",
+  "created_at": "2026-02-21T01:07:56.674Z",
+  "age_months": 18,
+  "locale": "en-US",
+  "caregiver_text": "He says 7 words, but no phrase.",
+  "images": [
+    "thumbnails/thumb_011.svg"
+  ],
+  "embedding_b64": "UWoYPO0UpT3g0/a8iIujO7oyTj0dnbu9oy/HPWIlib3NlNK81Z5oPbn+jryhNZY8V6wcPZRZPD2Gmly93cypPT8LbrzKEau8B9s8PcRhyr018ZI9Z5LHPYsf4j3MHZa71+XUvG9Wh7wwHdc9MqaMva3VuT07CKs9QG6OPYFRxL26EbU9+VI4PYiltD03IKa96At+vTgJ/jwMPvs7nnTePLAgOz1Y6Jo8PrSHvaqZZrtJi4+86x7DvamYbD0SzIu9s1/KvCdXuj09Uga9QJDiPZQCND1HBmU8JKGJPMYxLT2ZUJc9fmAsPdAtrD0rcYq9TFmPvTCpt70ss1c8fywlvWg+s71Bljq7T5QzvJzr4L00qJg9eT/bvbfYxD3H3I29P5wVPZwzlb3UjQS8AXweOr9+pD11yKG91iyWPZrjkbxEKKU9DmLePcZYeb3yADA9ykk8PaA20j2tayk9GSzePS/zsD2LZYe9D8m9O5k03r1fdMG9bGP4utjVrz0dR5w9I88svT+IqT3oiQu9XdnFvAKmyb0KU6+9lGXvvG14ib1UCyU9U6GuvXcn57xU1L88ied8vL844z15PQI9ydVkPZO3sDvLMdY9BbK5vPhjTT10cvu8qJVkvLipuLwe9ZY8NjClvawKKT09XXg9IkFNvINPbrygBdG96aozvcBIFD1L7+M9HrjBPQ1gh7wJ/wy9ykKwPaGlz7yZnDm9dlcxPH3jcT3ZNzE9RGWwvZnmuLwCIp+8+k/fPUUKS7zMDci9iK+dPSTSBb38uVo8L7MRvENlXL19o8+8eQubvNHOtr0Qlok9GY/WvACBOr31oZQ9Jp2EPfOGBjsisdw9Qz3pvOiZv72Qu7w92As9vQrZpD3R0uE8h3IxPTG0dTylKXW9HQ/MPXKRHD3gKfa7j6rtPGniHjv679i9ZUNyPRmG8zwMMw69dHzSO/UbZD2NoMc9HH4BvCTpojyNhrw9MIDJvSoW7jyYEJO9uOZmPdofhj3QFOA72Ky1vRfy07zZGmo8P9s3vWKH3zo3+Ni9CphuPEIt272DVFI9mHJOvINNcz1bXoe9h6pLPQ/Jjbz23RK961zDvDfZab2+Iga9d05SPawZ8bvgaEY96YL7OyF4rr2xb5U8MAeEvY1B5zsVauO8RW8SOqNMYDzQuoq6dS1/PEo+pL0WfdK9OQiHPcVO173Y8Mc92AE8vI2fYL24m0w9PAvPPSofU71Mu6K9aFC9vfJ2VD2R3sO9472zvTct2byfP+48PwafPDQxij0su4Y8IOlPvaDBFr0Cr9g9Gn7HPCllkD3KMpk9Ru2pvVSi2r1VIzs9Lx0dPfC6zLzU07a9+Lq/vSAjJT2OGqm93NiwPQ==",
+  "emb_version": "medsiglip-v1",
+  "mock_inference": {
+    "summary": [
+      "Mock summary for case-0011."
+    ],
+    "risk": "on_track",
+    "recommendations": [
+      "Short play-based activities",
+      "Rescreen in 3 months"
+    ],
+    "parent_text": "Try daily language play; re-check in 3 months.",
+    "explainability": [
+      {
+        "type": "text",
+        "detail": "No two-word phrases",
+        "score": 0.6845253931393174
+      }
+    ],
+    "confidence": 0.79,
+    "adapter_id": "mock/adapter_v1",
+    "model_id": "mock/medgemma"
+  },
+  "audit_log": [],
+  "time_to_referral_days": null,
+  "D_base": false
+}

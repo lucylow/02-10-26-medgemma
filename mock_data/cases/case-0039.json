@@ -1,0 +1,34 @@
+{
+  "case_id": "case-0039",
+  "created_at": "2026-02-21T01:07:56.689Z",
+  "age_months": 24,
+  "locale": "en-US",
+  "caregiver_text": "Uses spoon, sometimes fork; spills often.",
+  "images": [
+    "thumbnails/thumb_039.svg"
+  ],
+  "embedding_b64": "tD6fPeGfw7xu67A90HyyveoYyrxxa6k9y1mTPU74uD01Hk89fOS0PRfd073xizC8ys97vXCLmr0a5H67nmAFPbnv6DyOpps9IvE+u1n9MT0cn2O9KASXvL+yDT3oex+94cyrvb/Xvr1VSbU8sBi3PH28ALwI3FU8q+ScPa/uXz0x/WA9SQSfPWD4iD3f3m29UGh6PK4HvT2K2JE9hK6ivZeU8rzwSsG9B8osPWQHNT0/ftG9TfTAvA9Nnr0q0im8B357u+3tjLzgBoW9601mu/mokD0CvLa7Ch2AvdFGwr263Mi8c4y8PBeQMbz5WYo9Y1O6vR2Nmz3GrZs9rsJ7PZkYNz3JrxA79J0jPO7Uhz0059a7gAEQPTudzD1p4tK87TcTvQXEn72p34e9WeO7PSKrsjvHQrW9E3UiPadq4jx/etK9p7dHOw3h2D0V5vU7JsvDPdFUpLwQRkA6R1BpvEOO/zxq3N28JR5ZO2Jfkj3lBZo79OzKvTlD+jrKpZA9x0l2vJRPCDtZpwM7y1DJPZjUt70A9bY9z/4WvYBoHD2H0HI9YvVbPJDMzb16NI+9JzSFPeJxt71Ao8m9I+14Pd4tyr12xYK9qUsjPeLGbT0B5RC9tjOrvf5KgTzoLNQ9F9lJPHo4uDuUM5Y9FK2uPXtJb7xhqc29HnBYO/fWq73HLS28jnOivS1HN73Jeiw81dBsPDUpCb3aps+9MqPPOmhTaL2cxGE99GmvvdUWR72omAY9EWe/PSszzbu2ZRu9tgMLve48sL297FO9L0wCPdd1kD3mi+46pfpRPeuQzD1a5Ca8z2FDvYveY7zJCKe9HOTHvVH5iLyLWrm9m3OovSZu1L30l7U8WGWfPaXtpT0QFaK9HtFpvPRcp7xNZoO9VGO/vYoJfjxe67s9rdDTPAIiKT27nM098/LJPFWOJL07XuM8+MXGPDqNyr33cJY9IZK7PX0Rfz0Ddn89qyyzvdljr70Y1fO8FwlxvIix57vBSU+8DQaqvbMw5rscGcu9lzGRvQOFtjyKMhy770iYvZE82jzGDKo9LHSQPF1Fgb0q87G97qSlPDZLUjxEnTC93HzHPLViUT21h4q9onegva1TlT1grA29q5k2PR3fuT1FBnm9qEyYvOrap71kucG98KG9vYfMgTwz9Iy9O6xlvfeFyD2OUL+9NTLMPHUSOb0ZRNi98HbxvLVrvT2OmNK9VBaCPDZznTwVqIe9BFbJvbjHyr1teg+8mn0IvRwQMbyHbKG9ltotvED6gz0vvIK95/96vYwV1D3Hiac9BKnLPf8PY70/YIQ90zSEPbV28ztCvBe9Dc/WvTDAvL1htoa8V6LPPSKbYL3Sy4K9SJCSvQ==",
+  "emb_version": "medsiglip-v1",
+  "mock_inference": {
+    "summary": [
+      "Mock summary for case-0039."
+    ],
+    "risk": "on_track",
+    "recommendations": [
+      "Short play-based activities",
+      "Rescreen in 3 months"
+    ],
+    "parent_text": "Try daily language play; re-check in 3 months.",
+    "explainability": [
+      {
+        "type": "text",
+        "detail": "No two-word phrases",
+        "score": 0.6869074984192639
+      }
+    ],
+    "confidence": 0.69,
+    "adapter_id": "mock/adapter_v1",
+    "model_id": "mock/medgemma"
+  },
+  "audit_log": []
+}

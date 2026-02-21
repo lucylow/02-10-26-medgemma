@@ -1,0 +1,34 @@
+{
+  "case_id": "case-0048",
+  "created_at": "2026-02-21T01:07:56.693Z",
+  "age_months": 0,
+  "locale": "en-US",
+  "caregiver_text": "Limited eye contact, repetitive play.",
+  "images": [
+    "thumbnails/thumb_048.svg"
+  ],
+  "embedding_b64": "/c7FPS8Ji71Zx449cQQTvVo8zjvNj3m9ZQobPVBzS72fdYI7fD48vdHaXT16PI28JJqqvYC8Br3L4l49zV7gOtQliT1hm769AXfwvHKRbr0f6Pq7QAnHvQCx0j3cXD49G/+Dvf09Hz1b0ck99Sq2PbG/YL0GiWi8gS/LOzuNeD1+p+m8q+DmPGTPiT1DdWc9CoG+vYJe07151C49TMjQPbSCYbwdJVW9t6EiPXUf7rueJaY8FWlUvUyRcT2kmbs9Z1KPvY6UPj1xVsy9/GIaPd/zYD23/6e8B+01vPnP+LuakII9osyqPD3O+Lre+7O91abDu5STMb1ocFU86xJ6vUTJNTx6q8e9nY9PPI1gFT1LHpi93hOevbrZcj2F/dI9fOg1PVdZq7yY6wy9a1OGuyWsy72X+kW9PljAPcSSYD0zacE9Wkm2Pa6aFTzs1US9ZjybPBL2wz0WIBu9omS8PUEekDy3pVA9D9wPvcrUjj3OmR09GAjoPMP9rb2K6po9CPPQuysIs72zGoA8PlnEvVdRrb0bJag9oeKDPZLHTT36+Te93sFePexhlL0Y2jK91kR+PQVLtT09fpe8J5shPSyHY7z3kMM93Ne9Pb+tHz2/9R+8bLSrvZYZsjuUX8y9UVHCvQ4Kmzz4CLy9t33NPYyizT3G/LQ94a/RPausXz3wIr69hiEAPCVvy7opvZG904V5vXZPLD2HVwQ9HJEgPfNuUT3eqsi9yXmpvTwQPD2npqy88dJtvCa5Az2dCYo9rq8RPLuUVL3g+MU9LgwQvSRttz26r308bjjJvYnu1L0S+YS95ZVnvbs5q72JaUw9oGlpPTUKz7179jM9qM6CvVjdZj0WSYG9I2OUPRzylz2xPWM9lHo7PWuq+jsFkbK9VAIru4zU1D2suM09SGCqOwEawT1Wz189BUGaPcpB97xVL1i9hWu1vS0auD3QrJ29ZllePK74DD3+nBw9TvopvRb9mj3blDy9s/3APXRHabyovo69wwKzvGUEtDzojH69bl2/vGhYuT2EBDS9ph0UvMP/Ebw90yK98WHOu67nkL3fWWQ83sXxPOAkDTq9xsy9uRfOvQfmmD3fa7I9+cSBvVLxnD2CGPe86kd7vVA+MzwshtM9mRvyvFEtyb2jG5G95LKevUNUrj3OpZ29CwHGvfRnp7w1UJY9jaHCvcHymr3ySz89i41SvZrPpL1R8RC9DH7xPFshrrxtb5A9zlzDPUtnqLxGgOS7PELIOxc2t70uGKe9y0davI7Nxr1yH6o9S2SXPEohKLzJFsM95gBJvW3EnbzSCYC9MUPNvVNFA72u0xm9ti+MO2bsWT2gr5i8CqrRPUi5I7z7Zhi9AWSYvA==",
+  "emb_version": "medsiglip-v1",
+  "mock_inference": {
+    "summary": [
+      "Mock summary for case-0048."
+    ],
+    "risk": "refer",
+    "recommendations": [
+      "Short play-based activities",
+      "Rescreen in 3 months"
+    ],
+    "parent_text": "Try daily language play; re-check in 3 months.",
+    "explainability": [
+      {
+        "type": "text",
+        "detail": "No two-word phrases",
+        "score": 0.728467221883457
+      }
+    ],
+    "confidence": 0.88,
+    "adapter_id": "mock/adapter_v1",
+    "model_id": "mock/medgemma"
+  },
+  "audit_log": []
+}

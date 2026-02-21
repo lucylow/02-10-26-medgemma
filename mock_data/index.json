@@ -1,0 +1,352 @@
+[
+  {
+    "case_id": "case-0001",
+    "age_months": 36,
+    "locale": "es-ES",
+    "risk": "on_track",
+    "thumb": "thumbnails/thumb_001.svg"
+  },
+  {
+    "case_id": "case-0002",
+    "age_months": 24,
+    "locale": "es-ES",
+    "risk": "on_track",
+    "thumb": "thumbnails/thumb_002.svg"
+  },
+  {
+    "case_id": "case-0003",
+    "age_months": 48,
+    "locale": "es-ES",
+    "risk": "monitor",
+    "thumb": "thumbnails/thumb_003.svg"
+  },
+  {
+    "case_id": "case-0004",
+    "age_months": 48,
+    "locale": "es-ES",
+    "risk": "monitor",
+    "thumb": "thumbnails/thumb_004.svg"
+  },
+  {
+    "case_id": "case-0005",
+    "age_months": 6,
+    "locale": "es-ES",
+    "risk": "on_track",
+    "thumb": "thumbnails/thumb_005.svg"
+  },
+  {
+    "case_id": "case-0006",
+    "age_months": 12,
+    "locale": "es-ES",
+    "risk": "monitor",
+    "thumb": "thumbnails/thumb_006.svg"
+  },
+  {
+    "case_id": "case-0007",
+    "age_months": 6,
+    "locale": "es-ES",
+    "risk": "monitor",
+    "thumb": "thumbnails/thumb_007.svg"
+  },
+  {
+    "case_id": "case-0008",
+    "age_months": 24,
+    "locale": "es-ES",
+    "risk": "on_track",
+    "thumb": "thumbnails/thumb_008.svg"
+  },
+  {
+    "case_id": "case-0009",
+    "age_months": 6,
+    "locale": "es-ES",
+    "risk": "monitor",
+    "thumb": "thumbnails/thumb_009.svg"
+  },
+  {
+    "case_id": "case-0010",
+    "age_months": 48,
+    "locale": "es-ES",
+    "risk": "refer",
+    "thumb": "thumbnails/thumb_010.svg"
+  },
+  {
+    "case_id": "case-0011",
+    "age_months": 18,
+    "locale": "en-US",
+    "risk": "on_track",
+    "thumb": "thumbnails/thumb_011.svg"
+  },
+  {
+    "case_id": "case-0012",
+    "age_months": 48,
+    "locale": "en-US",
+    "risk": "on_track",
+    "thumb": "thumbnails/thumb_012.svg"
+  },
+  {
+    "case_id": "case-0013",
+    "age_months": 18,
+    "locale": "en-US",
+    "risk": "on_track",
+    "thumb": "thumbnails/thumb_013.svg"
+  },
+  {
+    "case_id": "case-0014",
+    "age_months": 12,
+    "locale": "en-US",
+    "risk": "on_track",
+    "thumb": "thumbnails/thumb_014.svg"
+  },
+  {
+    "case_id": "case-0015",
+    "age_months": 36,
+    "locale": "en-US",
+    "risk": "monitor",
+    "thumb": "thumbnails/thumb_015.svg"
+  },
+  {
+    "case_id": "case-0016",
+    "age_months": 6,
+    "locale": "en-US",
+    "risk": "on_track",
+    "thumb": "thumbnails/thumb_016.svg"
+  },
+  {
+    "case_id": "case-0017",
+    "age_months": 18,
+    "locale": "en-US",
+    "risk": "monitor",
+    "thumb": "thumbnails/thumb_017.svg"
+  },
+  {
+    "case_id": "case-0018",
+    "age_months": 24,
+    "locale": "en-US",
+    "risk": "on_track",
+    "thumb": "thumbnails/thumb_018.svg"
+  },
+  {
+    "case_id": "case-0019",
+    "age_months": 24,
+    "locale": "en-US",
+    "risk": "refer",
+    "thumb": "thumbnails/thumb_019.svg"
+  },
+  {
+    "case_id": "case-0020",
+    "age_months": 18,
+    "locale": "en-US",
+    "risk": "monitor",
+    "thumb": "thumbnails/thumb_020.svg"
+  },
+  {
+    "case_id": "case-0021",
+    "age_months": 18,
+    "locale": "en-US",
+    "risk": "monitor",
+    "thumb": "thumbnails/thumb_021.svg"
+  },
+  {
+    "case_id": "case-0022",
+    "age_months": 6,
+    "locale": "en-US",
+    "risk": "on_track",
+    "thumb": "thumbnails/thumb_022.svg"
+  },
+  {
+    "case_id": "case-0023",
+    "age_months": 18,
+    "locale": "en-US",
+    "risk": "on_track",
+    "thumb": "thumbnails/thumb_023.svg"
+  },
+  {
+    "case_id": "case-0024",
+    "age_months": 36,
+    "locale": "en-US",
+    "risk": "refer",
+    "thumb": "thumbnails/thumb_024.svg"
+  },
+  {
+    "case_id": "case-0025",
+    "age_months": 24,
+    "locale": "en-US",
+    "risk": "on_track",
+    "thumb": "thumbnails/thumb_025.svg"
+  },
+  {
+    "case_id": "case-0026",
+    "age_months": 36,
+    "locale": "en-US",
+    "risk": "on_track",
+    "thumb": "thumbnails/thumb_026.svg"
+  },
+  {
+    "case_id": "case-0027",
+    "age_months": 18,
+    "locale": "en-US",
+    "risk": "monitor",
+    "thumb": "thumbnails/thumb_027.svg"
+  },
+  {
+    "case_id": "case-0028",
+    "age_months": 6,
+    "locale": "en-US",
+    "risk": "on_track",
+    "thumb": "thumbnails/thumb_028.svg"
+  },
+  {
+    "case_id": "case-0029",
+    "age_months": 36,
+    "locale": "en-US",
+    "risk": "monitor",
+    "thumb": "thumbnails/thumb_029.svg"
+  },
+  {
+    "case_id": "case-0030",
+    "age_months": 36,
+    "locale": "en-US",
+    "risk": "on_track",
+    "thumb": "thumbnails/thumb_030.svg"
+  },
+  {
+    "case_id": "case-0031",
+    "age_months": 18,
+    "locale": "en-US",
+    "risk": "refer",
+    "thumb": "thumbnails/thumb_031.svg"
+  },
+  {
+    "case_id": "case-0032",
+    "age_months": 18,
+    "locale": "en-US",
+    "risk": "on_track",
+    "thumb": "thumbnails/thumb_032.svg"
+  },
+  {
+    "case_id": "case-0033",
+    "age_months": 24,
+    "locale": "en-US",
+    "risk": "on_track",
+    "thumb": "thumbnails/thumb_033.svg"
+  },
+  {
+    "case_id": "case-0034",
+    "age_months": 6,
+    "locale": "en-US",
+    "risk": "on_track",
+    "thumb": "thumbnails/thumb_034.svg"
+  },
+  {
+    "case_id": "case-0035",
+    "age_months": 36,
+    "locale": "en-US",
+    "risk": "monitor",
+    "thumb": "thumbnails/thumb_035.svg"
+  },
+  {
+    "case_id": "case-0036",
+    "age_months": 48,
+    "locale": "en-US",
+    "risk": "on_track",
+    "thumb": "thumbnails/thumb_036.svg"
+  },
+  {
+    "case_id": "case-0037",
+    "age_months": 18,
+    "locale": "en-US",
+    "risk": "on_track",
+    "thumb": "thumbnails/thumb_037.svg"
+  },
+  {
+    "case_id": "case-0038",
+    "age_months": 12,
+    "locale": "en-US",
+    "risk": "monitor",
+    "thumb": "thumbnails/thumb_038.svg"
+  },
+  {
+    "case_id": "case-0039",
+    "age_months": 24,
+    "locale": "en-US",
+    "risk": "on_track",
+    "thumb": "thumbnails/thumb_039.svg"
+  },
+  {
+    "case_id": "case-0040",
+    "age_months": 36,
+    "locale": "en-US",
+    "risk": "refer",
+    "thumb": "thumbnails/thumb_040.svg"
+  },
+  {
+    "case_id": "case-0041",
+    "age_months": 48,
+    "locale": "en-US",
+    "risk": "monitor",
+    "thumb": "thumbnails/thumb_041.svg"
+  },
+  {
+    "case_id": "case-0042",
+    "age_months": 18,
+    "locale": "en-US",
+    "risk": "refer",
+    "thumb": "thumbnails/thumb_042.svg"
+  },
+  {
+    "case_id": "case-0043",
+    "age_months": 48,
+    "locale": "en-US",
+    "risk": "monitor",
+    "thumb": "thumbnails/thumb_043.svg"
+  },
+  {
+    "case_id": "case-0044",
+    "age_months": 0,
+    "locale": "en-US",
+    "risk": "monitor",
+    "thumb": "thumbnails/thumb_044.svg"
+  },
+  {
+    "case_id": "case-0045",
+    "age_months": 6,
+    "locale": "en-US",
+    "risk": "monitor",
+    "thumb": "thumbnails/thumb_045.svg"
+  },
+  {
+    "case_id": "case-0046",
+    "age_months": 24,
+    "locale": "en-US",
+    "risk": "on_track",
+    "thumb": "thumbnails/thumb_046.svg"
+  },
+  {
+    "case_id": "case-0047",
+    "age_months": 18,
+    "locale": "en-US",
+    "risk": "monitor",
+    "thumb": "thumbnails/thumb_047.svg"
+  },
+  {
+    "case_id": "case-0048",
+    "age_months": 0,
+    "locale": "en-US",
+    "risk": "refer",
+    "thumb": "thumbnails/thumb_048.svg"
+  },
+  {
+    "case_id": "case-0049",
+    "age_months": 36,
+    "locale": "en-US",
+    "risk": "monitor",
+    "thumb": "thumbnails/thumb_049.svg"
+  },
+  {
+    "case_id": "case-0050",
+    "age_months": 18,
+    "locale": "en-US",
+    "risk": "refer",
+    "thumb": "thumbnails/thumb_050.svg"
+  }
+]

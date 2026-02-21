@@ -1,0 +1,29 @@
+{
+  "$id": "https://pediscreen.ai/schemas/task",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["task_id", "case_id", "task_type", "priority", "created_at", "payload"],
+  "properties": {
+    "task_id": { "type": "string" },
+    "case_id": { "type": "string" },
+    "task_type": {
+      "type": "string",
+      "enum": ["embed", "analyze_monitor", "analyze_refer", "audit_log", "indexing"]
+    },
+    "priority": {
+      "type": "string",
+      "enum": ["urgent", "high", "normal", "low"]
+    },
+    "idempotency_key": { "type": "string" },
+    "consent": {
+      "type": "object",
+      "properties": {
+        "consent_given": { "type": "boolean" },
+        "consent_id": { "type": "string" }
+      }
+    },
+    "payload": { "type": "object" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "meta": { "type": "object" }
+  }
+}

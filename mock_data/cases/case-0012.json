@@ -1,0 +1,36 @@
+{
+  "case_id": "case-0012",
+  "created_at": "2026-02-21T01:07:56.675Z",
+  "age_months": 48,
+  "locale": "en-US",
+  "caregiver_text": "Points to things, seems social.",
+  "images": [
+    "thumbnails/thumb_012.svg"
+  ],
+  "embedding_b64": "zNujvW8clL0RMuu84oSGPYishb0E+Sa8v8IRPRRYvz16vI89LYKhvWrQlb0IVbE9TmKgvY392D2a0WW9WWw2vd1sA70hgJw93miqvfgbyz1vVD69r3y1vSBtmz3/MKq8h6uVPTZF0j3MKBg9+7WUPaxcr71bnIO9APumvXwBJ73hupU9niTNPT7vTT0qNta7M/FJvJb2O73F1aK9gRmxvZEBYj3pbay9kASQPUsQ7Lz9mk29J5K1PaMud71yC6m9l8xCvaAZSrx8m5A94932PKrLcL32ga898f8fvBoV1r0f3TW9qIE9vdyckr0wm628qxy0vc+VnToUfCE8fZfyvAPz4rypUMu91agJPZ66Iz3uZ8E9G65kPU+lx7vT2Dq9JrSxPfh6kz1lEqu9pTAAPVh4ij0n5Jg9XssXPf2kfr3YO4I85uaEPZVlnD2UbME9WSpiuXSluL0np5U8rGybvfzrvr1zAkW947oRPdWuZjwO5ya9RZ2vvLRJUL2sucy8TNiavapQmbxGO4a9mshzvWbSlT37mVQ9dvuTvW9uhTwZYs89m8lbvaJvQ70+yJY9nr5iPYHE072O9gi9yIXbOwFKfr1236q6SmK3vRPfUr2RGNK8sLGLPTNwHz1zSac9kvicvXcqjr2DYhi9DT2OuwNekj23C4Y9Pu/SvKA3Vr1yCGU9VG2pvVI1kDvGoKq9lTuQPRmz7jwWxeo7gxMCPaZuwbyEC5e9cvgYvXYm0j2fOw49p64YvD/J8LmnQEi9lTt+vYaGpz2D6p88OgXIvWcRBb1/kuU8sluiPTsHzj3pZUo9ft6DPUiOe70GoNW9xXwjvW4oVLzWYSw9c7vSPTfpMD3k77A90FIsvSED1rxHnnk9uQKHvI3Otj08O1886pHVPFe5lz3S1Z29TqnDPTQuWL3lHH09ycO0PTJ/lr2FkDU9kIKHPI6eJb1NTZ69hO62PddLmT0yZH87w2CTvLeBRb22Iq89GeLDPBaH9jz7fr48dgW8PVI6vzzfHH895ccvvMGFyT2mKFk9CLDRvE1XGb0/Hmw9tK+ZvHWHuryuGIg7xcUMPOxAzz1dLHG9AduJPbM5zb272ny7T0VnvJoE2bxfl0A9sBmvvSdGiDz9gom9ZfDUvV3NPj0NwJ+9XFLUPVLz9Dx6Fp89YhduvQnYmr3SiK69cNoNvEZCtDuZ5MI9rsa3PTHFZr0Ouwm7BNvIvQUgwLx4jIQ94FSGPeHHyroA/vs8YGSoPWhh2T388De9XVrCvd4NMb3OgOG8aIDGvCM/pz2f+6W9GPmQPW40X70O6RG9d4UdvW1dZT1R28w9mxqSPb80ZLz01l+9yifCvdC5Xj2E+MO9CbxjvQ==",
+  "emb_version": "medsiglip-v1",
+  "mock_inference": {
+    "summary": [
+      "Mock summary for case-0012."
+    ],
+    "risk": "on_track",
+    "recommendations": [
+      "Short play-based activities",
+      "Rescreen in 3 months"
+    ],
+    "parent_text": "Try daily language play; re-check in 3 months.",
+    "explainability": [
+      {
+        "type": "text",
+        "detail": "No two-word phrases",
+        "score": 0.7375743949777502
+      }
+    ],
+    "confidence": 0.68,
+    "adapter_id": "mock/adapter_v1",
+    "model_id": "mock/medgemma"
+  },
+  "audit_log": [],
+  "time_to_referral_days": null,
+  "D_base": false
+}

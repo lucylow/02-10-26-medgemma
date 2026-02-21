@@ -1,0 +1,19 @@
+# Dataset registry: id, description, source, license, population, consent, preprocessing, access.
+# Add entries for each dataset used in training; required for provenance.
+# Purpose: Auditable, privacy-aware data handling.
+# Input: N/A (config). Output: Reference for training scripts and model cards.
+
+# Example entry structure (uncomment and fill):
+# - id: pediscreen-synthetic-v1
+#   description: Synthetic pediatric screening pairs for smoke tests
+#   source: internal
+#   license: Apache-2.0
+#   population: synthetic, no real patients
+#   collection_date_range: N/A
+#   consent_policy: N/A (synthetic)
+#   preprocessing_steps: ["template generation", "tokenization"]
+#   sample_sizes_per_subgroup: {}
+#   access_restrictions: none
+
+# Placeholder: add your datasets here. Training should reference registry id via --dataset_provenance_id.
+datasets: []

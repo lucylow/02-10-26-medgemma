@@ -1,0 +1,6 @@
+# Dev/test deps for repo-root and pedi_screen (run: pip install -r requirements-dev.txt)
+-r backend/requirements.txt
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
+# For tests that import configs, monitoring, pedi_screen
+pydantic>=1.10.0

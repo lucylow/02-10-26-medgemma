@@ -1,0 +1,8 @@
+# Distillation config: teacher -> student (model-dev).
+# Purpose: Temperature, loss weights, student architecture hints.
+temperature: 2.0
+kl_weight: 0.5
+mse_embed_weight: 0.3
+supervised_weight: 0.2
+student_hidden_size: 256
+student_num_layers: 4

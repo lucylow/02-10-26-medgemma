@@ -1,0 +1,34 @@
+{
+  "case_id": "case-0023",
+  "created_at": "2026-02-21T01:07:56.681Z",
+  "age_months": 18,
+  "locale": "en-US",
+  "caregiver_text": "Parent concerned about speech.",
+  "images": [
+    "thumbnails/thumb_023.svg"
+  ],
+  "embedding_b64": "SWp3vaX4gj2N64o8yhvPPP9vlb3bgzS9W9t0u0KAcj1xAWC9i1mmPR8F4r1M2yc8qb+mvC4A97uPCTi9e5hZPQ4YgT1eSyA9t3qtPaTnj7yvLnQ9lIN6vbJmHb3oQLY8+2GOPSje1jwMWZG9ecBUPd/Ixb0DdAm9T+jkPCLqdb21wFM9zggpPYhzpz0/ZtC8BvqIPUsHmb38fN890ZrVvTS5MrxpwqS8Wxq+PGpVgb1/M7a9wN8XPLYU4L1+fW294WhBvSK0pT2OvzC9lAiPvbobNT2tdam9U+l9PBHsXDxpL9+9y5LWvW9dpb3gPp89+zUtvX4QJz2t+KE9aWV+PTYpDL2ykiU6x5duvc3Jm70CEMc9gR6BvcmceT26X4W913qQvZgAlLyHHk69NlLBvKLsyT1lNcc9XzyIPNpszr3Fcz+9caNvPIokmT2uwbm94ZoHPUpT0j3KDSA91F6oPYds4D2Elya9dsS1vNiKlb0528M9GPSHPdAW5rzhjJ29ylzOvTyNib1PtMG9LvY5PK2k4j0HUbU9pLmhPXX6Ar0BLXc9oVzbvfcd0D2EzU48ELueOfrZTz36AWE9u/5pvV7PAb0dWT86UecdPDkEwj2RKY085bdHPSu9QD14Ax28UpoEPQrVr7xM4TQ9wy8APKJpczyJy8W8kfFxvXS9QD2EfH680o2Bve3GWj2LR0Q93y/jvZxDMT24o408hSOlPYD0Cz3EnZc9wnW6vXL3tL3A1bO9c8sQPTE+0r2Rr1c4DgkvvVFAsD1VSAE9wJZ2PDFXBjwN/ik8SWfYPXfWdz0OHjy9D5fVPXfXi70y+si9uQ+Hvadboj12UI+9A76KvYCMVL03ygq7i4vcvOsteb2r29w9OA3bvTDq5DxDss48qC2TO1a/vb2Crmq8SCCHvQFJOr3gkJK99spAPBJ5ir2xkcG8M80gPX87VD2VhXm9QTqgPVqypr02/M29GnFpva654LsUKzG9hOiuvcQglb2zbcE9Lk7cPevylTwBzrq9pf/NPH+MCT3+Uyy9TvLcPWlI273IoaO9D59UvVfnsLzOmdm9rO+4veDlLLxH8qU8sI9RPaJgtj1pMoQ82XeoPdhGn738Htg9YsWyPU1oBz03UeI9Pi/Su+Qv3736D+s7Kk9kvVVIjL0fDoo99aopPT68wr20hq08Wi1BvIVdQTxIVyK9klegvarWvb3pb7q9MRqUvc9RDDzgUti8HiCSvEtFKD2pAu863dHOPFQ9DL0Vu0Q9rm2sPeqhHLwSN3I9xDxMPdENlj1Xllg8FZDgOxvvD7u9xIu8/dnDO7U1/Ty14Au9BifUO6Svq7wqZgG9Ts04PZmERL0RHZi9yNtZPQ==",
+  "emb_version": "medsiglip-v1",
+  "mock_inference": {
+    "summary": [
+      "Mock summary for case-0023."
+    ],
+    "risk": "on_track",
+    "recommendations": [
+      "Short play-based activities",
+      "Rescreen in 3 months"
+    ],
+    "parent_text": "Try daily language play; re-check in 3 months.",
+    "explainability": [
+      {
+        "type": "text",
+        "detail": "No two-word phrases",
+        "score": 0.8317315136119949
+      }
+    ],
+    "confidence": 0.69,
+    "adapter_id": "mock/adapter_v1",
+    "model_id": "mock/medgemma"
+  },
+  "audit_log": []
+}

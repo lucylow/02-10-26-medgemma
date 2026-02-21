@@ -1,0 +1,31 @@
+{
+  "$id": "https://pediscreen.ai/schemas/agent",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "agent_id": { "type": "string" },
+    "capabilities": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "last_seen": { "type": "string", "format": "date-time" },
+    "health": {
+      "type": "object",
+      "properties": {
+        "status": { "type": "string" },
+        "latency_ms": { "type": "number" }
+      }
+    },
+    "resources": {
+      "type": "object",
+      "properties": {
+        "cpu": { "type": "number" },
+        "mem_mb": { "type": "number" },
+        "gpu": { "type": "number" }
+      }
+    },
+    "location": { "type": "string" },
+    "version": { "type": "string" },
+    "endpoint": { "type": "string" }
+  }
+}

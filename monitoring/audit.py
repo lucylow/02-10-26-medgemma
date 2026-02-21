@@ -3,18 +3,21 @@ Compact audit log for every inference — append-only JSONL.
 Never store raw images; only request_id, case_id, model_id, adapter_id, success, fallback_used.
 """
 import json
+import os
 import time
 from pathlib import Path
 from typing import Optional
 
 
 def _audit_path() -> Path:
+    env_path = os.getenv("AUDIT_LOG_PATH")
+    if env_path:
+        return Path(env_path)
     try:
         from configs.defaults import settings
-        path = Path(settings.AUDIT_LOG_PATH)
+        return Path(settings.AUDIT_LOG_PATH)
     except Exception:
-        path = Path("data/audit.log")
-    return path
+        return Path("data/audit.log")
 
 
 def log_audit(

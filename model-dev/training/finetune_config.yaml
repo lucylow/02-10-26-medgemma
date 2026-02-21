@@ -1,0 +1,33 @@
+# Finetune config for LoRA/PEFT (model-dev/training).
+# Purpose: Default hyperparameters; override via CLI.
+# Usage: finetune_lora.py --config model-dev/training/finetune_config.yaml
+
+base_model_id: "google/medgemma-2b-it"
+adapter_output_dir: "model-dev/adapters/default"
+per_device_train_batch_size: 4
+gradient_accumulation_steps: 4
+learning_rate: 5.0e-5
+num_train_epochs: 3
+max_steps: -1
+max_length: 512
+seed: 42
+save_steps: 500
+eval_steps: 250
+logging_steps: 20
+warmup_ratio: 0.03
+weight_decay: 0.01
+lr_scheduler_type: "cosine"
+bf16: true
+fp16: false
+use_8bit: false  # set true with bitsandbytes for 8-bit training
+lora_r: 16
+lora_alpha: 16
+lora_dropout: 0.05
+target_modules:
+  - q_proj
+  - k_proj
+  - v_proj
+  - o_proj
+  - gate_proj
+  - up_proj
+  - down_proj

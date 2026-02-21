@@ -3,11 +3,12 @@ import time
 import uuid
 from typing import Optional
 
-from fastapi import APIRouter, File, UploadFile, Form, Depends, BackgroundTasks
+from fastapi import APIRouter, File, UploadFile, Form, Depends, BackgroundTasks, Request
 from datetime import datetime
 
 from app.core.config import settings
 from app.core.logger import logger
+from app.core.request_id_middleware import get_request_id
 from app.core.security import get_api_key
 from app.errors import ApiError, ErrorCodes
 from app.models.schemas import AnalyzeResponse
@@ -19,6 +20,7 @@ from app.services.medgemma_service import MedGemmaService
 from app.services.model_wrapper import analyze as run_analysis
 from app.services.phi_redactor import redact_text
 from app.services.storage import save_upload, remove_file
+from app.telemetry.emitter import build_ai_event_envelope, emit_ai_event
 
 router = APIRouter()
 
@@ -92,6 +94,7 @@ def _medgemma_report_to_response(
 
 @router.post("/api/analyze", response_model=AnalyzeResponse, status_code=200, dependencies=[Depends(get_api_key)])
 async def analyze_endpoint(
+    request: Request,
     background_tasks: BackgroundTasks,
     childAge: str = Form(...),
     domain: str = Form(""),
@@ -137,6 +140,9 @@ async def analyze_endpoint(
             logger.warning(f"Could not read image bytes: {e}")
 
     # Prefer MedGemmaService when configured; fallback to model_wrapper
+    request_id = get_request_id(request)
+    start_ns = time.perf_counter_ns()
+    org_id = "default"
     medgemma_svc = _get_medgemma_svc()
     try:
         if medgemma_svc:
@@ -159,6 +165,17 @@ async def analyze_endpoint(
                 result_risk=analysis_result.get("report", {}).get("riskLevel"),
             )
             result = _medgemma_report_to_response(analysis_result, age, domain, screening_id, inference_id)
+            latency_ms = int((time.perf_counter_ns() - start_ns) / 1_000_000)
+            emit_ai_event(build_ai_event_envelope(
+                request_id=request_id,
+                endpoint="analyze",
+                model_name=prov.get("base_model_id", prov.get("model_id", "medgemma")),
+                org_id=org_id,
+                latency_ms=latency_ms,
+                success=True,
+                provenance=prov,
+                consent=bool(consent_id and consent_given),
+            ))
         else:
             result = await run_analysis(child_age_months=age, domain=domain, observations=observations_clean, image_path=saved_path)
             screening_id = result.get("screening_id", f"ps-{int(time.time())}-{uuid.uuid4().hex[:8]}")
@@ -175,8 +192,31 @@ async def analyze_endpoint(
             result["inference_id"] = inference_id
             result["feedback_allowed"] = True
             result["feedback_url"] = f"/api/feedback/inference/{inference_id}"
+            latency_ms = int((time.perf_counter_ns() - start_ns) / 1_000_000)
+            emit_ai_event(build_ai_event_envelope(
+                request_id=request_id,
+                endpoint="analyze",
+                model_name="model_wrapper" if result.get("model_used") else "baseline",
+                org_id=org_id,
+                latency_ms=latency_ms,
+                success=True,
+                fallback_used=not result.get("model_used", True),
+                consent=bool(consent_id and consent_given),
+            ))
     except Exception as e:
         logger.error(f"Analysis failure: {e}")
+        latency_ms = int((time.perf_counter_ns() - start_ns) / 1_000_000)
+        emit_ai_event(build_ai_event_envelope(
+            request_id=request_id,
+            endpoint="analyze",
+            model_name="medgemma",
+            org_id=org_id,
+            latency_ms=latency_ms,
+            success=False,
+            error_code=ErrorCodes.ANALYSIS_FAILED,
+            error_message=str(e)[:1000],
+            consent=bool(consent_id and consent_given),
+        ))
         # cleanup file if present
         if saved_path:
             remove_file(saved_path)

@@ -1,0 +1,34 @@
+{
+  "case_id": "case-0034",
+  "created_at": "2026-02-21T01:07:56.687Z",
+  "age_months": 6,
+  "locale": "en-US",
+  "caregiver_text": "He says 8 words and points, but no two-word phrases.",
+  "images": [
+    "thumbnails/thumb_034.svg"
+  ],
+  "embedding_b64": "ccN9PT98zr1sJLw9XxDWPfbLzDyXbCY9VRksPbsYj711VZa9i7pMPGewz70FGrG9TQ6mvV/2oT2o87a9K2+9u9OtwL3Jc+I8viKtPAr6vb1nBpo96pOOvcZbab15LXg98t6xPUuuR7zBasS8mUE2PYd2071AhMq9Oh2vvSIcyzzjSO28B8qLvSufg71W3ZA9/dxLvSFwXD2J5K69ziylPeyKEj2Vdwm9FyJLvR/iiD1SQE+9RIaVvS1z3j0Pkte9cNlMPHwHq7xwoxW981jVvMGDPb0k5AU97A5vvbI3NT0r/OG9nzTdvasYpLrkKK29mIP7vJLHwb3iUVa91TWXPc/BMT297ru9a2tNPXzSizyIS3o8mVRqPZsZ+bzdfFa8DEMHOyJxQL1zmSe7D2GGPYNUib2NlZU9Fc1qPG52QjxtmfQ8GGM+PVbljb0Z20C8oAWLvVZ6mr294xS7L1tDPdDKjT1IENA8m/GkPQGL3Dz/er49oGywvCMSRT27LBc9cNuZvfwAGb229rY89JY/PQWVrT3WbGA8niSAu8DtJz399a09A4m4vSL4FD0SwuA9J7ZDvOQB4zzmbnK9MkirPSUhGr1gxs29VojSvMtsiL18wqO8rK67vWi+Qj3p+CQ9KjO6vU//DD365sE9wJpLPdIYV72XCxg91C5/vSXRt71n2O+8scaBvWAJmjz7+iw92LDHPV0txj1EE8G9UyDUPftqpj0a3Y08jundPUQooL2/hZ49kbBmvd954bveQ9G9cLWlPV2ccj0s57Q9li5qPasFVT1nDEy9F9YbPWxGvzwMJL89SYAxPYsXsz3efLq923fPvA/g2rmf/9o9WLGbvNzksby+Kqs92x2mPXRlCjzePM475hywvZZ8kr1qelM9uPEePO8Pgj0P0Ca8kWacvaaQ2L3zSzq9aFrXPL46eLu7zsg9sv6XvW/Szb3OzIi9v5CfvXd2r72aNok9PVCZPaFc0r2XK9c7alncvexDyjy8rsq8/BuOvRg0r712sps61dDZPburu70KNXY6FlzFPJYHLL1wChk9Sz/UPVRx8bzFJaq9mwa3vN01uz3GNwU8GwBoPbBZtb0i2N+8dEnJvS8lpTyaoou97vy8vd4FhL2ymA89tee7veGOPr023aa9DsNvPMVEazoTQKY8ZPXXPJWEsDxUfHY83QqcPCHLV71x8RW9x9x0PIxXC72h1QW9mlIfPc1zvD014zO9dey8PZT6GLr7fOk8MICTPbZmA7ye9ts8zklZvGCHWT0MUxe9m5aMvdqBmb3j6cc8bUfpvBtYJD3XW6c95R7ivEyqMrxMwHe9robhO0ptpz299Hi96z/XvIkZmjyMw2296FzbvQ==",
+  "emb_version": "medsiglip-v1",
+  "mock_inference": {
+    "summary": [
+      "Mock summary for case-0034."
+    ],
+    "risk": "on_track",
+    "recommendations": [
+      "Short play-based activities",
+      "Rescreen in 3 months"
+    ],
+    "parent_text": "Try daily language play; re-check in 3 months.",
+    "explainability": [
+      {
+        "type": "text",
+        "detail": "No two-word phrases",
+        "score": 0.7439716671292436
+      }
+    ],
+    "confidence": 0.67,
+    "adapter_id": "mock/adapter_v1",
+    "model_id": "mock/medgemma"
+  },
+  "audit_log": []
+}

@@ -1,0 +1,34 @@
+{
+  "case_id": "case-0017",
+  "created_at": "2026-02-21T01:07:56.679Z",
+  "age_months": 18,
+  "locale": "en-US",
+  "caregiver_text": "Plays alongside others, minimal sharing.",
+  "images": [
+    "thumbnails/thumb_017.svg"
+  ],
+  "embedding_b64": "2cHPvWlhpj3cejU6MeTdvfY0Hb0gySu8+7CAPa+rTzvyl6M9fBzfPeTB3DwD1pe95XGAvGQDSb1ERxS98sMPvVUu4DwBa9u9DKq0PZpvcD0g1NY9U4e7PYqo0b28E7S8HX5+PcdZtb1bNqw941lEvN2BBTx13q69FSzXvVT0Ez2yFa09WilhPOf7eb1kad08Fbm8PdQH2rxOjyi9uJTPvWm6gT0dR4s9CUBZO81Bm71apDo9Iv/CO9s8gD3gV4+9u2NJPc1DY72d5Mi9dOGYvXtNRj0iOk49feTSPeTpbb0wAHc8XYIHPEeqvryec008vwZzvYgwnL05eYa9xHH+u1F0pzzyJiy9pk+YvZ58B70oOKO7wng3vSrJAz1WD6S7hNfDvKG3xD05d7C8CYnCvR2AiD3BUFI9DYCpvfUU0z22vis8iVduPToeYTyPUEM9RxjGvS2mtT1vBGM9VA8xvZ70SD3whn46HaNzvWa2Oj37gYq9xTSivZLlX71zUdK7ORTfPTwgcb2cyzW9Nhu4vd9XhT1b0Ss9BaA9OxUy0r34MqU987SePZjCxT3pBp+9WybQvTMYLL1fmaY8yr1lPUoVhLyhePK8fapIPdqLTT3o+7I75THmvKWJ5jrQMxA9OniFPSLOtbyaIr66RHpUPVZUoL1QVko9p/PNvemevT2R6dS9k3JCvFmGrT1v4Ka84+TVvfxChD3WsDU9uYXdPcc9Xr0wGak9qSSePSYa8Dz0B6w8HWF6PPlt8rxZ5BY9GTLFPQpkiL04V2c9refFPdROGru2iIy9UM4HvbAAbT36yrU9+eyPvcFi2T0K9Hw8/8savfs9ebxkN7I9ZNaMvSDZOj1BA609BUyMvdItBL17qjW9AoUEvYp4ij2AeNC9ncigPcY4wzuow9K9v2eZO6usOb3MMSY8I4PmvNat9jzFVZs9XnFyvIcwaz0Dw5q9z17mvAnZojpio5w9c2javSnAvb3uMJi9cyaQPcXyYLyAVNM95TaovR15Zr10HSG9LIeUPQxMq7zHdlg7YnPEPX7e3r3a2Q69zUNePeSYzr0BbSE9xl6hvQ/0zbwfeIw9X9e5PHwKnr0ip0M93L6pPU4bkTyiVly97n+uPQHnkjtCvyE9hQCqPaHscT1poiQ9biOcvSeq2T1OXKe9sB9evZUWdb3YKrq8nuzVPbgPwrz0guI84cmvvRcOMz2lXLY8E7XcPb3Qyb0P+N88t8vjvEv9l71kSGK95WCCOyThmTzaPRA9Z8gbPPmJuzx/Z809luYcvYEbl71pHqk94a2wPEvtgb2LQOq89y99urSNRDvBzSe8IreeveUKnLyDEMg7MtWBvbHPkjzD/gW9xi+xvQ==",
+  "emb_version": "medsiglip-v1",
+  "mock_inference": {
+    "summary": [
+      "Mock summary for case-0017."
+    ],
+    "risk": "monitor",
+    "recommendations": [
+      "Short play-based activities",
+      "Rescreen in 3 months"
+    ],
+    "parent_text": "Try daily language play; re-check in 3 months.",
+    "explainability": [
+      {
+        "type": "text",
+        "detail": "No two-word phrases",
+        "score": 0.7878776517430109
+      }
+    ],
+    "confidence": 0.82,
+    "adapter_id": "mock/adapter_v1",
+    "model_id": "mock/medgemma"
+  },
+  "audit_log": []
+}

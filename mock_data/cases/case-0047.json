@@ -1,0 +1,34 @@
+{
+  "case_id": "case-0047",
+  "created_at": "2026-02-21T01:07:56.692Z",
+  "age_months": 18,
+  "locale": "en-US",
+  "caregiver_text": "Runs and climbs well, still wobbly on one foot.",
+  "images": [
+    "thumbnails/thumb_047.svg"
+  ],
+  "embedding_b64": "cB2Qveznjj3go4e9jQITvbk8lr3eI8w9vP8CvWeF0ruI8RY94K5EPbIBpz2ckVq9C/jXPOZ0m7zNiIA9D63ZPQk3lD0xgao9KSY2u9Bys728s1S89Qj9vDFttr2RMkg9YryEPVL0ej2p98i9ZF+PPTmGmb1uZs09p82zvQOJsr0h/t695zOVvWXwn72Vpsq9OFhpvTGBvLuZpYK9RRhWvY5Myr1UNs89gqBTPe6vEr1CDiq97/jePUEytz1yziO9gXPPvewsmL3SwOk8yZuUu3erlz1MdnU6Wb1NPdNDvDtbTJO8Si/UPOjK7Ly09q69MFaHPfG9RDqvuYS8rkwpPbjAA7w2RxY8WYGhvFBiZzxC3+K9Cb+ePeGSx71RM6c9DIvzPEraHb0VGT283hPLPOt3z710DNQ9OTtxvdRVX72D/hI9ax+FvTogpj1QzzA9QWfRPQfXsD3lZqc8vy+fvRLpMz06pjk9HwgQvYt6a7mdA7u9ku+VPacnXrq56hk89Z2KPWBdUzxN0s08r2agvda8Kb32hnG9cHBGPMZpIL2hwjI9SkhcvdTb47ztGe085DQKPbJqzT0PL2g9U4xcvFFM0b0Afoa8Fdp9PXTMwr3B5co9Vg4ePdqWFz2J7Rk9bpg5PTU+7bsQF90777TFPQYi2L34jzy9dC2XPTxDoL0GELW809HFPXDVU7pbwWk99EGyvAMUgr2BTTk7Q06zPSfg67zYyYw9Gl66PB5tIb3lWBa9B/Pdu2kC1D0IO1e9V6wnuyadKz2MDIQ9MRPIvWxA2zz2ZMS9glOavbEYR72I1pQ8eEHcved8i707Znq9KBWVPRbZk72PL8g8bDgzvYerQ73fdMa9oqqRvPxrPL0u8QY9LHRhPQRhhjxDKYM9PirZPJRfZL2a58+7oRehvCv4b7zdmRk9s+KnPZuUcTxE+NA9+1LdPYGOiz2u6Cq8WZRhO4T00L3K1dE9Uk0IPKiezTy3zBS90RxMPI4Skz09dKG9n9e4PThoybxrICA97utgPJJHmLyM81O8DNmRPSPZZ70KCwA9Edaevfxhzr2ZaIO9QrjYPcwxuju6BtK9jC+OPVW/2z2OOFi9EOIUvKFFnj102H89cFLVPIfY0j25t0w9EG01PcBGkb2Tfro9Q1gfvcjjlT23c889nmVZvQBAFT3LM8O8Q7YhvczRUD3by2692ibGvC9FLr2kybe9r3vLvf9FHj3dwdg8oFoHPHSXOb2nzLO9+gK0PQbUUb0ir5o8BHq2vS4yCb15F6C91/OEvMKHoDzgpIs9HjgiPU2vrb1Utd89lGqpPMau3D3ZZpa9kAW1PUYsi73Xx3M9GJwJPVcPez2RFfe7d7h0vQ==",
+  "emb_version": "medsiglip-v1",
+  "mock_inference": {
+    "summary": [
+      "Mock summary for case-0047."
+    ],
+    "risk": "monitor",
+    "recommendations": [
+      "Short play-based activities",
+      "Rescreen in 3 months"
+    ],
+    "parent_text": "Try daily language play; re-check in 3 months.",
+    "explainability": [
+      {
+        "type": "text",
+        "detail": "No two-word phrases",
+        "score": 0.7416305555500795
+      }
+    ],
+    "confidence": 0.84,
+    "adapter_id": "mock/adapter_v1",
+    "model_id": "mock/medgemma"
+  },
+  "audit_log": []
+}

@@ -1,0 +1,36 @@
+{
+  "case_id": "case-0003",
+  "created_at": "2026-02-21T01:07:56.670Z",
+  "age_months": 48,
+  "locale": "es-ES",
+  "caregiver_text": "Corre y trepa bien, aún inestable en un pie.",
+  "images": [
+    "thumbnails/thumb_003.svg"
+  ],
+  "embedding_b64": "xe9VOwO+qz038x+96Tm3vLPSob3i0K49+nuUPWbQZT0U5tY7yD8QPbkUkr2F3ZM9zWztvKasej2ElUQ80mZfPctT1D36o0C9ShrcO2ez3D3aGNq8WhwmPPp4Sz2MVI+9/KScPUPLx72r5dq9CfrLvXZouL06c8A8B1tyPd7Vtr3qyYs8HFQkPWenuT0RBUy9IEp6vQ6JnT3yLk69WZt8PQuJKr0fCN297XupvT80E706OaQ97OcMPSDhhr0+wiq9TlAhvQAcyj3jObY938HIu9JvwT2sk1A9Z/WCPca9Ib3s9XC9SU45u5RiUb3EYJ698nx8Pf84QbvV6IU9SoJ/PZm5vr0AIVW9osG0PfNLH72PLqU9R3jLvcly1r3gGJM9kT6JvUq1XT29Itu9EJ6WvdO90DyyDz49vmaCvA6nDr38iEg90yfQPffalj13OvY8P/WqPPYsOj3iPzO7tHFAvCti371UdJa83HSXvc9btr1JtcG8iVUrvfS9XjzWIuy8oa6SvZri2jtBZqu9VE2JPGGw071yNwO9kl6rve4pqD3tqx89+DiWvVjKfr0LsIi9PEgxPSwQlb3QXE+8SjebvXB+xjzWXHO9GJeMvQGBBLtZtSk9XZDYPdBct71qjjQ90ivDvZMBrj2lZd+9HxA2PHtxyD1OUYQ90uB1PPR/qbxSGcg97/wYuN2a2T1+C649+APdPSRAzL29hCM6N9IavPOQBLytgls9G7EcvWDXhjyFAn49WQVvvWJHPD1PXaa9xSx9PVtD9rsOBeA7fQ6XvR9rk7zpu8c8VFqEPeZhFTwg4bi9rfpkvKKW0b3E+069utsXvQtd1rzbusW9ApBiPS47vr31PYk7cw1/vZhfej0iu149U1mSvYm+Ab13JXe9VhMNPfFT2Dv0uBs9yB2Rvan4fr1Hnou9iqajvdGMPzyLjQw9e7V8PSwdSzy183M6AQd9PeODUT2yWhS9JCtZvCWUrLzxvsA9R2QKvHPYEz3rrXK9OU0MOh803D3EFYA8ZzDYPLQfo73mfME9und4vTGssj3GibO9/8IuPSQYpTuIyv4838aqvRwefr3JEyi9vhB4PR/KzL1g/UI9I3haPMbm0701CSK9W5hZuwBP6Lsh1s68edrGPZyCirwTD709ORrXPA97Jz1D3+g7KzCaPZsXNjh+omy9tbmYvW4PjD3WYR+9PSzUvURwiL0jty084U9tPYlWq73OXdu94NyOvZXA2T0JWcM8bXYEvUe8WD2Tn9U9xCsgPd/ogDv/FXm9c9JRPXlKjDwY2Pa8j7+pPddh072kAam9OY+5PK/2rL3hLOs8HpvSPHfHJb3C2ke9v6DJvDpKkr3fMMg982JpvA==",
+  "emb_version": "medsiglip-v1",
+  "mock_inference": {
+    "summary": [
+      "Mock summary for case-0003 (es)."
+    ],
+    "risk": "monitor",
+    "recommendations": [
+      "Short play-based activities",
+      "Rescreen in 3 months"
+    ],
+    "parent_text": "Pruebe actividades de lenguaje diarias; revisar en 3 meses.",
+    "explainability": [
+      {
+        "type": "text",
+        "detail": "No two-word phrases",
+        "score": 0.6672128685770516
+      }
+    ],
+    "confidence": 0.64,
+    "adapter_id": "mock/adapter_v1",
+    "model_id": "mock/medgemma"
+  },
+  "audit_log": [],
+  "time_to_referral_days": null,
+  "D_base": false
+}

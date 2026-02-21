@@ -1,0 +1,34 @@
+{
+  "case_id": "case-0022",
+  "created_at": "2026-02-21T01:07:56.681Z",
+  "age_months": 6,
+  "locale": "en-US",
+  "caregiver_text": "Limited eye contact, repetitive play.",
+  "images": [
+    "thumbnails/thumb_022.svg"
+  ],
+  "embedding_b64": "QRrAvZDLzTzxPE880i/dvXVSzr2uerK9x1XgO4D/57x8dFc8p8GBvbKe8Lzp15A9ijbLvfeUxr3a0pa8pEGCPVXllr3iy4a9lfrAPTjRYz2NjXK9u7ZKvYOSsr23RxS9mcQ/vaE44Lt9V649YQeGvdD+jz3QfDM9oPKGvHVyxrwLxd8988WRPbl4jL06LOg9m3dpPanzyz3G+LW60A2yPasbkj2zEZ89RLX6PPaac71h8QG7xao5PTtuj7011rC80m+Qu/gl5DuPop28UnrVuMxb171jopA9qodtvXB6hj3GHda98nebPY3CJ70StzU8g3G3vXeOhb0zfNo8OmLRPUz59Dse1Z08ZTn8vDkTH72ylYE9z1+pPEF18T0ZJoO9derXvSuWW73pfGA8FBZNvUqDwb38eIw95tZhu56FaLz2rYc9TzC/PF7Mvj0+m6A9OwHfPZb1fb06nuA9ygevvfL2xL0mu2g9ZV2iva8Anb1lgvA9+oqHvVtGOr25BLk6pgRLvcP5rDt9FEa9ycl0PYb3JL2b6IG8aR6aPDJqlT0HtsO7kdoIPSL6Mrw8L9A9Oey5vY0zTL2DqDi8jWNMvXLaYD2zjwe8EOXeveXckL1n7uc94DjYvbZhz70T+4A7hz39POnYFL11pIg9A1pmvQZnET0wLD29diWOvNhPBjxw9u493vrZO/hjgb2KJ++9MjqqvM5qIj3fbiq9plyEvToVgr3sW4g9XMARvZmoiD1v7Wq9w1ZBu1t4PD3SQBa9c6UyPX31mD3Y1CA9C0onu7OOgL0IMJm9WHlBvX8wZb3XqHk8jnljPUdQ6z2thEy9sBoAPbphwD14DmC8pfKAvbds0D3Vqpk7dp1MPZzVqbx6i5y7llEova0Hl70oOUa86ArWPEgm1b2CkcG9onLbPCd0xzt4O5O9/GT6O03BLzw/lMw9z69svSW/Gzzl/4M99qdRPYPdnL3IyIa9v/t2vRrWnb1vn5U8S7csPb41LLxh9P68MTTfvUPNSD1/15W8o1N3vO8DoDsQAAQ9QZpTuxV387o8GL+89h0dO4TxpT22aY+8n/J2PDNw47wiXX68rTuMvdzour1a6IG9wJd6vUOwjb1Kfwe9VEuku91Jbb05ZmE9UaDPu5kARbz6Tpi9X0GxPVitI7tV+m497edFvRciDz00Jc89YcpKPVwXor0j+7a9fvsRPYOBQz1UMsW9+VIwvBERpz0zJpg9cQdgPciPhTzXEpo9ERi9OS3xKD0XYvo8DbqjPd+2p71tfeo9UHjBvSmQvbyjpKq9+RzgPXXciL1eu9q9fJ3pvFQngDxO5kq9P+4gPYAmxD2JpNm9wP44O7z4mz2HtYC9Sl6UPQ==",
+  "emb_version": "medsiglip-v1",
+  "mock_inference": {
+    "summary": [
+      "Mock summary for case-0022."
+    ],
+    "risk": "on_track",
+    "recommendations": [
+      "Short play-based activities",
+      "Rescreen in 3 months"
+    ],
+    "parent_text": "Try daily language play; re-check in 3 months.",
+    "explainability": [
+      {
+        "type": "text",
+        "detail": "No two-word phrases",
+        "score": 0.7950899295793933
+      }
+    ],
+    "confidence": 0.93,
+    "adapter_id": "mock/adapter_v1",
+    "model_id": "mock/medgemma"
+  },
+  "audit_log": []
+}

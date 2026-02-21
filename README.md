@@ -137,7 +137,7 @@ PediScreen AI is configured for deployment on Lovable Cloud with Supabase:
 3. Deploy Edge Functions: `supabase functions deploy`
 4. Run migrations: `supabase db push`
 
-See [docs/RUNBOOK_LOVABLE.md](docs/RUNBOOK_LOVABLE.md) for the full deployment checklist.
+See [docs/RUNBOOK_LOVABLE.md](docs/RUNBOOK_LOVABLE.md) for the full deployment checklist. For inference failure modes, audit log, and recovery: **[RUNBOOK.md](RUNBOOK.md)**.
 
 ---
 

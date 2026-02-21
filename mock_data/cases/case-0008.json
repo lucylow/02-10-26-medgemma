@@ -1,0 +1,36 @@
+{
+  "case_id": "case-0008",
+  "created_at": "2026-02-21T01:07:56.672Z",
+  "age_months": 24,
+  "locale": "es-ES",
+  "caregiver_text": "Señala cosas, parece sociable.",
+  "images": [
+    "thumbnails/thumb_008.svg"
+  ],
+  "embedding_b64": "7qnsPBGbAr21hqy98ZRJvZ9OZbwbE6o9mg7MvbcJ2L14StW9rsUePaL5ojrlgzS8A40AvSwTob1Ii0s9HIp5vfhu5jt1VtE9w1UyPXoRor2MeL+91DWePMdjdL18LIQ8oCfGvQ6/kj05Ssa9hdS9PNOQS73KO8w95JvPPcvxtL3ZosO9m8FQvdruFjwCxE25obXrPGmahTtG0Mo9DWasPd5Fmj2vTpi8pTp9vea6qTwsoi49q8SXvV8J1T0O9ae9uDVRPXHWF7y/taS8e3eCPRjrCj3uh6q83zXIvQuDm73+DYy9Y6jKu/YnJj3DhF89kWOfPTdtpL17UJQ9x47OPQQ9Zz3Y+Ze9hVKEvWk0pDt7TIg91SSjvTW+Ir2+/Ia9iQcZvXF+qr3pesM9T4AqugrvGb0MXUc9VtU6PEVDwj3ddoe98JwjPene0j39YcA9mEfXvfajDL3PAaM9aIG3PCtf0L3iCFw9I+Flu4z+Qj00LZ48w+61Pb8NJb0G27k9BA2JPIy9mLuOn3Y97+LRPKN7Cj0lnSQ9vmOovfDErLzzcJq9OAOrvIXcmT2QcyO90PcSvMt8mL1lCdk56LNcPYJVwz1SL7w9SJ6OvazoMr1wbZk8nJSePRIZz70Pu5G7o8K2PV332DsKHcU8/XtJPdoAYL1wJJO9yDE/vag/hL3pVQy90W22Pc6stjtGGVe9Obakvez4pj1NzT49xySwvc8ttj3nTaK9V4jovKwId707JY+9Uud/PYQjSL2S7Kc9fI+NvPkOQz0CRQ89RIMQPaC137yti9o81vq+vP5ser1o+KM6hh7OvdLGWj2p+ak9/6awPQXnmbwhtN28wa4bvAYPozuCci49kbgCvdMLmr116Mk96C0Nvdv/Yz0Yb3o9ASoxvMGp/brhgsa8akvWPVBLgb0Ygqm7Y0G+vHyXyTz7+L+94B/cvGgWz71vvQS97XG6vGsYKL2u2wU9Qm+sPMqN5zw9Vyc9ryxePS7qvL1FW9K9TCqBvQLgib3ln6Y9sbmbvTp9z71cCpm9tNh1PWCokr1adiO9GkkkvVQKo71gKMa90aKPPdj4iLz+Q0W97OVbPSYiDLxLPQS9c7vKvZxrkb16WZM9jGu9Pbtxoz0m7MU9InbZPJoVbj3y9sw9MPN8vfMOu73yS7e8mmFvvXVukT1poP08giyGPE/Vzz1d7Ii97MJUvXdfkr3sX4E92GulPTfPAju9kAK8ZJqSPTVxYj3aDmg7V8NrPX2ryb0Hc849tm/avO7bXr3IRqY95LuWO24riT31GGi9SbQ2PUL4izw9RGi9A46fvdVJjrg07rK9Y84uPf2un7uUemE9amNfvMiywT2RsZW9JTwOvQ==",
+  "emb_version": "medsiglip-v1",
+  "mock_inference": {
+    "summary": [
+      "Mock summary for case-0008 (es)."
+    ],
+    "risk": "on_track",
+    "recommendations": [
+      "Short play-based activities",
+      "Rescreen in 3 months"
+    ],
+    "parent_text": "Pruebe actividades de lenguaje diarias; revisar en 3 meses.",
+    "explainability": [
+      {
+        "type": "text",
+        "detail": "No two-word phrases",
+        "score": 0.6384128129042116
+      }
+    ],
+    "confidence": 0.77,
+    "adapter_id": "mock/adapter_v1",
+    "model_id": "mock/medgemma"
+  },
+  "audit_log": [],
+  "time_to_referral_days": null,
+  "D_base": false
+}

@@ -4,12 +4,12 @@ Privacy-first inference endpoint for precomputed embeddings (design spec Section
 Accepts embedding_b64 + metadata; raw images never leave device.
 Returns structured InferenceExplainable for AI explainability & trust.
 """
+import time
+import uuid
 from typing import Any, Dict, List, Optional  # noqa: F401 Dict used in _mock_inference
 
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel, Field
-
-import uuid
 
 from app.core.config import settings
 from app.core.logger import logger
@@ -19,6 +19,7 @@ from app.errors import ApiError, ErrorCodes, ErrorResponse
 from app.services.medgemma_service import MedGemmaService
 from app.services.feedback_store import insert_inference
 from app.services.audit import log_inference_audit
+from app.telemetry.emitter import build_ai_event_envelope, emit_ai_event
 
 router = APIRouter(prefix="/api", tags=["MedGemma Inference"])
 
@@ -193,8 +194,39 @@ async def infer_endpoint(
         result["inference_id"] = inference_id
         result["feedback_allowed"] = True
         result["feedback_url"] = f"/api/feedback/inference/{inference_id}"
+        latency_ms = result.get("inference_time_ms") or int((time.perf_counter_ns() - start_ns) / 1_000_000)
+        emit_ai_event(build_ai_event_envelope(
+            request_id=request_id,
+            endpoint="infer",
+            model_name=prov.get("base_model_id", prov.get("model_id", "medgemma")),
+            org_id=org_id,
+            user_id=req.user_id_pseudonym,
+            model_version=prov.get("model_version"),
+            adapter_id=prov.get("adapter_id"),
+            latency_ms=latency_ms,
+            compute_ms=result.get("compute_ms"),
+            cost_usd=result.get("cost_usd", 0.0),
+            success=True,
+            fallback_used=result.get("fallback_used", False),
+            fallback_model=result.get("fallback_model"),
+            provenance=prov,
+            consent=bool(req.consent_id),
+        ))
         return result
     except ValueError as e:
+        latency_ms = int((time.perf_counter_ns() - start_ns) / 1_000_000)
+        emit_ai_event(build_ai_event_envelope(
+            request_id=request_id,
+            endpoint="infer",
+            model_name="medgemma",
+            org_id=org_id,
+            user_id=req.user_id_pseudonym,
+            latency_ms=latency_ms,
+            success=False,
+            error_code=ErrorCodes.EMBEDDING_PARSE_ERROR,
+            error_message=str(e)[:1000],
+            consent=bool(req.consent_id),
+        ))
         raise ApiError(
             ErrorCodes.EMBEDDING_PARSE_ERROR,
             str(e),
@@ -202,6 +234,19 @@ async def infer_endpoint(
             details={"hint": "Check embedding_b64 and shape match expected format"},
         ) from e
     except Exception as e:
+        latency_ms = int((time.perf_counter_ns() - start_ns) / 1_000_000)
+        emit_ai_event(build_ai_event_envelope(
+            request_id=request_id,
+            endpoint="infer",
+            model_name=getattr(settings, "BASE_MODEL_ID", "medgemma") or "medgemma",
+            org_id=org_id,
+            user_id=req.user_id_pseudonym,
+            latency_ms=latency_ms,
+            success=False,
+            error_code=ErrorCodes.INFERENCE_FAILED,
+            error_message=str(e)[:1000],
+            consent=bool(req.consent_id),
+        ))
         logger.exception("Infer failed: %s", e)
         raise ApiError(
             ErrorCodes.INFERENCE_FAILED,

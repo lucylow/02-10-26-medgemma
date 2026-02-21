@@ -12,7 +12,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "gen:mock": "node scripts/generate_mock_data.js",
+    "validate:mock": "node scripts/validate_mock_data.js",
+    "start:demo": "vite --mode demo"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

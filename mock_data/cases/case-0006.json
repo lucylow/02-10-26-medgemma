@@ -1,0 +1,36 @@
+{
+  "case_id": "case-0006",
+  "created_at": "2026-02-21T01:07:56.671Z",
+  "age_months": 12,
+  "locale": "es-ES",
+  "caregiver_text": "Juega junto a otros, comparte poco.",
+  "images": [
+    "thumbnails/thumb_006.svg"
+  ],
+  "embedding_b64": "MdlyvevXUj0nE4u9JrqGvas+OL3I7GI9bW0BupC1TTyMfCe9b76KPbDzFD0DEMc9oP04PQrm+bxDfs88QgrEvaX30rxzOWE92U9lPbxYhLxZLKS9Er2KvbDKODzo/Aq8NqlQPdYUxj0r3N89BxI7vdvUXjxaNI+9DWfDvacv0L2UFM+95aH6ux7E+Drluko9gaEzPZvhy71k0k+9zlq5PEiUjj1TqNa8Dyy3vNPinr1VADo9unnfvSD21716FbM9oc7avfWZij0Xv0w9m0gdvYSxr721KG09T7alPQk1l71dyLk9K9y9PUCX9rz3Nrc9HsF6PXmJuL1v0lm9fqSxPXaXID32yb29Hd2evZFaJLtuPx29YmdBPV3tHz3BAPO8QzTVva4PczymfSo9QQqAPQHk3Lx7x908AiFBvTxUIr3BoIs9MkG0vRp5Hj29JS89eIAYvUYJt7wt7xk84e9BPYOtur1E7Pa8hBA9PYjZ3j3lTLU85DKFvTpMN735A1m8+QF0PZ2Ytz36xtQ9mhjAvZABwDvXFX69f9iLvaJu470bmOA7grI+vc9+Pz0cF589wzulvTQp2T3hor+7cn5ePEebWz0VgTa7OiKKvCuXCbwbsJE84A4cPU2o0b2CQ4u8JpSMvSPRDT0SbWk9ilMuvcWX2LsyrTS9jryIvZzlST0xmUg91DEtvWi2u72TnLG9+BqNvXBNDL23FDU8kBCpvVE1kT3iGVs9PprJPIZlhrwTs749UzTdPeDcbDz5roM8/gInvUnnMj0GqqE9fCidPYqPibqEFpO9K3mRPBBDGb02QKy9SspIvN2YzD0JLuG9b8LQOzvpxD2h/ck9l3W8vcSSpbwW78C9hezOvVFfBzs4E8m9Cs6PvfloIT3Vcdi8V+VQPY8t273b3eS9hIUgPQwL5D0TDu67zuUZPIhBgj3RzaU9ettUPeoTlj19qgg9thh4vc+jqj3cmaq94fkmvCpnjT20GoK93U3YPBp60Ly39/Q8pApAvYEVU72biVw9WiSLPHl9h7xCeJI9MvnbvVBSKz29Z6M9ek80vaSwQT2yhZq8bjtFPWn0yz0Rncm9+by/PdVYS734u+08Syx+vLaZMb1BTlY6wvubPS0E/zz2+o89o+fZvdJ9NT2rRK48vpihvTB+fD19jqK9X5otPZ8+orzmFcw9cN7jvaQFyzzTsk29ikisvH5TTL2S+Kg9nl0kPKsk1r00nKk9yqKjvF0/bjwk/kI9kvrqPCsrr701zH+7NJ+TPSZEhb3Ww/887JyovX/TEbygBlO7HtLWPSCTobyO8Gs9ZbeqvTAxejpITuy7BXavPS9Ud71l8z09p+PpOiuzPD2oo1+94FcWPQ==",
+  "emb_version": "medsiglip-v1",
+  "mock_inference": {
+    "summary": [
+      "Mock summary for case-0006 (es)."
+    ],
+    "risk": "monitor",
+    "recommendations": [
+      "Short play-based activities",
+      "Rescreen in 3 months"
+    ],
+    "parent_text": "Pruebe actividades de lenguaje diarias; revisar en 3 meses.",
+    "explainability": [
+      {
+        "type": "text",
+        "detail": "No two-word phrases",
+        "score": 0.8398255337094491
+      }
+    ],
+    "confidence": 0.76,
+    "adapter_id": "mock/adapter_v1",
+    "model_id": "mock/medgemma"
+  },
+  "audit_log": [],
+  "time_to_referral_days": null,
+  "D_base": true
+}
