@@ -41,10 +41,12 @@ def log_inference_audit(
     success: bool,
     fallback_used: bool,
     error_msg: Optional[str] = None,
+    fallback_reason: Optional[str] = None,
 ) -> None:
     """
     Append one compact inference audit event (JSONL).
     Same contract as docs/error_handling.md; never store raw images.
+    When fallback_used=True, pass fallback_reason e.g. MODEL_FALLBACK for compliance.
     """
     event = {
         "ts": time.time(),
@@ -57,6 +59,8 @@ def log_inference_audit(
         "fallback_used": fallback_used,
         "error": error_msg,
     }
+    if fallback_reason:
+        event["fallback_reason"] = fallback_reason
     _append_audit_event(event)
 
 
@@ -72,10 +76,14 @@ def log_inference_audit_expanded(
     success: bool = True,
     fallback_used: bool = False,
     error_msg: Optional[str] = None,
+    decision_payload: Optional[dict] = None,
+    drift_alert: bool = False,
 ) -> None:
     """
     Expanded audit entry for HAI/MCP pipeline (PAGE 13).
     Stores model_id, adapter_id, prompt_version, tool_chain, confidence, clinician_override.
+    When using agents, pass decision_payload (timestamp, risk, agent_id, etc.) for compliance.
+    Set drift_alert=True when drift monitor signals; logged for dashboard/alerting.
     """
     event = {
         "timestamp": _now_iso(),
@@ -91,7 +99,10 @@ def log_inference_audit_expanded(
         "success": success,
         "fallback_used": fallback_used,
         "error": error_msg,
+        "drift_alert": drift_alert,
     }
+    if decision_payload is not None:
+        event["decision"] = decision_payload
     _append_audit_event(event)
 
 

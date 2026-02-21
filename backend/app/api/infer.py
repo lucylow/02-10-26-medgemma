@@ -150,6 +150,7 @@ async def infer_endpoint(
                 emb_version=req.emb_version,
                 success=True,
                 fallback_used=True,
+                fallback_reason="MODEL_FALLBACK",
             )
             return {
                 "case_id": req.case_id,

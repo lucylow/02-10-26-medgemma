@@ -19,4 +19,4 @@ class RiskTool(MCPTool):
         confidence = context.get("confidence", 0.5)
         if confidence < 0.5:
             risk = "manual_review_required"
-        return {"risk_score": risk, "risk_source": "risk_tool", "confidence": confidence}
+        return {"risk": risk, "risk_score": risk, "risk_source": "risk_tool", "confidence": confidence}

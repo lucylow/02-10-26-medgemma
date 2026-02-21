@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "pediagents.fullname" . }}-orchestrator
+  labels:
+    app.kubernetes.io/name: {{ include "pediagents.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  replicas: {{ .Values.orchestrator.replicas }}
+  selector:
+    matchLabels:
+      app: {{ include "pediagents.fullname" . }}-orchestrator
+  template:
+    metadata:
+      labels:
+        app: {{ include "pediagents.fullname" . }}-orchestrator
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: {{ include "pediagents.serviceAccountName" . }}
+      {{- if .Values.orchestrator.mtls.enabled }}
+      initContainers:
+        - name: copy-mtls
+          image: bitnami/minideb
+          command: ["/bin/sh", "-c", "cp /mnt/tls/* /etc/ssl/certs/ 2>/dev/null || true"]
+          volumeMounts:
+            - name: mtls-secret
+              mountPath: /mnt/tls
+      {{- end }}
+      containers:
+        - name: orchestrator
+          image: "{{ .Values.orchestrator.image.repository }}:{{ .Values.orchestrator.image.tag }}"
+          imagePullPolicy: {{ .Values.orchestrator.image.pullPolicy }}
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: OTEL_SERVICE_NAME
+              value: "pedi-orchestrator"
+            - name: LOG_LEVEL
+              value: "{{ .Values.orchestrator.logLevel }}"
+            - name: AGENT_REGISTRY_URL
+              value: "{{ .Values.orchestrator.agentRegistryURL | default "" }}"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              memory: "{{ .Values.orchestrator.resources.requests.memory }}"
+              cpu: "{{ .Values.orchestrator.resources.requests.cpu }}"
+            limits:
+              memory: "{{ .Values.orchestrator.resources.limits.memory }}"
+              cpu: "{{ .Values.orchestrator.resources.limits.cpu }}"
+          {{- if .Values.orchestrator.mtls.enabled }}
+          volumeMounts:
+            - name: mtls-secret
+              mountPath: /etc/ssl/certs/pedi
+              readOnly: true
+          {{- end }}
+      {{- if .Values.orchestrator.mtls.enabled }}
+      volumes:
+        - name: mtls-secret
+          secret:
+            secretName: {{ .Values.orchestrator.mtls.secretName }}
+      {{- end }}

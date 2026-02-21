@@ -1,0 +1,26 @@
+nameOverride: ""
+orchestrator:
+  replicas: 1
+  image:
+    repository: ghcr.io/yourorg/pedi-orchestrator
+    tag: "v0.1.0"
+    pullPolicy: IfNotPresent
+  logLevel: info
+  agentRegistryURL: ""
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "1000m"
+  mtls:
+    enabled: false
+    secretName: "pedi-mtls-secret"
+
+serviceAccount:
+  create: true
+  name: ""
+
+serviceMonitor:
+  enabled: false

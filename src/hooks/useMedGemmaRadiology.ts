@@ -10,10 +10,8 @@ const API_BASE = import.meta.env.VITE_PEDISCREEN_BACKEND_URL?.replace(/\/api\/?$
   || (import.meta.env.DEV ? 'http://localhost:8000' : 'https://api.pediscreen.ai');
 const API_KEY = import.meta.env.VITE_API_KEY || 'dev-example-key';
 
-function headers(): Record<string, string> {
-  const h: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (API_KEY) h['x-api-key'] = API_KEY;
-  return h;
+function authHeaders(): Record<string, string> {
+  return API_KEY ? { 'x-api-key': API_KEY } : {};
 }
 
 export type BoneAgeResult = {
@@ -61,7 +59,7 @@ export function useMedGemmaRadiology() {
 
       const res = await fetch(`${API_BASE}/api/radiology/analyze-bone-age`, {
         method: 'POST',
-        headers: API_KEY ? { 'x-api-key': API_KEY } : {},
+        headers: authHeaders(),
         body: form,
       });
 
@@ -77,7 +75,11 @@ export function useMedGemmaRadiology() {
         }
       }
 
-      const data = (await res.json()) as { result?: string; bone_age_months?: number; [k: string]: unknown };
+      const data = (await res.json()) as {
+        result?: string;
+        bone_age_months?: number;
+        [k: string]: unknown;
+      };
       if (data.bone_age_months != null) {
         return {
           bone_age_months: data.bone_age_months,
@@ -114,7 +116,7 @@ export function useMedGemmaRadiology() {
 
       const res = await fetch(`${API_BASE}/api/radiology/analyze-rop`, {
         method: 'POST',
-        headers: API_KEY ? { 'x-api-key': API_KEY } : {},
+        headers: authHeaders(),
         body: form,
       });
 

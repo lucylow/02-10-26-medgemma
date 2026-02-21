@@ -28,15 +28,14 @@ def test_score_agent_urgency_boost_for_triage():
 
 
 def test_score_agent_private_penalty_when_no_consent():
-    cloud_agent = {"agent_id": "reasoner-gpu", "capabilities": ["reason"], "latency_p95": 2500, "cost": "high", "health": "ok", "private_ok": False}
+    # Same capability; cloud has private_ok False, edge has True. No consent -> cloud gets penalty.
+    cloud_agent = {"agent_id": "embedder-cloud", "capabilities": ["embed"], "latency_p95": 300, "cost": "low", "health": "ok", "private_ok": False}
     private_agent = {"agent_id": "embedder-edge", "capabilities": ["embed"], "latency_p95": 200, "cost": "low", "health": "ok", "private_ok": True}
     consent_false = False
-    score_cloud = score_agent(cloud_agent, ["embed", "reason"], "normal", consent_false)
+    score_cloud = score_agent(cloud_agent, ["embed"], "normal", consent_false)
     score_private = score_agent(private_agent, ["embed"], "normal", consent_false)
-    # Private agent should score higher when consent is false (no penalty)
-    assert score_private > 0
-    # Cloud agent with private_ok False gets private_penalty when not consent_raw_upload
-    assert score_cloud < score_private or "reason" not in ["embed"]
+    assert score_private > 0 and score_cloud > 0
+    assert score_private > score_cloud
 
 
 def test_score_agent_unhealthy_excluded_in_route_candidates():

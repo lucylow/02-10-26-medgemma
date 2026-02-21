@@ -243,35 +243,50 @@ class PediRadDatasetPrep:
         sex: str,
         fracture_type: str,
     ) -> Dict:
-        """Single annotation entry for LoRA training (bone age, fractures, risk)."""
+        """Single annotation entry for LoRA training (PEDIRAD-001 production JSON)."""
         bone_age = age_months + np.random.normal(0, 1.2)
         z_score = (bone_age - age_months) / 12.0
         fractures: List[Dict] = []
         if "normal" not in fracture_type.lower():
-            bone_name = "distal_radius" if "radius" in fracture_type else "ulna"
+            bone_name = "distal_radius" if "radius" in fracture_type else "distal_ulna"
             ftype = fracture_type.split("_")[0] if "_" in fracture_type else fracture_type
+            if ftype not in ("buckle", "greenstick", "complete", "plastic"):
+                ftype = "buckle" if "buckle" in fracture_type.lower() or "torus" in fracture_type.lower() else "greenstick"
+            displaced = "complete" in fracture_type.lower()
             fractures.append({
                 "bone": bone_name,
                 "type": ftype,
-                "displaced": "complete" in fracture_type.lower(),
+                "displaced": displaced,
+                "angulation_degrees": int(np.clip(np.random.normal(8, 4), 0, 25)),
                 "confidence": 0.96,
-                "management": "casting" if "buckle" in fracture_type.lower() else "surgical",
+                "management": "closed_reduction_casting" if not displaced else "surgical",
             })
         risk = "urgent_ortho" if fractures else "routine"
+        referral_timeline = "24_hours" if risk == "urgent_ortho" else "72_hours" if fractures else "6_months"
+        differentials = ["soft_tissue", "normal_variant"] if not fractures else []
+        icd10 = ["S52.501A"] if fractures else ["Z00.129"]
+        chw_action = "splint + immediate_referral" if risk == "urgent_ortho" else "casting_clinic_72hr" if fractures else "routine well_child"
+        maturity_stage = "average" if -1.5 <= z_score <= 1.5 else "late" if z_score < -1.5 else "advanced"
         return {
             "image_path": img_path,
             "patient": {
                 "age_months": age_months,
                 "sex": sex,
+                "weight_kg": round(age_months * 0.18 + 4.0, 1),
                 "chronological_age_months": age_months,
             },
             "radiology": {
                 "bone_age_months": round(bone_age, 1),
+                "chronological_age_months": age_months,
                 "z_score": round(z_score, 2),
-                "maturity_stage": "average",
+                "maturity_stage": maturity_stage,
             },
             "fractures": fractures,
+            "differentials": differentials,
             "risk_stratification": risk,
+            "referral_timeline": referral_timeline,
+            "icd10": icd10,
+            "chw_action": chw_action,
             "quality_score": 0.92,
         }
 

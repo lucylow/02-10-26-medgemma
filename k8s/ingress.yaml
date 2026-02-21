@@ -1,0 +1,28 @@
+# Ingress — TLS termination; route to PediScreen API (and optional Grafana)
+# Adjust host and TLS secret for your domain.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: pediscreen-ingress
+  namespace: pediscreen
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+spec:
+  tls:
+    - hosts:
+        - api.pediscreen.example.com
+      secretName: pediscreen-tls
+  rules:
+    - host: api.pediscreen.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: pediscreen-api
+                port:
+                  number: 8000

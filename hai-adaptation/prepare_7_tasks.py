@@ -32,6 +32,7 @@ TASK_DIRS = {
     "bone_age": "bone_age",
     "growth": "growth_zscore",
     "fracture": "fractures",
+    "pedirad": "pedirad_unified",
     "chw_workflow": "chw_workflow",
     "multilingual": "multilingual",
 }
@@ -54,6 +55,7 @@ Place JSONL files per task:
 - bone_age/       (~4K)  — Bone age assessment
 - growth_zscore/  (~1.5K)— Growth z-scores
 - fractures/      (~1.5K)— Fracture classification
+- pedirad_unified/ — PEDIRAD-001 unified fracture + bone age (production JSON)
 - chw_workflow/   — CHW workflow generation
 - multilingual/   — Multilingual reports
 

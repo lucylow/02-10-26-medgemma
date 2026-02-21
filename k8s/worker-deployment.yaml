@@ -1,0 +1,51 @@
+# PediScreen AI — background workers (inference queue, FHIR write-back, audit)
+# Optional: GPU for model inference workers
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pediscreen-worker
+  namespace: pediscreen
+  labels:
+    app: pediscreen-worker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: pediscreen-worker
+  template:
+    metadata:
+      labels:
+        app: pediscreen-worker
+    spec:
+      containers:
+        - name: worker
+          image: pediscreen-ai:latest
+          imagePullPolicy: IfNotPresent
+          command: ["python", "-m", "workers.worker"]
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: db-secret
+                  key: url
+            - name: ENV
+              value: production
+          resources:
+            limits:
+              memory: "4Gi"
+              cpu: "2"
+              # nvidia.com/gpu: "1"  # optional for GPU workers
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pediscreen-worker
+  namespace: pediscreen
+spec:
+  selector:
+    app: pediscreen-worker
+  clusterIP: None
+  ports: []

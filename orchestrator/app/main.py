@@ -14,11 +14,13 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from orchestrator.agent_registry import AgentRegistry
+from orchestrator.agent_base import HTTPAgent
 from orchestrator.db.audit import AuditStore
 from orchestrator.db.idempotency import IdempotencyStore
 from orchestrator.policies import TASK_TYPE_CAPABILITY
 from orchestrator.queue import enqueue_task, stream_length, PRIORITY_STREAM_MAP
 from orchestrator.router import Router
+from orchestrator.router_simple import route as route_simple
 
 logger = logging.getLogger("orchestrator.routing")
 
@@ -158,6 +160,38 @@ async def get_task(task_id: str):
     """Return task status (and result if stored). Placeholder: extend with result store lookup."""
     # Optional: lookup from Redis or DB by task_id
     return {"task_id": task_id, "status": "unknown"}
+
+
+@app.post("/route_and_call")
+def route_and_call(envelope: RequestEnvelope):
+    """
+    Lightweight endpoint: routes via in-memory registry to best agent and calls the first one synchronously.
+    For heavy jobs, use /route_task for async enqueue and 202 + task_id.
+    """
+    req = envelope.model_dump() if hasattr(envelope, "model_dump") else envelope.dict()
+    req["request_id"] = req.get("request_id") or str(uuid.uuid4())
+    req.setdefault("capability", [])
+
+    candidates = route_simple(req, top_k=3)
+    if not candidates:
+        raise HTTPException(status_code=503, detail="No agents available")
+
+    selected = candidates[0]
+    agent_url = selected.get("base_url") or f"http://{selected['agent_id']}:8000"
+    timeout_sec = max(1, (req.get("timeout_ms") or 5000) // 1000)
+    agent_client = HTTPAgent(selected["agent_id"], url=agent_url, timeout=timeout_sec)
+
+    try:
+        resp = agent_client.handle(req)
+    except Exception as exc:
+        logger.exception("Agent call failed")
+        raise HTTPException(status_code=502, detail=f"Agent call failed: {exc}")
+
+    return {
+        "request_id": req["request_id"],
+        "agent_id": selected["agent_id"],
+        "agent_response": resp,
+    }
 
 
 @app.post("/register_agent")

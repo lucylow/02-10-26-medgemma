@@ -1,0 +1,18 @@
+{
+  "name": "medgemma-eval",
+  "private": true,
+  "version": "1.0.0",
+  "description": "PediScreen AI - MedGemma production evaluation (ASQ-3 gold standard)",
+  "type": "commonjs",
+  "scripts": {
+    "eval": "ts-node medgemma-evaluator.ts"
+  },
+  "dependencies": {
+    "@xenova/transformers": "^2.17.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.0.0"
+  }
+}

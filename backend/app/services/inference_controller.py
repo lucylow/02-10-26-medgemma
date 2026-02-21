@@ -11,7 +11,10 @@ from app.core.config import settings
 from app.models import get_registry, register_default_models, MockEmbeddingModel
 from app.models.post_processor import fallback_response
 from app.mcp import create_default_registry, MCPOrchestrator
-from app.schemas.explainability_structured import ensure_explainability_in_output
+from app.schemas.explainability_structured import (
+    ensure_explainability_in_output,
+    ensure_hai_structured_output,
+)
 from app.calibration import apply_calibration
 from app.services.audit import log_inference_audit_expanded
 
@@ -78,11 +81,12 @@ def run_inference_sync(
     start = time.perf_counter()
     try:
         orch = _get_orchestrator()
+        run_fn = orch.run if hasattr(orch, "run") else orch.run_pipeline
         for attempt in range(MAX_RETRIES + 1):
             try:
                 result = asyncio.run(
                     asyncio.wait_for(
-                        asyncio.to_thread(orch.run_pipeline, input_data),
+                        asyncio.to_thread(run_fn, input_data),
                         timeout=INFERENCE_TIMEOUT_S,
                     )
                 )
@@ -106,7 +110,7 @@ def run_inference_sync(
         result["case_id"] = case_id
         elapsed_ms = int((time.perf_counter() - start) * 1000)
         result["inference_time_ms"] = elapsed_ms
-        # Audit
+        # Audit: include agent decision_log (timestamp, risk, tool_chain) when present
         log_inference_audit_expanded(
             request_id=request_id,
             case_id=case_id,
@@ -115,9 +119,11 @@ def run_inference_sync(
             prompt_version=result.get("prompt_version"),
             tool_chain=result.get("tool_chain"),
             confidence=result.get("confidence"),
-            clinician_override=False,
+            clinician_override=result.get("clinician_override", False),
             success=True,
             fallback_used=result.get("fallback", False),
+            decision_payload=result.get("decision_log"),
+            drift_alert=result.get("drift_alert", False),
         )
         return result
     except Exception as e:

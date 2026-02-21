@@ -1,0 +1,27 @@
+# Prometheus alert rules for pediagents (orchestrator + agents).
+# Use with Prometheus Operator: apply in the same namespace as your Prometheus CR.
+# Example: kubectl apply -f charts/pediagents/alerts/prometheus-rules.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: pediagents-alerts
+  labels:
+    release: prometheus
+spec:
+  groups:
+    - name: pediagents.rules
+      rules:
+        - alert: HighAgentLatency
+          expr: histogram_quantile(0.95, sum(rate(agent_call_duration_seconds_bucket[5m])) by (le, agent_id)) > 10
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Agent latency high (p95 > 10s)"
+        - alert: JobQueueLengthHigh
+          expr: redis_instance_connected_clients > 100
+          for: 10m
+          labels:
+            severity: critical
+          annotations:
+            summary: "High job queue length"

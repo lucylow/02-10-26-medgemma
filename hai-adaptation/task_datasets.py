@@ -170,7 +170,7 @@ Plot: WHO 2006""",
 
 
 class FractureDataset:
-    """Fracture detection/classification from X-ray."""
+    """Fracture detection/classification from X-ray (PEDIRAD-001 priority bones)."""
 
     def format_training_data(self, samples: List[Dict[str, Any]] | None = None) -> List[Dict[str, Any]]:
         if samples:
@@ -196,6 +196,84 @@ Site: Distal radius""",
         if isinstance(out, dict):
             out = json.dumps(out, indent=2)
         return {"instruction": inst, "output": out}
+
+
+# ---------------------------------------------------------------------------
+# PEDIRAD-001: Unified Multi-Label Fracture + Bone Age (CHW production JSON)
+# ---------------------------------------------------------------------------
+
+def _get_pedirad_config() -> Any:
+    try:
+        from hai_adaptation.pedirad_task_config import build_pedirad_prompt, production_output_example
+        return build_pedirad_prompt, production_output_example
+    except ImportError:
+        _HAI_DIR = Path(__file__).resolve().parent
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "pedirad_task_config", _HAI_DIR / "pedirad_task_config.py"
+        )
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod.build_pedirad_prompt, mod.production_output_example
+
+
+class PediRadUnified:
+    """
+    PEDIRAD-001: Multi-label pediatric extremity fracture + bone age.
+    Outputs production JSON (patient, radiology, fractures[], risk_stratification, chw_action, icd10).
+    """
+
+    def format_training_data(self, samples: List[Dict[str, Any]] | None = None) -> List[Dict[str, Any]]:
+        if samples:
+            return [self._format_one(s) for s in samples]
+        build_prompt, example = _get_pedirad_config()
+        instruction = build_prompt(age_months=48, sex="M", weight_kg=18.2)
+        return [
+            {
+                "instruction": instruction,
+                "output": json.dumps(example(), indent=2),
+            }
+        ]
+
+    def _format_one(self, s: Dict[str, Any]) -> Dict[str, Any]:
+        build_prompt, example = _get_pedirad_config()
+        p = s.get("patient", {})
+        r = s.get("radiology", {})
+        inst = s.get("instruction")
+        if not inst and (p or r):
+            inst = build_prompt(
+                age_months=p.get("age_months", 48),
+                sex=p.get("sex", "M"),
+                weight_kg=p.get("weight_kg", 18.2),
+                mechanism=s.get("mechanism", "Fall"),
+                symptoms=s.get("symptoms", "Swelling, deformity, limited ROM"),
+                prior_imaging=s.get("prior_imaging", "None"),
+                quality_score=s.get("quality_score", 0.92),
+            )
+        out = s.get("output", s.get("target"))
+        if out is None and (p or r):
+            # Build production JSON from annotation (PEDIRAD-001)
+            ex = example()
+            ex["patient"] = {
+                "age_months": p.get("age_months", 48),
+                "sex": p.get("sex", "M"),
+                "weight_kg": p.get("weight_kg", 18.2),
+            }
+            ex["radiology"] = {
+                "bone_age_months": r.get("bone_age_months", ex["radiology"]["bone_age_months"]),
+                "chronological_age_months": r.get("chronological_age_months", p.get("age_months", 48)),
+                "z_score": r.get("z_score", ex["radiology"]["z_score"]),
+                "maturity_stage": r.get("maturity_stage", "average"),
+            }
+            ex["fractures"] = s.get("fractures", ex["fractures"])
+            ex["risk_stratification"] = s.get("risk_stratification", ex["risk_stratification"])
+            ex["referral_timeline"] = s.get("referral_timeline", ex["referral_timeline"])
+            ex["icd10"] = s.get("icd10", ex["icd10"])
+            ex["chw_action"] = s.get("chw_action", ex["chw_action"])
+            out = json.dumps(ex, indent=2)
+        elif isinstance(out, dict):
+            out = json.dumps(out, indent=2)
+        return {"instruction": inst or "", "output": out or ""}
 
 
 # ---------------------------------------------------------------------------
@@ -275,6 +353,7 @@ TASK_LOADERS = {
     "bone_age": BoneAgeAssessor,
     "growth": GrowthZScoreDataset,
     "fracture": FractureDataset,
+    "pedirad": PediRadUnified,
     "chw_workflow": CHWWorkflowDataset,
     "multilingual": MultilingualDataset,
 }
@@ -308,6 +387,7 @@ def create_multitask_samples(data_root: Path) -> List[Dict[str, Any]]:
         "bone_age": "bone_age",
         "growth": "growth_zscore",
         "fracture": "fractures",
+        "pedirad": "pedirad_unified",
         "chw_workflow": "chw_workflow",
         "multilingual": "multilingual",
     }

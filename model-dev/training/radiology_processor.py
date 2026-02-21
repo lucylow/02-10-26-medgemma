@@ -98,9 +98,44 @@ Provide JSON only:
 }}"""
 
 
+def build_pedirad_unified_prompt(annot: Dict[str, Any]) -> str:
+    """
+    PEDIRAD-001: Multi-label pediatric fracture + bone age (CHW production).
+    Uses prompt template from hai-adaptation/pedirad_task_config.
+    """
+    try:
+        from hai_adaptation.pedirad_task_config import build_pedirad_prompt
+    except ImportError:
+        _parent = Path(__file__).resolve().parent.parent.parent
+        import importlib.util
+        _spec = importlib.util.spec_from_file_location(
+            "pedirad_task_config",
+            _parent / "hai-adaptation" / "pedirad_task_config.py",
+        )
+        _mod = importlib.util.module_from_spec(_spec)
+        _spec.loader.exec_module(_mod)
+        build_pedirad_prompt = _mod.build_pedirad_prompt
+
+    p = annot.get("patient", {})
+    age_months = p.get("age_months", annot.get("age_months", 48))
+    sex = p.get("sex", annot.get("sex", "M"))
+    weight_kg = p.get("weight_kg", 18.2)
+    return build_pedirad_prompt(
+        age_months=age_months,
+        sex=sex,
+        weight_kg=weight_kg,
+        mechanism=annot.get("mechanism", "Fall"),
+        symptoms=annot.get("symptoms", "Swelling, deformity, limited ROM"),
+        prior_imaging=annot.get("prior_imaging", "None"),
+        quality_score=annot.get("quality_score", annot.get("image_quality", 0.92)),
+    )
+
+
 def build_radiology_prompt(annot: Dict[str, Any]) -> str:
     """Dispatch to task-specific prompt by annot['task'] or path hints."""
     task = (annot.get("task") or "").lower()
+    if "pedirad" in task or task == "pedirad_001":
+        return build_pedirad_unified_prompt(annot)
     if "bone_age" in task or "bone age" in task:
         return build_bone_age_prompt(annot)
     if "rop" in task or "retinopathy" in task:
@@ -223,10 +258,17 @@ class PediatricRadiologyDataset(Dataset if Dataset is not None else object):  # 
         p = Path(raw)
         if p.is_absolute() and p.exists():
             return p
-        # Try data_dir / image_path
+        # Try data_dir / image_path (and processed/train, etc. for PediRad-8K)
         full = self.data_dir / raw
         if full.exists():
             return full
+        for prefix in ("processed", "bone_age", "rop_screening", "fractures"):
+            alt = self.data_dir / prefix / self.split / p.name
+            if alt.exists():
+                return alt
+            alt = self.data_dir / prefix / raw
+            if alt.exists():
+                return alt
         # Try task subdirs
         for sub in ("bone_age", "rop_screening", "fractures"):
             for spl in (self.split, "train", "val", "test"):

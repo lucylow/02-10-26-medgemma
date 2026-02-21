@@ -28,6 +28,8 @@ class Settings(BaseSettings):
     MODEL_BACKEND: str = Field("mock", env="MODEL_BACKEND")
     # Use HAI pipeline (registry + MCP orchestrator + calibration + expanded audit)
     USE_HAI_PIPELINE: bool = Field(False, env="USE_HAI_PIPELINE")
+    # Use agent layer (ScreeningAgent) when HAI pipeline is on; adds safety + decision logging
+    USE_AGENT_PIPELINE: bool = Field(True, env="USE_AGENT_PIPELINE")
 
     # MedGemmaService: Vertex AI / Hugging Face
     HF_MODEL: Optional[str] = Field(None, env="HF_MODEL")

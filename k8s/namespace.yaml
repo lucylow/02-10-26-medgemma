@@ -1,0 +1,8 @@
+# PediScreen AI — production namespace (enterprise + federal)
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: pediscreen
+  labels:
+    app.kubernetes.io/name: pediscreen
+    compliance: nist-800-53

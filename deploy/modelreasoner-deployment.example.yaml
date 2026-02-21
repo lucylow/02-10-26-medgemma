@@ -1,0 +1,50 @@
+# Minimal manifest for the reasoner agent (model server).
+# Deploy alongside the orchestrator; orchestrator routes to this service.
+# Example: kubectl apply -f deploy/modelreasoner-deployment.example.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: modelreasoner
+  labels:
+    app: modelreasoner
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: modelreasoner
+  template:
+    metadata:
+      labels:
+        app: modelreasoner
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+    spec:
+      containers:
+        - name: modelserver
+          image: ghcr.io/yourorg/medgemma-modelserver:latest
+          ports:
+            - containerPort: 8000
+              name: http
+          resources:
+            requests:
+              cpu: "2000m"
+              memory: "8Gi"
+            limits:
+              cpu: "8000m"
+              memory: "32Gi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: modelreasoner
+  labels:
+    app: modelreasoner
+spec:
+  selector:
+    app: modelreasoner
+  ports:
+    - port: 8000
+      targetPort: 8000
+      name: http
+  type: ClusterIP
