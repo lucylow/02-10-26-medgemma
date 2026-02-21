@@ -27,6 +27,7 @@ import MultimodalAnalysisPreview from '@/components/pediscreen/MultimodalAnalysi
 import ProgressiveHelp from '@/components/pediscreen/ProgressiveHelp';
 import AccessibilityBar from '@/components/pediscreen/AccessibilityBar';
 import ConsentModal, { hasStoredConsent } from '@/components/pediscreen/ConsentModal';
+import { getConsent } from '@/services/consentService';
 import ImageUploadConsentModal, { hasImageConsentPreference, getStoredUploadPreference } from '@/components/pediscreen/ImageUploadConsentModal';
 import CapturePreviewStep from '@/components/pediscreen/CapturePreviewStep';
 import DisclaimerBanner from '@/components/pediscreen/DisclaimerBanner';
@@ -219,11 +220,13 @@ const ScreeningScreen = () => {
     setMedGemmaDraft(null);
     
     try {
+      const consent = await getConsent();
       const result = await submitScreening({
         childAge: currentScreening.childAge,
         domain: currentScreening.domain,
         observations: currentScreening.observations,
         imageFile: currentScreening.imageFile,
+        consent_id: consent?.id ?? undefined,
       });
       
       if (result.success && result.report && result.screeningId) {
@@ -279,7 +282,7 @@ const ScreeningScreen = () => {
       <ConsentModal
         open={consentOpen}
         onOpenChange={setConsentOpen}
-        onConsent={() => setConsentOpen(false)}
+        onConsent={(_opts) => setConsentOpen(false)}
         screeningId={lastResult?.screeningId}
         apiKey={import.meta.env.VITE_API_KEY}
       />

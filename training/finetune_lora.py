@@ -15,7 +15,8 @@ Adjustments:
 
 Usage:
   python training/finetune_lora.py --data data/synthetic/v1.0/train.parquet
-  python training/finetune_lora.py --data my_finetune_dataset  # HuggingFace dataset path
+  python training/finetune_lora.py --train_file data/synth_train.jsonl --output_dir adapters/pediscreen_v1
+  python training/finetune_lora.py --model_name_or_path google/medgemma-2b-it --train_file data/synth_train.jsonl --output_dir adapters/pediscreen_v1 --num_train_epochs 3
 """
 from __future__ import annotations
 
@@ -78,6 +79,21 @@ def load_dataset(data_path: str) -> datasets.DatasetDict:
     return datasets.load_from_disk(str(path))
 
 
+def load_dataset_from_jsonl(train_file: str, max_length: int = 512) -> datasets.DatasetDict:
+    """Load JSONL (e.g. from data.synth) and build HF Dataset with 'text' column."""
+    from training.utils import JsonlTextDataset
+
+    ds = JsonlTextDataset(train_file)
+    texts = [s["text"] for s in ds.samples]
+    labels = [s.get("label") or s.get("expected_risk") or "unknown" for s in ds.samples]
+    if not texts:
+        raise ValueError(f"No samples in {train_file}")
+    hf_ds = datasets.Dataset.from_dict({"text": texts, "label": labels})
+    test_size = min(0.1, max(1, len(hf_ds) // 10))
+    split = hf_ds.train_test_split(test_size=test_size, seed=42)
+    return datasets.DatasetDict({"train": split["train"], "validation": split["test"]})
+
+
 def collate_fn(tokenizer, max_length: int = 2048):
     """Collate batch: tokenize texts, set labels for causal LM (mask padding with -100)."""
 
@@ -101,17 +117,28 @@ def collate_fn(tokenizer, max_length: int = 2048):
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="MedGemma-4B QLoRA fine-tuning")
-    parser.add_argument(
-        "--data",
-        default="my_finetune_dataset",
-        help="Path to parquet file/dir or HuggingFace dataset",
-    )
+    parser = argparse.ArgumentParser(description="MedGemma QLoRA/LoRA fine-tuning")
+    parser.add_argument("--model_name_or_path", default=BASE_MODEL, help="Base model (e.g. google/medgemma-2b-it)")
+    parser.add_argument("--data", default=None, help="Path to parquet or HuggingFace dataset")
+    parser.add_argument("--train_file", default=None, help="Path to JSONL (e.g. data/synth_train.jsonl)")
     parser.add_argument("--output-dir", default=OUTPUT_DIR)
-    parser.add_argument("--adapter-dir", default=ADAPTER_DIR)
-    parser.add_argument("--max-length", type=int, default=2048)
+    parser.add_argument("--adapter-dir", default=None, help="Adapter save path (defaults to output-dir)")
+    parser.add_argument("--max-length", type=int, default=512)
+    parser.add_argument("--per_device_train_batch_size", type=int, default=8)
+    parser.add_argument("--num_train_epochs", type=int, default=3)
+    parser.add_argument("--learning_rate", type=float, default=5e-5)
+    parser.add_argument("--weight_decay", type=float, default=0.01)
+    parser.add_argument("--lora_rank", type=int, default=8)
+    parser.add_argument("--lora_alpha", type=int, default=16)
+    parser.add_argument("--max_steps", type=int, default=-1, help="Stop after N steps (-1 = full epochs)")
     parser.add_argument("--attention-only", action="store_true", help="LoRA on attention only (VRAM save)")
     args = parser.parse_args()
+
+    data_path = args.train_file or args.data or "my_finetune_dataset"
+    adapter_dir = args.adapter_dir or args.output_dir
+    model_name = args.model_name_or_path
+    lora_r = args.lora_rank
+    lora_alpha = args.lora_alpha
 
     target_modules = (
         ["q_proj", "k_proj", "v_proj", "o_proj"]
@@ -119,9 +146,9 @@ def main() -> None:
         else TARGET_MODULES
     )
 
-    tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL, trust_remote_code=True)
+    tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
     model = AutoModelForCausalLM.from_pretrained(
-        BASE_MODEL,
+        model_name,
         trust_remote_code=True,
         device_map="auto",
         quantization_config=BITSANBYTES_CONFIG,
@@ -129,8 +156,8 @@ def main() -> None:
     model = prepare_model_for_kbit_training(model)
 
     lora_config = LoraConfig(
-        r=LORA_R,
-        lora_alpha=LORA_ALPHA,
+        r=lora_r,
+        lora_alpha=lora_alpha,
         lora_dropout=LORA_DROPOUT,
         bias="none",
         task_type="CAUSAL_LM",
@@ -140,7 +167,10 @@ def main() -> None:
     model = get_peft_model(model, lora_config)
     model.print_trainable_parameters()
 
-    ds = load_dataset(args.data)
+    if args.train_file and Path(args.train_file).suffix == ".jsonl":
+        ds = load_dataset_from_jsonl(args.train_file, max_length=args.max_length)
+    else:
+        ds = load_dataset(data_path)
     if "text" not in ds["train"].column_names:
         raise ValueError(
             "Dataset must have 'text' column. Run training/prepare_sft_data.py first."
@@ -148,10 +178,12 @@ def main() -> None:
 
     training_args = TrainingArguments(
         output_dir=args.output_dir,
-        per_device_train_batch_size=2,
+        per_device_train_batch_size=args.per_device_train_batch_size,
         gradient_accumulation_steps=8,
-        learning_rate=1e-4,
-        num_train_epochs=3,
+        learning_rate=args.learning_rate,
+        weight_decay=args.weight_decay,
+        num_train_epochs=args.num_train_epochs,
+        max_steps=args.max_steps if args.max_steps > 0 else -1,
         lr_scheduler_type="cosine",
         warmup_ratio=0.03,
         bf16=True,
@@ -171,10 +203,10 @@ def main() -> None:
     trainer.train()
 
     # Save adapter and tokenizer
-    Path(args.adapter_dir).mkdir(parents=True, exist_ok=True)
-    model.save_pretrained(args.adapter_dir)
-    tokenizer.save_pretrained(args.adapter_dir)
-    print(f"Adapter saved to {args.adapter_dir}")
+    Path(adapter_dir).mkdir(parents=True, exist_ok=True)
+    model.save_pretrained(adapter_dir)
+    tokenizer.save_pretrained(adapter_dir)
+    print(f"Adapter saved to {adapter_dir}")
 
 
 if __name__ == "__main__":

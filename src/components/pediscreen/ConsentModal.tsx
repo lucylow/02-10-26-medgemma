@@ -1,10 +1,11 @@
 /**
  * Parent-facing consent modal — shown before any data collection.
- * Uses exact microcopy for legal consistency; consent stored for audit.
- * Calls POST /api/consent when accepted for backend audit trail.
+ * Consent-first: consent required before raw image/audio; consent_id stored and sent with API calls.
+ * Uses consentService for single source of truth; calls POST /api/consent for backend audit.
  */
 import React from 'react';
 import { postConsent } from '@/api/consentApi';
+import { getConsent, setConsent, type ConsentScope } from '@/services/consentService';
 import {
   Dialog,
   DialogContent,
@@ -21,12 +22,11 @@ import {
   PARENT_FAQ_PARAGRAPH,
 } from '@/constants/disclaimers';
 
-const CONSENT_STORAGE_KEY = 'pediscreen_consent_v1';
-
 export interface ConsentModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConsent: (opts: { images: boolean; deidentified: boolean }) => void;
+  /** Called with consent_id and options; include consent_id in upload/infer calls */
+  onConsent: (opts: { images: boolean; deidentified: boolean; consent_id: string }) => void;
   /** Show extended FAQ paragraph */
   extended?: boolean;
   /** Optional: screening/patient IDs for consent record */
@@ -36,20 +36,16 @@ export interface ConsentModalProps {
   apiKey?: string;
 }
 
+/** Sync: whether the user has already granted consent (embeddings_only or raw_image). Used for initial modal visibility. */
 export function hasStoredConsent(): boolean {
   if (typeof window === 'undefined') return false;
   try {
-    return localStorage.getItem(CONSENT_STORAGE_KEY) === 'true';
+    const raw = localStorage.getItem('consent_v1');
+    if (!raw) return false;
+    const parsed = JSON.parse(raw) as { scope?: string };
+    return parsed.scope !== 'revoked';
   } catch {
     return false;
-  }
-}
-
-export function storeConsent(): void {
-  try {
-    localStorage.setItem(CONSENT_STORAGE_KEY, 'true');
-  } catch {
-    /* ignore */
   }
 }
 
@@ -66,10 +62,15 @@ export default function ConsentModal({
   const [deidentified, setDeidentified] = React.useState(true);
 
   const handleAccept = async () => {
-    storeConsent();
-    onConsent({ images, deidentified });
+    const scope: ConsentScope = images ? 'raw_image' : 'embeddings_only';
+    const record = await setConsent({
+      scope,
+      rawImagePurpose: images ? 'screening' : undefined,
+      deidentified,
+      images,
+    });
+    onConsent({ images, deidentified, consent_id: record.id });
     onOpenChange(false);
-    // Record consent to backend for audit trail (fire-and-forget)
     try {
       await postConsent({
         screeningId,

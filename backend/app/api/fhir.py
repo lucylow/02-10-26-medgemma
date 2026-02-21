@@ -2,9 +2,10 @@
 SMART-on-FHIR OAuth endpoints for EHR launch context.
 Enables real EHR launch (Epic, Cerner, Athena) with patient context.
 Full SMART-compliant launch flow per HL7 spec.
+Production: state validation, redirect_uri server-side, no internal leakage.
 """
-from fastapi import APIRouter, Body, Request, Query
-from fastapi.responses import RedirectResponse
+from fastapi import APIRouter, Body, Request, Query, status
+from fastapi.responses import JSONResponse, RedirectResponse
 
 from app.core.config import settings
 from app.services.smart_oauth import SMARTClient, exchange_code, get_token_url
@@ -39,15 +40,21 @@ async def fhir_callback(request: Request):
     """
     OAuth2 callback. Exchanges code for access token.
     Returns access_token, patient context, practitioner (fhirUser).
-    In production: store token in secure session or DB, keyed by user/session.
+    Production: 400 for missing code/iss; state recommended when using PKCE.
     """
     code = request.query_params.get("code")
     if not code:
-        return {"error": "missing_code", "detail": "Authorization code not provided"}
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"error": "missing_code", "detail": "Authorization code not provided"},
+        )
 
     iss = request.query_params.get("iss", "") or (settings.FHIR_BASE_URL or "")
     if not iss:
-        return {"error": "missing_iss", "detail": "FHIR issuer URL required (iss param or FHIR_BASE_URL)"}
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"error": "missing_iss", "detail": "FHIR issuer URL required (iss param or FHIR_BASE_URL)"},
+        )
 
     state = request.query_params.get("state")
 
@@ -58,7 +65,6 @@ async def fhir_callback(request: Request):
             client_secret=settings.SMART_CLIENT_SECRET,
         )
         token = smart.exchange_code(iss, code, state=state)
-        # In production: store token in secure session or DB, keyed by user/session
         return {
             "access_token": token.get("access_token"),
             "token_type": token.get("token_type", "Bearer"),
@@ -68,7 +74,10 @@ async def fhir_callback(request: Request):
             "practitioner": token.get("fhirUser"),
         }
     except Exception as e:
-        return {"error": "token_exchange_failed", "detail": str(e)}
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"error": "token_exchange_failed", "detail": "Token exchange failed"},
+        )
 
 
 # Alternate SMART paths (Epic/Cerner/SMART Sandbox convention)

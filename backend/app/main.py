@@ -11,6 +11,7 @@ from app.core.config import settings
 from app.core.logger import logger
 from app.core.disclaimers import API_DISCLAIMER_HEADER
 from app.core.legal_middleware import LegalMiddleware
+from app.core.request_id_middleware import RequestIDMiddleware, get_request_id
 from app.api import (
     analyze,
     stream_analyze,
@@ -63,6 +64,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         "Request validation failed",
         status_code=422,
         details=details,
+        request_id=get_request_id(request),
     )
 
 
@@ -95,7 +97,9 @@ async def global_exception_handler(request: Request, exc: Exception):
         status_code=500,
     )
 
-# Legal middleware: audit, PHI enforcement, disclaimer, policy scan (runs first)
+# Request ID first so all downstream code has request.state.request_id
+app.add_middleware(RequestIDMiddleware)
+# Legal middleware: audit, PHI enforcement, disclaimer, policy scan
 app.add_middleware(LegalMiddleware)
 
 
@@ -138,6 +142,7 @@ app.include_router(medgemma_detailed.router)
 app.include_router(citations.router)
 app.include_router(infra.router)
 app.include_router(fhir.router)
+app.include_router(epic_fhir.router)
 app.include_router(consent.router)
 app.include_router(dsr.router)
 app.include_router(embed.router)

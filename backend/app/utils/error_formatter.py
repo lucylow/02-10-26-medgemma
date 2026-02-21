@@ -1,13 +1,13 @@
 # backend/app/utils/error_formatter.py
 """
 Central error formatter for consistent API error responses.
-Returns JSONResponse with standardized {code, message, details} schema.
+Returns JSONResponse with standardized { error: { code, message, details?, request_id? } } schema.
 """
 from typing import Optional
 
 from fastapi.responses import JSONResponse
 
-from app.errors import ErrorResponse
+from app.errors import ErrorResponse, ErrorResponseEnvelope
 
 
 def api_error(
@@ -15,21 +15,20 @@ def api_error(
     message: str,
     status_code: int = 400,
     details: Optional[dict] = None,
+    request_id: Optional[str] = None,
 ) -> JSONResponse:
     """
     Build a standardized JSON error response.
-
-    Args:
-        code: Machine-readable error code (e.g. INVALID_PAYLOAD, EMBEDDING_ERROR)
-        message: Human-readable error message
-        status_code: HTTP status code (default 400)
-        details: Optional extra context (e.g. {"field": "age_months", "expected": "0-240"})
-
-    Returns:
-        JSONResponse with ErrorResponse schema
+    Client receives { "error": { "code", "message", "details?", "request_id?" } }.
     """
-    body = ErrorResponse(code=code, message=message, details=details)
-    return JSONResponse(
-        status_code=status_code,
-        content=body.model_dump(exclude_none=True),
+    body = ErrorResponse(
+        code=code,
+        message=message,
+        details=details,
+        request_id=request_id,
     )
+    content = {"error": body.model_dump(exclude_none=True)}
+    response = JSONResponse(status_code=status_code, content=content)
+    if request_id:
+        response.headers["X-Request-Id"] = request_id
+    return response

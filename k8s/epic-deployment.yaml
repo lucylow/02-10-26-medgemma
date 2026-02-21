@@ -1,0 +1,72 @@
+# Enterprise Hospital Deployment (Epic production) — standalone snippet
+# For full Helm flow use: helm install pediscreen-epic ./helm/medgemma -f helm/medgemma/values.yaml -f helm/medgemma/values-epic.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pediscreen-epic
+  labels:
+    app: pediscreen-epic
+    deployment: epic
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: pediscreen-epic
+  template:
+    metadata:
+      labels:
+        app: pediscreen-epic
+        deployment: epic
+    spec:
+      containers:
+        - name: api
+          image: pediscreen/api:prod
+          ports:
+            - containerPort: 8000
+          env:
+            - name: ENV
+              value: production
+            - name: FHIR_BASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: pediscreen-epic-secrets
+                  key: FHIR_BASE_URL
+            - name: EPIC_FHIR_SERVER_URL
+              valueFrom:
+                secretKeyRef:
+                  name: pediscreen-epic-secrets
+                  key: EPIC_FHIR_SERVER_URL
+            - name: SMART_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: pediscreen-epic-secrets
+                  key: SMART_CLIENT_ID
+            - name: SMART_REDIRECT_URI
+              valueFrom:
+                configMapKeyRef:
+                  name: pediscreen-epic-config
+                  key: SMART_REDIRECT_URI
+            - name: SMART_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: pediscreen-epic-secrets
+                  key: SMART_CLIENT_SECRET
+          resources:
+            limits:
+              cpu: "2"
+              memory: "4Gi"
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 20
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10

@@ -14,6 +14,13 @@ class ErrorResponse(BaseModel):
     code: str = Field(..., description="Machine-readable error code for client logic")
     message: str = Field(..., description="Human-readable error message")
     details: Optional[dict] = Field(default=None, description="Optional extra context (e.g. field errors)")
+    request_id: Optional[str] = Field(default=None, description="Request ID for support and log correlation")
+
+
+class ErrorResponseEnvelope(BaseModel):
+    """API error envelope: { \"error\": { code, message, details?, request_id? } }."""
+
+    error: ErrorResponse
 
 
 # Custom exception for structured API errors (use instead of HTTPException)

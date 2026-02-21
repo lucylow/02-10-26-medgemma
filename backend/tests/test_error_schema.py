@@ -11,29 +11,38 @@ from app.core.config import settings
 from app.errors import ErrorResponse, ErrorCodes
 
 
+def _error_body(r) -> dict:
+    """Return the error payload: either envelope { error: {...} } or legacy top-level."""
+    body = r.json()
+    return body.get("error", body)
+
+
 def _assert_error_schema(body: dict) -> None:
-    """Assert response body conforms to ErrorResponse schema."""
+    """Assert response body conforms to ErrorResponse schema (code, message, optional details, request_id)."""
     assert "code" in body, f"Missing 'code' in error response: {body}"
     assert "message" in body, f"Missing 'message' in error response: {body}"
     assert isinstance(body["code"], str)
     assert isinstance(body["message"], str)
     if "details" in body and body["details"] is not None:
         assert isinstance(body["details"], dict)
+    if "request_id" in body and body["request_id"] is not None:
+        assert isinstance(body["request_id"], str)
 
 
 @pytest.mark.asyncio
 async def test_auth_error_returns_standardized_schema():
-    """401 from missing API key should return {code, message}."""
+    """401 from missing API key should return {error: {code, message}} and X-Request-Id."""
     async with AsyncClient(app=app, base_url="http://testserver") as ac:
         r = await ac.post(
             "/api/analyze",
             data={"childAge": "24", "domain": "language", "observations": "test"},
         )
     assert r.status_code == 401
-    body = r.json()
+    body = _error_body(r)
     _assert_error_schema(body)
     assert body["code"] == ErrorCodes.AUTH_FAIL
     assert "message" in body["message"]
+    assert "X-Request-Id" in r.headers
 
 
 @pytest.mark.asyncio
@@ -64,7 +73,7 @@ async def test_invalid_payload_returns_standardized_schema():
             data={"childAge": "not-a-number", "domain": "language", "observations": "test"},
         )
     assert r.status_code == 400
-    body = r.json()
+    body = _error_body(r)
     _assert_error_schema(body)
     assert body["code"] == ErrorCodes.INVALID_PAYLOAD
     assert body.get("details", {}).get("field") == "childAge" or "childAge" in body["message"]
@@ -104,7 +113,7 @@ async def test_embed_invalid_image_returns_standardized_schema():
             files={"file": ("fake.png", b"not an image", "image/png")},
         )
     assert r.status_code == 400
-    body = r.json()
+    body = _error_body(r)
     _assert_error_schema(body)
     assert body["code"] == ErrorCodes.INVALID_IMAGE
 
@@ -127,11 +136,11 @@ async def test_embed_payload_too_large_returns_standardized_schema():
 
 @pytest.mark.asyncio
 async def test_error_response_model_serialization():
-    """ErrorResponse Pydantic model serializes correctly."""
+    """ErrorResponse Pydantic model serializes correctly (optional request_id)."""
     err = ErrorResponse(code="TEST_CODE", message="Test message", details={"key": "value"})
     d = err.model_dump(exclude_none=True)
-    assert d == {"code": "TEST_CODE", "message": "Test message", "details": {"key": "value"}}
+    assert d["code"] == "TEST_CODE" and d["message"] == "Test message" and d["details"] == {"key": "value"}
 
-    err2 = ErrorResponse(code="SIMPLE", message="No details")
+    err2 = ErrorResponse(code="SIMPLE", message="No details", request_id="uuid-123")
     d2 = err2.model_dump(exclude_none=True)
-    assert "details" not in d2 or d2.get("details") is None
+    assert d2.get("request_id") == "uuid-123"

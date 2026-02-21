@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     # Model config
     MEDGEMMA_MODE: bool = Field(False, env="MEDGEMMA_MODE")  # toggle to use real model
     MOCK_MODE: bool = Field(True, env="MOCK_MODE")  # demo mode: use mock when no model configured
+    MOCK_FALLBACK: bool = Field(True, env="MOCK_FALLBACK")  # return deterministic mock when model unavailable
     MEDGEMMA_MODEL_NAME: Optional[str] = Field(None, env="MEDGEMMA_MODEL_NAME")
 
     # MedGemmaService: Vertex AI / Hugging Face
@@ -40,6 +41,9 @@ class Settings(BaseSettings):
     SMART_CLIENT_ID: Optional[str] = Field(None, env="SMART_CLIENT_ID")
     SMART_CLIENT_SECRET: Optional[str] = Field(None, env="SMART_CLIENT_SECRET")
     SMART_REDIRECT_URI: Optional[str] = Field(None, env="SMART_REDIRECT_URI")
+    # Epic production: optional overrides (defaults use FHIR_BASE_URL + .well-known/smart-configuration)
+    EPIC_FHIR_SERVER_URL: Optional[str] = Field(None, env="EPIC_FHIR_SERVER_URL")
+    EPIC_TOKEN_URL: Optional[str] = Field(None, env="EPIC_TOKEN_URL")
 
     # HL7 ORU push (radiology triage → EHR/PACS)
     HL7_HOST: Optional[str] = Field(None, env="HL7_HOST")

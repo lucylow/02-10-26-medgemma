@@ -1,0 +1,35 @@
+# values-dev.yaml — local / dev overrides (do not use for production)
+# Usage: helm upgrade --install pediscreen . -n pediscreen -f values.yaml -f values-dev.yaml
+
+namespace: pediscreen
+
+# Smaller replicas for dev
+agents:
+  orchestrator:
+    replicas: 1
+    hpa:
+      enabled: false
+  embedder:
+    replicas: 1
+  modelreasoner:
+    replicas: 0
+    enabled: false
+  audit:
+    replicas: 1
+  registry:
+    replicas: 1
+  ui:
+    replicas: 1
+    hpa:
+      enabled: false
+
+ingress:
+  enabled: false
+
+prometheus:
+  enabled: false
+
+# Optional: inline secrets for dev only (override with ExternalSecrets in prod)
+# secrets:
+#   pediscreen-db:
+#     DATABASE_URL: "postgresql://postgres:pass@postgres.pediscreen.svc.cluster.local:5432/pediscreen"

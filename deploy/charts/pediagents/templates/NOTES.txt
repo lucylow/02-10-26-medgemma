@@ -1,0 +1,12 @@
+PediScreen agents have been installed.
+
+  Release:   {{ .Release.Name }}
+  Namespace: {{ .Release.Namespace }}
+
+Quick checks:
+  kubectl get pods -n {{ .Release.Namespace }} -l app.kubernetes.io/name=pediagents
+  kubectl get svc -n {{ .Release.Namespace }}
+  kubectl logs deployment/{{ .Release.Name }}-orchestrator -n {{ .Release.Namespace }} --tail=50
+
+Configure ingress hostname and TLS in values.yaml or via --set.
+Do not commit real secrets; use ExternalSecrets or your cluster secret store in production.

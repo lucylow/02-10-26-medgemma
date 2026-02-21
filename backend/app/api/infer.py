@@ -4,9 +4,9 @@ Privacy-first inference endpoint for precomputed embeddings (design spec Section
 Accepts embedding_b64 + metadata; raw images never leave device.
 Returns structured InferenceExplainable for AI explainability & trust.
 """
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional  # noqa: F401 Dict used in _mock_inference
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel, Field
 
 import uuid
@@ -14,9 +14,11 @@ import uuid
 from app.core.config import settings
 from app.core.logger import logger
 from app.core.security import get_api_key
+from app.core.request_id_middleware import get_request_id
 from app.errors import ApiError, ErrorCodes, ErrorResponse
 from app.services.medgemma_service import MedGemmaService
 from app.services.feedback_store import insert_inference
+from app.services.audit import log_inference_audit
 
 router = APIRouter(prefix="/api", tags=["MedGemma Inference"])
 
@@ -67,6 +69,7 @@ class InferRequest(BaseModel):
 @router.post("/infer", responses=_infer_responses)
 async def infer_endpoint(
     req: InferRequest,
+    request: Request,
     api_key: str = Depends(get_api_key),
 ):
     """
@@ -74,8 +77,46 @@ async def infer_endpoint(
     Privacy-first: raw images never leave device; client sends L2-normalized embedding only.
     Returns structured result with full provenance and explainability (reasoning_chain, evidence, confidence).
     """
+    request_id = get_request_id(request)
     svc = _get_medgemma_svc()
     if not svc:
+        if getattr(settings, "MOCK_FALLBACK", True):
+            mock = _mock_inference(req.case_id)
+            log_inference_audit(
+                request_id=request_id,
+                case_id=req.case_id,
+                model_id="",
+                adapter_id="",
+                emb_version=req.emb_version,
+                success=True,
+                fallback_used=True,
+            )
+            return {
+                "case_id": req.case_id,
+                "result": {
+                    "summary": mock.get("summary", []),
+                    "risk": mock.get("risk", "monitor"),
+                    "recommendations": mock.get("recommendations", []),
+                    "explain": mock.get("explain", ""),
+                    "confidence": mock.get("confidence", 0.5),
+                    "evidence": mock.get("evidence", []),
+                    "reasoning_chain": mock.get("reasoning_chain", []),
+                    "model_provenance": mock.get("model_provenance", {}),
+                },
+                "provenance": {"note": "mock_fallback"},
+                "inference_time_ms": 0,
+                "fallback_used": True,
+            }
+        log_inference_audit(
+            request_id=request_id,
+            case_id=req.case_id,
+            model_id="",
+            adapter_id="",
+            emb_version=req.emb_version,
+            success=False,
+            fallback_used=True,
+            error_msg="MedGemma not configured",
+        )
         raise ApiError(
             ErrorCodes.MODEL_LOAD_FAIL,
             "MedGemma not configured (HF_MODEL+HF_API_KEY or Vertex required)",
@@ -92,11 +133,20 @@ async def infer_endpoint(
             consent_id=req.consent_id,
             user_id_pseudonym=req.user_id_pseudonym,
         )
-        # Audit log for explainability & accountability (Page 10)
+        prov = result.get("provenance", {})
+        res = result.get("result", {})
+        log_inference_audit(
+            request_id=request_id,
+            case_id=req.case_id,
+            model_id=prov.get("base_model_id", prov.get("model_id", "")),
+            adapter_id=prov.get("adapter_id", ""),
+            emb_version=req.emb_version,
+            success=True,
+            fallback_used=False,
+        )
+        # Legacy audit log for explainability & accountability
         try:
             from app.services.audit import write_audit
-            prov = result.get("provenance", {})
-            res = result.get("result", {})
             write_audit(
                 action="inference_run",
                 actor=req.user_id_pseudonym or api_key[:8] + "..." if api_key else "api",

@@ -70,6 +70,8 @@ export type ScreeningRequest = {
   domain: string;
   observations: string;
   imageFile?: File | null;
+  /** Consent record id for audit; from consentService.getConsent() */
+  consent_id?: string | null;
   additionalContext?: Record<string, unknown>;
   useGemma3?: boolean;
   communicationParams?: {
@@ -139,6 +141,7 @@ export const submitScreening = async (request: ScreeningRequest): Promise<Screen
       form.append('childAge', request.childAge);
       form.append('domain', request.domain || '');
       form.append('observations', request.observations);
+      if (request.consent_id) form.append('consent_id', request.consent_id);
       if (request.imageFile) {
         form.append('image', request.imageFile, request.imageFile.name);
       }
@@ -207,6 +210,7 @@ export const submitScreening = async (request: ScreeningRequest): Promise<Screen
         domain: request.domain,
         observations: request.observations,
         image_b64: imageBase64.split(',')[1], // Remove data:image/jpeg;base64,
+        consent_id: request.consent_id ?? undefined,
         use_gemma3_for_communication: request.useGemma3 ?? true, // Default to true for Gemma 3
         communication_params: request.communicationParams || {
           tone: 'reassuring',
@@ -219,6 +223,7 @@ export const submitScreening = async (request: ScreeningRequest): Promise<Screen
         age_months: parseInt(request.childAge),
         domain: request.domain,
         observations: request.observations,
+        consent_id: request.consent_id ?? undefined,
         use_gemma3_for_communication: request.useGemma3 ?? true,
         communication_params: request.communicationParams || {
           tone: 'reassuring',

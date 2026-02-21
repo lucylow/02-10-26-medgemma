@@ -1,0 +1,25 @@
+{{- $root := . }}
+{{- range $agentName, $agent := .Values.agents }}
+{{- if $agent.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $root.Release.Name }}-{{ $agentName }}
+  namespace: {{ default $root.Release.Namespace $root.Values.namespace }}
+  labels:
+    app: {{ $root.Release.Name }}-{{ $agentName }}
+    app.kubernetes.io/name: {{ $root.Chart.Name }}
+    app.kubernetes.io/component: {{ $agentName }}
+    app.kubernetes.io/instance: {{ $root.Release.Name }}
+spec:
+  type: ClusterIP
+  selector:
+    app: {{ $root.Release.Name }}-{{ $agentName }}
+  ports:
+    - name: http
+      port: {{ $agent.port | default 8000 }}
+      targetPort: http
+      protocol: TCP
+---
+{{- end }}
+{{- end }}

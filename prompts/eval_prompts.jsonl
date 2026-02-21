@@ -1,0 +1,3 @@
+{"id": "eval_001", "prompt": "Based on the following developmental observations, provide a risk level and brief rationale.\n\nObservations: {observations}", "domain": "communication"}
+{"id": "eval_002", "prompt": "Provide a short clinical summary (2-4 bullets), a risk level, and 3 actionable recommendations.\n\nObservations: {observations}", "domain": "general"}
+{"id": "eval_003", "prompt": "Given these observations, classify risk: on_track, monitor, discuss, or refer. Then give 2-3 bullet rationale.\n\nObservations: {observations}", "domain": "motor"}

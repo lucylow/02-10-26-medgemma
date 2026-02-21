@@ -1,0 +1,28 @@
+{{- $root := . }}
+{{- range $agentName, $agent := .Values.agents }}
+{{- if and $agent.enabled $agent.hpa $agent.hpa.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ $root.Release.Name }}-{{ $agentName }}-hpa
+  namespace: {{ default $root.Release.Namespace $root.Values.namespace }}
+  labels:
+    app.kubernetes.io/name: {{ $root.Chart.Name }}
+    app.kubernetes.io/component: {{ $agentName }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ $root.Release.Name }}-{{ $agentName }}
+  minReplicas: {{ $agent.hpa.minReplicas | default 1 }}
+  maxReplicas: {{ $agent.hpa.maxReplicas | default 5 }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ $agent.hpa.targetCPUUtilizationPercentage | default 60 }}
+---
+{{- end }}
+{{- end }}

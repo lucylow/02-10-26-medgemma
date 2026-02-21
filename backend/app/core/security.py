@@ -85,6 +85,17 @@ def admin_required(authorization: str = Header(None)):
     return {"actor": "admin_demo", "token": parts[1]}
 
 
+# For FHIR proxy: require EHR OAuth2 Bearer token (no decode; token is Epic/Cerner access_token)
+_http_bearer_required = HTTPBearer(auto_error=True)
+
+
+async def get_fhir_bearer_token(
+    cred: HTTPAuthorizationCredentials = Depends(_http_bearer_required),
+) -> str:
+    """Require Authorization: Bearer <token> for FHIR/Epic proxy routes. Returns the access token."""
+    return cred.credentials
+
+
 async def get_api_key(
     x_api_key: str | None = Header(None, alias="x-api-key"),
     cred: HTTPAuthorizationCredentials | None = Depends(_http_bearer),

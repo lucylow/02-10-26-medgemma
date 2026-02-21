@@ -1,0 +1,61 @@
+# Enterprise Hospital Deployment (Epic production rollout)
+# Use: helm install pediscreen-epic ./medgemma -f values.yaml -f values-epic.yaml
+
+replicaCount: 3
+
+image:
+  repository: pediscreen/api
+  tag: prod
+
+resources:
+  limits:
+    cpu: "2"
+    memory: "4Gi"
+  requests:
+    cpu: "500m"
+    memory: "1Gi"
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 60
+
+env:
+  - name: ENV
+    value: production
+  - name: HF_MODEL
+    value: ""
+  - name: HF_API_KEY
+    value: ""
+  - name: VERTEX_PROJECT
+    value: ""
+  - name: VERTEX_LOCATION
+    value: ""
+  - name: REDIS_URL
+    value: ""
+  # Epic / FHIR (set via secrets in production)
+  - name: FHIR_BASE_URL
+    value: ""   # or EPIC_FHIR_SERVER_URL
+  - name: EPIC_FHIR_SERVER_URL
+    value: ""
+  - name: EPIC_TOKEN_URL
+    value: ""   # optional Epic-specific token endpoint
+  - name: SMART_CLIENT_ID
+    value: ""
+  - name: SMART_REDIRECT_URI
+    value: ""   # e.g. https://app.yourhospital.com/smart/callback
+  - name: SMART_CLIENT_SECRET
+    value: ""   # use secret in production
+
+config:
+  LOG_LEVEL: info
+  RETENTION_DAYS: "365"
+
+# Mount Epic/FHIR secrets via existingSecret
+existingSecret: "pediscreen-epic-secrets"
+secrets:
+  SMART_CLIENT_SECRET: ""
+  HF_API_KEY: ""
+  DB_CONN: ""
+  REDIS_URL: ""

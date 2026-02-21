@@ -1,0 +1,10 @@
+# Linters, formatters, tests (dev only)
+# Install: pip install -r dev-requirements.txt
+
+pytest
+pytest-cov
+flake8
+black
+isort
+mypy
+pre-commit

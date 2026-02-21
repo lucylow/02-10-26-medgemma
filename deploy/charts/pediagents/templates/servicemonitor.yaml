@@ -1,0 +1,19 @@
+{{- if and .Values.prometheus.enabled .Values.prometheus.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "pediagents.name" . }}-sm
+  namespace: {{ default .Release.Namespace .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: {{ include "pediagents.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "pediagents.name" . }}
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+{{- end }}

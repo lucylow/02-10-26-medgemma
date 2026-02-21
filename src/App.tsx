@@ -47,6 +47,8 @@ import AgentDashboard from "./pages/AgentDashboard";
 import VoiceInputScreen from "./pages/VoiceInputScreen";
 import PediScreenCaseDetail from "./pages/pediscreen/PediScreenCaseDetail";
 import Telemetry from "./pages/Telemetry";
+import SmartLaunch from "./pages/SmartLaunch";
+import SmartCallback from "./pages/SmartCallback";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { ThemeProvider } from "./theme";
 
@@ -66,6 +68,8 @@ const appRoutes = createRoutesFromElements(
       <Route path="/settings" element={<Settings />} />
     </Route>
     <Route path="/telemetry" element={<Telemetry />} />
+    <Route path="/smart/launch" element={<SmartLaunch />} />
+    <Route path="/smart/callback" element={<SmartCallback />} />
     <Route path="/clinician" element={<ClinicianDashboard />} />
     <Route path="/clinician/review" element={<RealtimeHitlDashboard />} />
     <Route path="/pediscreen" element={<PediScreenLayout />}>

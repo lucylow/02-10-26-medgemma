@@ -1,0 +1,14 @@
+apiVersion: v2
+name: pediagents
+description: Helm chart to deploy PediScreen AI orchestrator and agents (embedder, modelreasoner, audit, registry, ui).
+type: application
+version: 0.1.0
+appVersion: "2026.02.24"
+icon: https://raw.githubusercontent.com/lucylow/02-10-26-medgemma/main/logo.png
+keywords:
+  - pediScreen
+  - medgemma
+  - agents
+maintainers:
+  - name: lucylow
+    email: you@example.org

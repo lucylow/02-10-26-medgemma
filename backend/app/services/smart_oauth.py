@@ -13,6 +13,12 @@ from urllib.parse import urlencode
 from app.core.config import settings
 from app.core.logger import logger
 
+
+def get_epic_token_url(iss: Optional[str] = None) -> Optional[str]:
+    """Epic production: use EPIC_TOKEN_URL when set (e.g. Epic-specific OAuth2 token endpoint)."""
+    url = getattr(settings, "EPIC_TOKEN_URL", None)
+    return url
+
 # In-memory PKCE store (state -> verifier). Use Redis/DB in production.
 _pkce_store: Dict[str, str] = {}
 
@@ -122,13 +128,18 @@ class SMARTClient:
         Exchange authorization code for access token.
         Returns token response with access_token, patient, fhirUser, etc.
         If state provided and PKCE verifier stored, adds code_verifier.
+        Epic production: EPIC_TOKEN_URL env override is used when set.
         """
-        config = _fetch_smart_configuration(iss)
-        token_url = (
-            config.get("token_endpoint")
-            if config
-            else f"{iss.rstrip('/')}/oauth2/token"
-        )
+        epic_url = get_epic_token_url(iss)
+        if epic_url:
+            token_url = epic_url
+        else:
+            config = _fetch_smart_configuration(iss)
+            token_url = (
+                config.get("token_endpoint")
+                if config
+                else f"{iss.rstrip('/')}/oauth2/token"
+            )
 
         data = {
             "grant_type": "authorization_code",

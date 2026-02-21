@@ -1,0 +1,21 @@
+# MedGemma / PediScreen training (GPU recommended)
+# Install: pip install -r requirements-training.txt
+# Use with CUDA for LoRA/QLoRA fine-tuning.
+
+torch>=2.1.0
+transformers>=4.35.2
+accelerate>=0.24.1
+peft>=0.4.0
+datasets>=2.10.0
+tqdm
+numpy
+scipy
+faiss-cpu
+scikit-learn
+pandas
+omegaconf
+safetensors
+protobuf
+Pillow>=10.0.0
+# Optional: 8-bit/4-bit training (GPU with CUDA)
+bitsandbytes>=0.43.0
