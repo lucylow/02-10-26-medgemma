@@ -1,0 +1,47 @@
+{
+  "version": "mock-v1",
+  "description": "Canonical deterministic fallback for PediScreen AI. Used when AI model is unavailable.",
+  "generation_rules": {
+    "seed": "HMAC_SHA256(master_mock_key, input_hash) → first 2 hex chars → seedByte",
+    "risk_mapping": {
+      "age_months_lt_6": "low (confidence 0.90)",
+      "seedByte_mod_100": {
+        "0-49": "low (confidence 0.75-0.94)",
+        "50-84": "monitor (confidence 0.55-0.69)",
+        "85-94": "high (confidence 0.40-0.54)",
+        "95-99": "refer (confidence 0.30-0.39)"
+      }
+    },
+    "critical_overrides": [
+      { "trigger": "no words | not speaking | doesn't respond", "action": "confidence → 0.90, risk ≥ monitor" },
+      { "trigger": "10 words | only about 10 words", "action": "confidence → min(0.55, current)" }
+    ],
+    "conservative_bias": "Pediatric screening defaults to higher monitoring thresholds"
+  },
+  "example_outputs": [
+    {
+      "input": { "age_months": 24, "observations": "Child says about 10 words", "input_hash": "a3..." },
+      "output": {
+        "riskLevel": "monitor",
+        "confidence": 0.55,
+        "summary": "Some developmental markers to monitor; consider formal screening.",
+        "keyFindings": ["Expressive vocabulary smaller than expected for age."],
+        "recommendations": ["Complete ASQ-3 screening for language."]
+      }
+    },
+    {
+      "input": { "age_months": 4, "observations": "Smiling, cooing normally", "input_hash": "f1..." },
+      "output": {
+        "riskLevel": "low",
+        "confidence": 0.90,
+        "summary": "Observations appear within typical developmental limits.",
+        "keyFindings": ["No immediate red flags identified."],
+        "recommendations": ["Continue routine monitoring."]
+      }
+    }
+  ],
+  "metadata": {
+    "why_deterministic": "Auditability and reproducibility for testing, dry-run pilots, and regulatory review.",
+    "phi_note": "Mock outputs contain NO PHI. Only input_hash (SHA-256) is used for seed derivation."
+  }
+}

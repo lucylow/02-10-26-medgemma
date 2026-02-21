@@ -1,0 +1,56 @@
+groups:
+  - name: pediscreen.edge.rules
+    rules:
+      - alert: HighP95Latency
+        expr: histogram_quantile(0.95, sum(rate(edge_latency_bucket[5m])) by (le, model_id)) > 2.0
+        for: 10m
+        labels:
+          severity: page
+        annotations:
+          summary: "PediScreen P95 latency > 2s for {{ $labels.model_id }}"
+          description: "P95 latency exceeded 2s for 10 minutes. Investigate model proxy or edge function performance."
+
+      - alert: HighErrorRate
+        expr: (sum(increase(edge_errors_total[5m])) / sum(increase(edge_requests_total[5m]))) > 0.01
+        for: 5m
+        labels:
+          severity: page
+        annotations:
+          summary: "Edge error rate > 1% for 5 minutes"
+          description: "Overall error rate across edge functions exceeded 1%. Check model availability and DB connectivity."
+
+      - alert: HighFallbackRate
+        expr: (sum(increase(edge_fallback_total[5m])) / sum(increase(edge_requests_total[5m]))) > 0.05
+        for: 5m
+        labels:
+          severity: warn
+        annotations:
+          summary: "Fallback rate > 5%"
+          description: "More than 5% of requests falling back to mock-v1. Model may be degraded."
+
+      - alert: PSIDriftDetected
+        expr: avg(psi_value) > 0.2
+        for: 15m
+        labels:
+          severity: warn
+        annotations:
+          summary: "Embedding drift (PSI > 0.2) detected"
+          description: "Population Stability Index exceeded threshold. Input distribution may have shifted. Notify data team."
+
+      - alert: NoEdgeTraffic
+        expr: increase(edge_requests_total[15m]) == 0
+        for: 20m
+        labels:
+          severity: warn
+        annotations:
+          summary: "No edge requests for 20 minutes"
+          description: "No incoming requests detected. Possible service outage or routing issue."
+
+      - alert: GatewayUnreachable
+        expr: edge_gateway_status == 0
+        for: 5m
+        labels:
+          severity: page
+        annotations:
+          summary: "AI gateway unreachable"
+          description: "Health check cannot reach AI gateway. All inferences will fallback to mock-v1."
