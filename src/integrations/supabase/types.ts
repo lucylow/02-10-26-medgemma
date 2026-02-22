@@ -152,6 +152,60 @@ export type Database = {
         }
         Relationships: []
       }
+      consents: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          granted: boolean
+          granted_at: string | null
+          id: string
+          meta: Json | null
+          org_id: string | null
+          patient_id: string | null
+          purpose: string
+          revoked_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          granted?: boolean
+          granted_at?: string | null
+          id?: string
+          meta?: Json | null
+          org_id?: string | null
+          patient_id?: string | null
+          purpose: string
+          revoked_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          granted?: boolean
+          granted_at?: string | null
+          id?: string
+          meta?: Json | null
+          org_id?: string | null
+          patient_id?: string | null
+          purpose?: string
+          revoked_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consents_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consents_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patient_identity"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       edge_metrics: {
         Row: {
           created_at: string
@@ -218,6 +272,106 @@ export type Database = {
         }
         Relationships: []
       }
+      organizations: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          settings: Json | null
+          slug: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          settings?: Json | null
+          slug?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          settings?: Json | null
+          slug?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      patient_identity: {
+        Row: {
+          created_at: string
+          encrypted_payload: string | null
+          id: string
+          org_id: string | null
+          patient_hash: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          encrypted_payload?: string | null
+          id?: string
+          org_id?: string | null
+          patient_hash: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          encrypted_payload?: string | null
+          id?: string
+          org_id?: string | null
+          patient_hash?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_identity_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      phi_access_log: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          patient_id: string | null
+          resource_type: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          patient_id?: string | null
+          resource_type?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          patient_id?: string | null
+          resource_type?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "phi_access_log_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patient_identity"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       screenings: {
         Row: {
           adapter_id: string | null
@@ -278,6 +432,38 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          org_id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          org_id: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          org_id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       vw_screenings_anonymized: {
@@ -325,13 +511,83 @@ export type Database = {
         }
         Relationships: []
       }
+      vw_screenings_anonymized_v2: {
+        Row: {
+          adapter_id: string | null
+          child_age_months: number | null
+          confidence: number | null
+          created_at: string | null
+          domain: string | null
+          id: string | null
+          input_hash: string | null
+          is_mock: boolean | null
+          model_id: string | null
+          observations_excerpt: string | null
+          risk_level: string | null
+          screening_id: string | null
+          status: string | null
+        }
+        Insert: {
+          adapter_id?: string | null
+          child_age_months?: number | null
+          confidence?: number | null
+          created_at?: string | null
+          domain?: string | null
+          id?: string | null
+          input_hash?: string | null
+          is_mock?: boolean | null
+          model_id?: string | null
+          observations_excerpt?: never
+          risk_level?: string | null
+          screening_id?: string | null
+          status?: string | null
+        }
+        Update: {
+          adapter_id?: string | null
+          child_age_months?: number | null
+          confidence?: number | null
+          created_at?: string | null
+          domain?: string | null
+          id?: string | null
+          input_hash?: string | null
+          is_mock?: boolean | null
+          model_id?: string | null
+          observations_excerpt?: never
+          risk_level?: string | null
+          screening_id?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      archive_mock_screenings: { Args: never; Returns: number }
+      get_user_org: { Args: { _user_id: string }; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      log_phi_access: {
+        Args: {
+          _action: string
+          _metadata?: Json
+          _patient_id: string
+          _resource_type?: string
+        }
+        Returns: undefined
+      }
       purge_mock_ai_events: { Args: never; Returns: number }
       purge_mock_screenings: { Args: never; Returns: number }
+      revoke_consent_and_purge: {
+        Args: { _consent_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "clinician" | "chw" | "analyst" | "viewer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -458,6 +714,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "clinician", "chw", "analyst", "viewer"],
+    },
   },
 } as const
