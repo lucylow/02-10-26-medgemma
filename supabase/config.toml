@@ -3,6 +3,15 @@
 [functions.analyze]
 verify_jwt = false
 
+[functions.medgemma-analyze]
+verify_jwt = false
+
+[functions.parent-notes]
+verify_jwt = false
+
+[functions.wearable-risk]
+verify_jwt = false
+
 [functions.list_screenings]
 verify_jwt = false
 
