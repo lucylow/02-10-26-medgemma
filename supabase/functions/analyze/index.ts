@@ -1,14 +1,16 @@
 // supabase/functions/analyze/index.ts
 /**
- * POST /analyze — Clinical screening analysis.
- * Uses Lovable AI (Gemini) with deterministic mock-v1 fallback.
- * Features: rate-limiting, idempotency, tracing, consent tracking, embedding hash.
+ * POST /analyze — Clinical screening analysis v4.0.
+ * Lovable AI (Gemini) with deterministic mock-v1 fallback.
+ * Features: rate-limiting, idempotency, tracing, consent,
+ * embedding hash, org scoping, PHI audit, deadline enforcement.
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import {
   corsHeaders, corsResponse, supabase, errorResponse, jsonResponse,
-  extractTraceId, recordMetric, recordAIEvent, hashInput,
+  extractTraceId, extractContext, recordMetric, recordAIEvent, recordAuditEvent,
+  hashInput, withDeadline,
   checkRateLimit, rateLimitHeaders, rateLimitKey,
   LOVABLE_API_KEY, MODEL_ID, AGENT_VERSION, COST_PER_1K_TOKENS,
 } from "../_shared/mod.ts";
@@ -28,25 +30,25 @@ Analyze the child's developmental observations and return a JSON object with thi
   "recommendations": ["action 1", "action 2"],
   "evidence": [{"type":"text","content":"...","influence":0.0-1.0}]
 }
-Return ONLY valid JSON. Be evidence-based, concise, and clinically appropriate.`;
+Return ONLY valid JSON. Be evidence-based, concise, and clinically appropriate.
+Consider age-appropriate milestones and AAP developmental surveillance guidelines.`;
 
   const userPrompt = `Child age: ${ageMonths} months\nDevelopmental domain: ${domain || "general"}\nParent/caregiver observations: ${observations}`;
 
   try {
-    const ctrl = new AbortController();
-    const timeout = setTimeout(() => ctrl.abort(), 5000);
-    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: MODEL_ID,
-        messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }],
-        temperature: 0.2,
-        max_tokens: 512,
+    const resp = await withDeadline(
+      fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: MODEL_ID,
+          messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }],
+          temperature: 0.2,
+          max_tokens: 512,
+        }),
       }),
-      signal: ctrl.signal,
-    });
-    clearTimeout(timeout);
+      5000, // 5s deadline
+    );
 
     if (!resp.ok) {
       const errText = await resp.text();
@@ -69,7 +71,7 @@ Return ONLY valid JSON. Be evidence-based, concise, and clinically appropriate.`
     }
     return { ok: false, raw: content, usage };
   } catch (e) {
-    const isTimeout = e instanceof DOMException && e.name === "AbortError";
+    const isTimeout = e instanceof Error && e.message === "DEADLINE_EXCEEDED";
     console.error("[analyze] AI call failed:", e);
     return { ok: false, error: isTimeout ? "MODEL_TIMEOUT" : String(e) };
   }
@@ -81,9 +83,10 @@ serve(async (req) => {
 
   const start = performance.now();
   let errorCode: string | undefined;
-  const traceId = extractTraceId(req);
+  const ctx = extractContext(req);
+  const traceId = ctx.traceId;
 
-  // Rate limit
+  // Rate limit: 30/min for analyze (expensive)
   const rl = checkRateLimit(rateLimitKey(req), 30);
   const rlH = rateLimitHeaders(rl);
 
@@ -119,6 +122,7 @@ serve(async (req) => {
     let imagePath: string | null = null;
     let embeddingB64: string | null = null;
     let consentId: string | null = null;
+    let caseId: string | null = null;
     let inputTypes: string[] = ["text"];
 
     if (contentType.includes("multipart/form-data")) {
@@ -127,12 +131,12 @@ serve(async (req) => {
       domain = form.get("domain")?.toString() ?? "";
       observations = form.get("observations")?.toString() ?? "";
       consentId = form.get("consent_id")?.toString() || null;
+      caseId = form.get("case_id")?.toString() || null;
 
       const file = form.get("image") as File | null;
       if (file && file.size > 0) {
-        // Require consent_id for image uploads (PHI minimization)
         if (!consentId) {
-          return errorResponse("CONSENT_REQUIRED", "consent_id is required for image uploads", 400, traceId, rlH);
+          return errorResponse("CONSENT_REQUIRED", "consent_id is required for image uploads (PHI minimization)", 400, traceId, rlH);
         }
         inputTypes.push("image");
         const screeningPrefix = idempotencyKey || `ps-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
@@ -151,7 +155,9 @@ serve(async (req) => {
       observations = body.observations ?? "";
       embeddingB64 = body.embedding_b64 || null;
       consentId = body.consent_id || null;
+      caseId = body.case_id || null;
       if (embeddingB64) inputTypes.push("embedding");
+      if (body.image_meta?.hash) inputTypes.push("image_ref");
     } else {
       return errorResponse("UNSUPPORTED_CONTENT_TYPE", "Use application/json or multipart/form-data", 400, traceId, rlH);
     }
@@ -159,13 +165,20 @@ serve(async (req) => {
     if (isNaN(childAge) || childAge < 0 || childAge > 216) {
       return errorResponse("INVALID_CHILD_AGE", "childAge must be 0-216 months", 400, traceId, rlH);
     }
+    if (!observations || observations.trim().length < 3) {
+      return errorResponse("INVALID_OBSERVATIONS", "observations must be at least 3 characters", 400, traceId, rlH);
+    }
 
-    // Analysis: baseline + AI
+    // Compute hashes
     const inputHash = await hashInput(`${childAge}|${domain}|${observations}`);
     const embeddingHash = embeddingB64 ? (await hashInput(embeddingB64)).slice(0, 16) : null;
+    const promptHash = await hashInput(`system_v4|${childAge}|${domain}|${observations.slice(0, 200)}`);
+
+    // Build deterministic baseline
     const baseline = deterministicMock(childAge, domain, observations, !!imagePath, inputHash);
     const promptTokens = Math.ceil((observations || "").split(/\s+/).length * 1.3);
 
+    // Call AI with deadline
     const aiStart = performance.now();
     const aiResponse = await callLovableAI(childAge, domain, observations);
     const aiLatency = Math.round(performance.now() - aiStart);
@@ -213,7 +226,13 @@ serve(async (req) => {
       domain,
       observations,
       image_path: imagePath,
-      report: { ...finalReport, model_used: usedModel, fallback_to: isFallback ? "mock-v1" : null },
+      report: {
+        ...finalReport,
+        model_used: usedModel,
+        fallback_to: isFallback ? "mock-v1.1" : null,
+        consent_id: consentId,
+        case_id: caseId,
+      },
       status: "created",
       risk_level: finalReport.riskLevel,
       model_id: usedModel ? MODEL_ID : null,
@@ -221,8 +240,8 @@ serve(async (req) => {
       confidence: finalReport.confidence,
       input_hash: inputHash.slice(0, 16),
       embedding_hash: embeddingHash,
+      prompt_hash: promptHash.slice(0, 16),
       is_mock: isFallback,
-      prompt_hash: inputHash,
     }]);
 
     if (dbErr) {
@@ -236,10 +255,11 @@ serve(async (req) => {
     const totalTokens = promptTokens + (aiResponse?.usage?.total_tokens || 256);
     const costEstimate = (totalTokens / 1000) * COST_PER_1K_TOKENS;
 
-    // Record telemetry (fire-and-forget)
+    // Fire-and-forget telemetry
     Promise.all([
       recordMetric("analyze", "success", totalLatency, undefined, {
         model_used: usedModel, fallback: isFallback, consent_id: consentId,
+        risk_level: finalReport.riskLevel, org_id: ctx.orgId,
       }),
       recordAIEvent({
         event_type: "inference", screening_id: screeningId,
@@ -252,21 +272,29 @@ serve(async (req) => {
         latency_ms: totalLatency, status_code: 200,
         cost_estimate_usd: usedModel ? costEstimate : 0,
         agent: AGENT_VERSION, trace_id: traceId, idempotency_key: idempotencyKey,
+        org_id: ctx.orgId, case_id: caseId,
         metadata: {
           ai_latency_ms: aiLatency, used_model: usedModel, domain,
           age_months: childAge, image_provided: !!imagePath,
           embedding_provided: !!embeddingB64, consent_id: consentId,
-          fallback_to: isFallback ? "mock-v1" : null,
+          fallback_to: isFallback ? "mock-v1.1" : null,
+          prompt_hash: promptHash.slice(0, 16),
         },
       }),
+      recordAuditEvent("screening_created", {
+        screening_id: screeningId, risk_level: finalReport.riskLevel,
+        model_used: usedModel, fallback: isFallback, org_id: ctx.orgId,
+        input_hash: inputHash.slice(0, 16), trace_id: traceId,
+      }, screeningId),
     ]).catch((e) => console.error("[analyze] telemetry error:", e));
 
     return jsonResponse({
       success: true, screening_id: screeningId, report: finalReport,
-      timestamp: Date.now(), model_id: usedModel ? MODEL_ID : null,
+      timestamp: new Date().toISOString(), model_id: usedModel ? MODEL_ID : null,
       adapter_id: "medgemma_pediscreen_v1", model_used: usedModel,
-      fallback: isFallback, fallback_to: isFallback ? "mock-v1" : null,
+      fallback: isFallback, fallback_to: isFallback ? "mock-v1.1" : null,
       confidence: finalReport.confidence, trace_id: traceId,
+      version: AGENT_VERSION,
     }, 200, rlH);
   } catch (err) {
     console.error("[analyze] error:", err);

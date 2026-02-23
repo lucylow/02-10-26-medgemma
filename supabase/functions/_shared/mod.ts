@@ -1,7 +1,7 @@
 /**
- * Shared utilities for all PediScreen AI edge functions.
- * Provides: CORS, Supabase client, error responses, metrics recording,
- * rate limiting, input hashing, and tracing.
+ * Shared utilities for PediScreen AI edge functions v4.0.
+ * CORS, Supabase client, errors, metrics, rate limiting,
+ * hashing, tracing, consent verification, PHI logging.
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -10,7 +10,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 export const corsHeaders: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-idempotency-key, x-request-id, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+    "authorization, x-client-info, apikey, content-type, x-idempotency-key, x-request-id, x-org-id, x-user-role, traceparent, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Max-Age": "86400",
 };
 
 export function corsResponse(): Response {
@@ -28,9 +30,9 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
 
 // ── Constants ───────────────────────────────────────────────────
 export const MODEL_ID = "google/gemini-3-flash-preview";
-export const AGENT_VERSION = "medgemma-service-v0.6";
+export const AGENT_VERSION = "pediscreen-edge-v4.0";
 export const COST_PER_1K_TOKENS = 0.00015;
-export const EDGE_VERSION = "3.0.0";
+export const EDGE_VERSION = "4.0.0";
 
 // ── Error responses ─────────────────────────────────────────────
 export function errorResponse(
@@ -41,7 +43,7 @@ export function errorResponse(
   extra: Record<string, string> = {},
 ): Response {
   return new Response(
-    JSON.stringify({ error_code: code, message, trace_id: traceId }),
+    JSON.stringify({ error_code: code, message, trace_id: traceId, timestamp: new Date().toISOString() }),
     { status, headers: { ...corsHeaders, "Content-Type": "application/json", ...extra } },
   );
 }
@@ -56,6 +58,23 @@ export function jsonResponse(body: unknown, status = 200, extra: Record<string, 
 // ── Tracing ─────────────────────────────────────────────────────
 export function extractTraceId(req: Request): string {
   return req.headers.get("x-request-id") || req.headers.get("traceparent")?.split("-")[1] || crypto.randomUUID();
+}
+
+// ── Request context extraction ──────────────────────────────────
+export interface RequestContext {
+  traceId: string;
+  orgId: string | null;
+  userRole: string | null;
+  apiKey: string | null;
+}
+
+export function extractContext(req: Request): RequestContext {
+  return {
+    traceId: extractTraceId(req),
+    orgId: req.headers.get("x-org-id") || null,
+    userRole: req.headers.get("x-user-role") || null,
+    apiKey: req.headers.get("apikey") || null,
+  };
 }
 
 // ── Metrics recording ───────────────────────────────────────────
@@ -87,8 +106,54 @@ export async function recordAIEvent(event: Record<string, unknown>): Promise<voi
   }
 }
 
-// ── Rate limiter (per-instance in-memory) ───────────────────────
+// ── Audit event recording ───────────────────────────────────────
+export async function recordAuditEvent(
+  action: string,
+  payload: Record<string, unknown>,
+  screeningId?: string,
+): Promise<void> {
+  try {
+    await supabase.from("audit_events").insert({
+      action,
+      screening_id: screeningId || null,
+      payload,
+    });
+  } catch (e) {
+    console.error("[audit] insert failed:", e);
+  }
+}
+
+// ── Consent verification ────────────────────────────────────────
+export async function verifyConsent(
+  patientId: string,
+  purpose: string,
+): Promise<{ valid: boolean; consentId?: string }> {
+  try {
+    const { data } = await supabase
+      .from("consents")
+      .select("id")
+      .eq("patient_id", patientId)
+      .eq("purpose", purpose)
+      .eq("granted", true)
+      .or("expires_at.is.null,expires_at.gt." + new Date().toISOString())
+      .limit(1)
+      .maybeSingle();
+    return data ? { valid: true, consentId: data.id } : { valid: false };
+  } catch {
+    return { valid: false };
+  }
+}
+
+// ── Rate limiter (per-instance in-memory with cleanup) ──────────
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+
+// Cleanup stale entries every 5 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of rateLimitMap) {
+    if (now >= entry.resetAt) rateLimitMap.delete(key);
+  }
+}, 300_000);
 
 export interface RateLimitResult {
   allowed: boolean;
@@ -122,7 +187,7 @@ export function rateLimitHeaders(rl: RateLimitResult): Record<string, string> {
 }
 
 export function rateLimitKey(req: Request): string {
-  return req.headers.get("apikey") || req.headers.get("x-forwarded-for") || "global";
+  return req.headers.get("x-org-id") || req.headers.get("apikey") || req.headers.get("x-forwarded-for") || "global";
 }
 
 // ── Input hashing ───────────────────────────────────────────────
@@ -143,11 +208,7 @@ export function bucketize(latencies: number[]): Record<string, number> {
   for (const v of latencies) {
     let placed = false;
     for (const b of LATENCY_BUCKETS) {
-      if (v <= b) {
-        result[`le_${b}`]++;
-        placed = true;
-        break;
-      }
+      if (v <= b) { result[`le_${b}`]++; placed = true; break; }
     }
     if (!placed) result["le_inf"]++;
   }
@@ -164,5 +225,30 @@ export function parseRange(range: string): number {
     case "h": return val * 60;
     case "m": return val;
     default: return 7 * 24 * 60;
+  }
+}
+
+// ── Deadline helper ─────────────────────────────────────────────
+export function withDeadline<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error("DEADLINE_EXCEEDED")), ms)),
+  ]);
+}
+
+// ── Embedding stats recording ───────────────────────────────────
+export async function recordEmbeddingStats(stats: {
+  model_id?: string;
+  adapter_id?: string;
+  mean_norm?: number;
+  std_norm?: number;
+  n_samples?: number;
+  psi_score?: number;
+  meta?: Record<string, unknown>;
+}): Promise<void> {
+  try {
+    await supabase.from("embedding_stats").insert(stats);
+  } catch (e) {
+    console.error("[embedding_stats] insert failed:", e);
   }
 }

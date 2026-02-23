@@ -1,27 +1,27 @@
 // supabase/functions/telemetry/index.ts
 /**
- * GET /telemetry — AI usage analytics API.
- * Actions: overview, models, errors, fallbacks, drift.
- * Rate-limited and traced.
+ * GET /telemetry — AI usage analytics API v4.0.
+ * Actions: overview, models, errors, fallbacks, drift, consent, screenings.
+ * Rate-limited, traced, org-aware.
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import {
   corsResponse, supabase, errorResponse, jsonResponse,
-  extractTraceId, parseRange, recordMetric,
-  checkRateLimit, rateLimitHeaders, rateLimitKey,
+  extractContext, parseRange, recordMetric,
+  checkRateLimit, rateLimitHeaders, rateLimitKey, bucketize,
 } from "../_shared/mod.ts";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
 
-  const traceId = extractTraceId(req);
+  const ctx = extractContext(req);
   const rl = checkRateLimit(rateLimitKey(req), 60);
   const rlH = rateLimitHeaders(rl);
 
   if (!rl.allowed) {
     recordMetric("telemetry", "rate_limited", 0, "RATE_LIMITED").catch(() => {});
-    return errorResponse("RATE_LIMITED", "Too many requests", 429, traceId, { ...rlH, "Retry-After": "60" });
+    return errorResponse("RATE_LIMITED", "Too many requests", 429, ctx.traceId, { ...rlH, "Retry-After": "60" });
   }
 
   try {
@@ -33,29 +33,31 @@ serve(async (req) => {
 
     let result: Response;
     switch (action) {
-      case "overview": result = await handleOverview(since, windowMinutes, traceId); break;
-      case "models": result = await handleModels(since, traceId); break;
-      case "errors": result = await handleErrors(since, traceId); break;
-      case "fallbacks": result = await handleFallbacks(since, traceId); break;
-      case "drift": result = await handleDrift(since, traceId); break;
-      default: result = errorResponse("UNKNOWN_ACTION", "Use: overview, models, errors, fallbacks, drift", 400, traceId, rlH);
+      case "overview": result = await handleOverview(since, windowMinutes, ctx.traceId); break;
+      case "models": result = await handleModels(since, ctx.traceId); break;
+      case "errors": result = await handleErrors(since, ctx.traceId); break;
+      case "fallbacks": result = await handleFallbacks(since, ctx.traceId); break;
+      case "drift": result = await handleDrift(since, ctx.traceId); break;
+      case "consent": result = await handleConsent(ctx.traceId); break;
+      case "screenings": result = await handleScreeningStats(since, ctx.traceId); break;
+      default: result = errorResponse("UNKNOWN_ACTION", "Use: overview, models, errors, fallbacks, drift, consent, screenings", 400, ctx.traceId, rlH);
     }
 
-    // Inject rate-limit headers into the response
     for (const [k, v] of Object.entries(rlH)) {
       result.headers.set(k, v);
     }
     return result;
   } catch (err) {
     console.error("[telemetry] error:", err);
-    return errorResponse("INTERNAL_ERROR", String(err), 500, traceId, rlH);
+    return errorResponse("INTERNAL_ERROR", String(err), 500, ctx.traceId, rlH);
   }
 });
 
 async function handleOverview(since: string, windowMinutes: number, traceId: string) {
-  const [eventsRes, driftRes] = await Promise.all([
+  const [eventsRes, driftRes, screeningCountRes] = await Promise.all([
     supabase.from("ai_events").select("*").gte("timestamp", since).order("timestamp", { ascending: true }),
     supabase.from("embedding_stats").select("psi_score, recorded_at, model_id").order("recorded_at", { ascending: false }).limit(1).maybeSingle(),
+    supabase.from("screenings").select("id", { count: "exact", head: true }).gte("created_at", since),
   ]);
 
   if (eventsRes.error) return jsonResponse({ error_code: "QUERY_FAILED", message: eventsRes.error.message, trace_id: traceId }, 500);
@@ -68,7 +70,9 @@ async function handleOverview(since: string, windowMinutes: number, traceId: str
   const latencies = items.filter(e => e.latency_ms != null).map(e => e.latency_ms!);
   const avgLatency = latencies.length > 0 ? Math.round(latencies.reduce((a, b) => a + b, 0) / latencies.length) : 0;
   const sorted = [...latencies].sort((a, b) => a - b);
+  const p50 = sorted[Math.floor(sorted.length * 0.5)] || 0;
   const p95 = sorted[Math.floor(sorted.length * 0.95)] || 0;
+  const p99 = sorted[Math.floor(sorted.length * 0.99)] || 0;
   const totalCost = items.reduce((sum, e) => sum + (Number(e.cost_estimate_usd) || 0), 0);
   const modelSet = new Set(items.filter(e => e.model_id).map(e => e.model_id));
   const modelCounts: Record<string, number> = {};
@@ -101,14 +105,17 @@ async function handleOverview(since: string, windowMinutes: number, traceId: str
   return jsonResponse({
     active_connection: activeConnection, last_used: lastUsed, total_requests: totalRequests,
     success_count: successCount, error_count: errorCount, fallback_count: fallbackCount,
-    avg_latency_ms: avgLatency, p95_latency_ms: p95,
+    avg_latency_ms: avgLatency, p50_latency_ms: p50, p95_latency_ms: p95, p99_latency_ms: p99,
     total_cost_usd: Math.round(totalCost * 1000000) / 1000000,
+    total_screenings: screeningCountRes.count || 0,
     number_of_models: modelSet.size,
     top_model: topModelEntry ? { model_id: topModelEntry[0], calls: topModelEntry[1] } : null,
     drift: driftRes.data ? { psi_score: driftRes.data.psi_score, recorded_at: driftRes.data.recorded_at, model_id: driftRes.data.model_id } : null,
+    latency_histogram: bucketize(latencies),
     timeseries: timeseriesArray, alerts,
     window_minutes: windowMinutes, since, trace_id: traceId,
     last_updated: new Date().toISOString(),
+    version: "4.0.0",
   });
 }
 
@@ -155,7 +162,14 @@ async function handleErrors(since: string, traceId: string) {
     .gte("timestamp", since).or("status_code.gte.400,error_code.not.is.null")
     .order("timestamp", { ascending: false }).limit(100);
   if (error) return jsonResponse({ error_code: "QUERY_FAILED", message: error.message, trace_id: traceId }, 500);
-  return jsonResponse({ errors: data || [], since, trace_id: traceId });
+
+  const errorCodes: Record<string, number> = {};
+  (data || []).forEach(e => {
+    const code = e.error_code || `http_${e.status_code}`;
+    errorCodes[code] = (errorCodes[code] || 0) + 1;
+  });
+
+  return jsonResponse({ errors: data || [], error_summary: errorCodes, total: (data || []).length, since, trace_id: traceId });
 }
 
 async function handleFallbacks(since: string, traceId: string) {
@@ -167,7 +181,7 @@ async function handleFallbacks(since: string, traceId: string) {
 
   const reasonCounts: Record<string, number> = {};
   (data || []).forEach(e => { const r = e.fallback_reason || "unknown"; reasonCounts[r] = (reasonCounts[r] || 0) + 1; });
-  return jsonResponse({ fallbacks: data || [], reason_summary: reasonCounts, since, trace_id: traceId });
+  return jsonResponse({ fallbacks: data || [], reason_summary: reasonCounts, total: (data || []).length, since, trace_id: traceId });
 }
 
 async function handleDrift(since: string, traceId: string) {
@@ -176,9 +190,72 @@ async function handleDrift(since: string, traceId: string) {
     .gte("recorded_at", since).order("recorded_at", { ascending: false }).limit(100);
   if (error) return jsonResponse({ error_code: "QUERY_FAILED", message: error.message, trace_id: traceId }, 500);
 
-  const timeline = (data || []).map(d => ({ ...d, alert: (d.psi_score ?? 0) > 0.2 }));
+  const timeline = (data || []).map(d => ({
+    ...d,
+    alert: (d.psi_score ?? 0) > 0.2,
+    severity: (d.psi_score ?? 0) > 0.5 ? "critical" : (d.psi_score ?? 0) > 0.2 ? "warning" : "ok",
+  }));
   return jsonResponse({
     drift_records: timeline, latest: timeline[0] || null,
-    drift_detected: timeline.some(d => d.alert), since, trace_id: traceId,
+    drift_detected: timeline.some(d => d.alert),
+    critical_drift: timeline.some(d => d.severity === "critical"),
+    since, trace_id: traceId,
+  });
+}
+
+async function handleConsent(traceId: string) {
+  const { data, error } = await supabase.from("consents")
+    .select("purpose, granted, created_at, expires_at, revoked_at")
+    .order("created_at", { ascending: false }).limit(200);
+  if (error) return jsonResponse({ error_code: "QUERY_FAILED", message: error.message, trace_id: traceId }, 500);
+
+  const purposeSummary: Record<string, { granted: number; revoked: number; expired: number; total: number }> = {};
+  const now = new Date();
+  for (const c of data || []) {
+    const p = c.purpose || "unknown";
+    if (!purposeSummary[p]) purposeSummary[p] = { granted: 0, revoked: 0, expired: 0, total: 0 };
+    purposeSummary[p].total++;
+    if (c.revoked_at) purposeSummary[p].revoked++;
+    else if (c.expires_at && new Date(c.expires_at) < now) purposeSummary[p].expired++;
+    else if (c.granted) purposeSummary[p].granted++;
+  }
+
+  return jsonResponse({
+    consent_records: (data || []).length,
+    purpose_summary: purposeSummary,
+    trace_id: traceId,
+  });
+}
+
+async function handleScreeningStats(since: string, traceId: string) {
+  const { data, error, count } = await supabase.from("screenings")
+    .select("risk_level, domain, is_mock, confidence, model_id, status, created_at", { count: "exact" })
+    .gte("created_at", since).order("created_at", { ascending: false }).limit(1000);
+  if (error) return jsonResponse({ error_code: "QUERY_FAILED", message: error.message, trace_id: traceId }, 500);
+
+  const items = data || [];
+  const riskDist: Record<string, number> = {};
+  const domainDist: Record<string, number> = {};
+  const statusDist: Record<string, number> = {};
+  let mockCount = 0;
+  let totalConf = 0;
+  let confCount = 0;
+
+  for (const s of items) {
+    riskDist[s.risk_level || "unknown"] = (riskDist[s.risk_level || "unknown"] || 0) + 1;
+    domainDist[s.domain || "general"] = (domainDist[s.domain || "general"] || 0) + 1;
+    statusDist[s.status || "unknown"] = (statusDist[s.status || "unknown"] || 0) + 1;
+    if (s.is_mock) mockCount++;
+    if (s.confidence != null) { totalConf += Number(s.confidence); confCount++; }
+  }
+
+  return jsonResponse({
+    total: count || items.length,
+    risk_distribution: riskDist,
+    domain_distribution: domainDist,
+    status_distribution: statusDist,
+    mock_count: mockCount,
+    avg_confidence: confCount > 0 ? Math.round((totalConf / confCount) * 100) / 100 : null,
+    since, trace_id: traceId,
   });
 }
