@@ -205,7 +205,7 @@ const PediScreenLayout = () => {
         )}
 
         {/* Main Content with Page Transitions */}
-        <main className="flex-1 overflow-auto flex flex-col">
+        <main id="main-content" className="flex-1 overflow-auto flex flex-col">
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}

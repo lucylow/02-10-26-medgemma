@@ -12,6 +12,9 @@ export const PAYMENT_ESCROW_ADDRESS =
 /** HIPAA records (hashes only), consent, audit */
 export const PEDISCREEN_RECORDS_ADDRESS =
   (import.meta.env.VITE_PEDISCREEN_RECORDS_ADDRESS as string) || "";
+/** Chainlink-powered oracle for verified PediScreen AI results */
+export const PEDISCREEN_ORACLE_ADDRESS =
+  (import.meta.env.VITE_PEDISCREEN_ORACLE_ADDRESS as string) || "";
 /** HealthChain POC — Base L2 patient data exchange */
 export const HEALTH_CHAIN_POC_ADDRESS =
   (import.meta.env.VITE_HEALTH_CHAIN_POC_ADDRESS as string) || "";
@@ -51,5 +54,6 @@ export const isBlockchainConfigured =
     PEDISCREEN_REGISTRY_ADDRESS ||
     PEDISCREEN_RECORDS_ADDRESS ||
     HEALTH_CHAIN_POC_ADDRESS ||
+    PEDISCREEN_ORACLE_ADDRESS ||
     FED_COORDINATOR_ADDRESS
   );

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { RefreshCw, Upload, AlertCircle, BarChart3, Eye } from "lucide-react";
+import { RefreshCw, Upload, AlertCircle, BarChart3, Eye, Scan, Cpu, Layers, Video, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -33,6 +33,12 @@ const PRIORITY_COLORS: Record<string, string> = {
   stat: "bg-red-500/90 text-white border-red-600",
   urgent: "bg-amber-500/90 text-white border-amber-600",
   routine: "bg-slate-500/80 text-white border-slate-600",
+};
+
+const CT_METRICS = {
+  modelSizeMb: 120,
+  inferenceSeconds: 2.1,
+  peakRamMb: 450,
 };
 
 function PriorityBadge({ label }: { label: string }) {
@@ -130,6 +136,121 @@ export default function RadiologyQueue() {
           <RefreshCw className={cn("w-4 h-4 mr-2", loading && "animate-spin")} />
           Refresh
         </Button>
+      </div>
+
+      {/* CT 3D & Edge overview — portable CT scanners frontend */}
+      <div className="rounded-lg border bg-card/70 p-4 space-y-4">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              <Scan className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold">CT 3D &amp; Edge — Portable CT Scanners</h2>
+              <p className="text-xs text-muted-foreground">
+                3D pediatric CT volumes (512×512×N voxels, 100–500&nbsp;MB DICOM) streamed into MedGemma-2B-IT-Q4 for fully offline triage.
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <div className="inline-flex items-center gap-1 rounded-full border px-2 py-1 bg-background">
+              <Cpu className="w-3 h-3 text-primary" />
+              <span>Edge-only (no cloud)</span>
+            </div>
+            <div className="inline-flex items-center gap-1 rounded-full border px-2 py-1 bg-background">
+              <Award className="w-3 h-3 text-primary" />
+              <span>Edge AI Prize-ready</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-3">
+          <div className="space-y-2">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              CT volume characteristics
+            </p>
+            <ul className="text-xs text-muted-foreground space-y-1">
+              <li>• Raw DICOM: 100–500&nbsp;MB (chest / abdomen / pelvis)</li>
+              <li>• Voxel spacing: 0.5&nbsp;mm × 0.5&nbsp;mm × 1–5&nbsp;mm</li>
+              <li>• Hounsfield: -1000 (air) → +3000 (bone), 16‑bit depth</li>
+              <li>• Typical stack: 200–1500 slices per study</li>
+            </ul>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Edge pipeline (DICOM → MedGemma)
+            </p>
+            <div className="text-xs text-muted-foreground space-y-1">
+              <div className="flex items-start gap-2">
+                <Layers className="w-3 h-3 mt-0.5 text-primary" />
+                <p>[DICOM stack 512×512×N] → NIfTI + Hounsfield normalization (-1000..+3000 → 0..1)</p>
+              </div>
+              <div className="flex items-start gap-2">
+                <Cpu className="w-3 h-3 mt-0.5 text-primary" />
+                <p>EdgeAiEngine: 3D patch extraction (64×64×64) + batching for MedGemma-2B-IT-Q4 (120&nbsp;MB quantized)</p>
+              </div>
+              <div className="flex items-start gap-2">
+                <Scan className="w-3 h-3 mt-0.5 text-primary" />
+                <p>Local 3D inference (~{CT_METRICS.inferenceSeconds}s/organ) → CT findings + tiered risk scores</p>
+              </div>
+              <div className="flex items-start gap-2">
+                <Video className="w-3 h-3 mt-0.5 text-primary" />
+                <p>FHIR R4 bundle + 3D visualization (multiplanar + volume render) for clinician review</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Portable CT targets &amp; metrics
+            </p>
+            <ul className="text-xs text-muted-foreground space-y-1">
+              <li>• Mobile CT (Canon Aquilion Go, Siemens Go.Top) — preemie IVH / head CT</li>
+              <li>• Cone‑beam CT — pediatric dental / airway adjunct</li>
+              <li>• pedCAT / extremity CT — fractures, scoliosis, foot‑ankle WBCT</li>
+            </ul>
+            <div className="mt-2 grid grid-cols-3 gap-2 text-center">
+              <div className="rounded-md border bg-background px-2 py-1.5">
+                <p className="text-[10px] text-muted-foreground">Model</p>
+                <p className="text-xs font-semibold">{CT_METRICS.modelSizeMb} MB</p>
+              </div>
+              <div className="rounded-md border bg-background px-2 py-1.5">
+                <p className="text-[10px] text-muted-foreground">Latency</p>
+                <p className="text-xs font-semibold">{CT_METRICS.inferenceSeconds}s / volume</p>
+              </div>
+              <div className="rounded-md border bg-background px-2 py-1.5">
+                <p className="text-[10px] text-muted-foreground">Peak RAM</p>
+                <p className="text-xs font-semibold">{CT_METRICS.peakRamMb} MB</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2 pt-2 border-t border-border/40 mt-2">
+          <div className="space-y-1">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Pediatric CT use cases (Edge AI)
+            </p>
+            <ul className="text-xs text-muted-foreground space-y-1.5">
+              <li>• Preemie IVH (CT head): Grade I–IV hemorrhage risk, hydrocephalus monitoring.</li>
+              <li>• Pediatric fractures: 0.2&nbsp;mm multiplanar reconstructions for complex joints.</li>
+              <li>• Abdominal emergencies: appendicitis vs NEC with multi‑organ risk stratification.</li>
+              <li>• Oncology staging: neuroblastoma, Wilms tumor, lymphoma — 3D tumor volume tracking.</li>
+            </ul>
+          </div>
+          <div className="space-y-1">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Edge AI Prize demo storyline
+            </p>
+            <p className="text-xs text-muted-foreground">
+              3‑minute flow: CHW loads portable CT in the PediScreen UI → DICOM/NIfTI import →
+              ~{CT_METRICS.inferenceSeconds}s on‑device CT inference → 4‑tier risk dashboard →
+              multiplanar 3D render → offline FHIR R4 export (e.g. AirDrop) to pediatric specialist →
+              serial CT comparison for progression tracking.
+            </p>
+          </div>
+        </div>
       </div>
 
       <div className="rounded-lg border bg-card p-4">

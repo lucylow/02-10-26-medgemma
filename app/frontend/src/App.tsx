@@ -16,7 +16,17 @@ import Profiles from "./pages/Profiles";
 import ChildProfileDetail from "./pages/pediscreen/ChildProfileDetail";
 import Settings from "./pages/Settings";
 import Education from "./pages/Education";
+import Monitoring from "./pages/Monitoring";
 import TechnicalWriter from "./pages/TechnicalWriter";
+import ParentPortal from "./pages/ParentPortal";
+import ClinicianReview from "./pages/ClinicianReview";
+import Wearables from "./pages/Wearables";
+import TeamManagement from "./pages/TeamManagement";
+import OnboardingWizard from "./pages/OnboardingWizard";
+import AdminPanel from "./pages/AdminPanel";
+import Agents from "./pages/Agents";
+import CT3DEdge from "./pages/CT3DEdge";
+import VirtualAssistants from "./pages/VirtualAssistants";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +47,16 @@ const App = () => (
               <Route path="history" element={<ScreeningHistory />} />
               <Route path="profiles" element={<Profiles />} />
               <Route path="profiles/:childId" element={<ChildProfileDetail />} />
+              <Route path="parent-portal" element={<ParentPortal />} />
+              <Route path="clinician-review" element={<ClinicianReview />} />
+              <Route path="monitoring" element={<Monitoring />} />
+              <Route path="wearables" element={<Wearables />} />
+              <Route path="team" element={<TeamManagement />} />
+              <Route path="onboarding" element={<OnboardingWizard />} />
+              <Route path="admin" element={<AdminPanel />} />
+              <Route path="agents" element={<Agents />} />
+              <Route path="virtual-assistants" element={<VirtualAssistants />} />
+              <Route path="ct-3d" element={<CT3DEdge />} />
               <Route path="settings" element={<Settings />} />
               <Route path="education" element={<Education />} />
               <Route path="learn-more" element={<LearnMore />} />

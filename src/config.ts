@@ -8,3 +8,13 @@ export const DEMO_MODE =
 
 export const MOCK_SERVER_URL =
   import.meta.env.VITE_MOCK_SERVER_URL || "http://localhost:4002";
+
+/**
+ * Frontend flag: when true, gracefully fall back to a
+ * locally simulated draft result if the model service
+ * is unavailable. Mirrors backend MOCK_FALLBACK.
+ *
+ * Note: expose via Vite as VITE_MOCK_FALLBACK=true.
+ */
+export const MOCK_FALLBACK =
+  import.meta.env.VITE_MOCK_FALLBACK === "true";

@@ -1,0 +1,2213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>PediScreen AI – MedGemma Pediatric Screening</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+  />
+  <style>
+    /* 1) DESIGN SYSTEM: COLORS, TYPE, LAYOUT */
+    :root {
+      --primary: #1a73e8;
+      --primary-soft: #e8f0fe;
+      --danger: #ea4335;
+      --danger-soft: #fce8e6;
+      --warning: #fbbc04;
+      --warning-soft: #fef7e0;
+      --success: #34a853;
+      --success-soft: #e6f4ea;
+      --bg: #f5f7fb;
+      --card-bg: #ffffff;
+      --border: #dadce0;
+      --text-main: #202124;
+      --text-muted: #5f6368;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+      --radius-md: 12px;
+      --transition-fast: 0.18s ease-out;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top left, #dfe9f3 0, #ffffff 50%, #f5f7fb 100%);
+      color: var(--text-main);
+    }
+    .ps-shell {
+      max-width: 1040px;
+      margin: 24px auto 40px;
+      padding: 0 16px;
+    }
+    header.ps-header {
+      background: linear-gradient(135deg, #1a73e8, #0b5cd3);
+      border-radius: 24px;
+      padding: 20px 24px;
+      color: #fff;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .ps-header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .ps-title {
+      font-size: 26px;
+      font-weight: 650;
+      letter-spacing: 0.02em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .ps-subtitle {
+      font-size: 14px;
+      opacity: 0.95;
+      max-width: 560px;
+    }
+    .ps-badges {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .ps-badge {
+      font-size: 11px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background-color: rgba(255,255,255,0.16);
+      border: 1px solid rgba(255,255,255,0.35);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .ps-badge i {
+      font-size: 12px;
+    }
+    /* Main layout */
+    main.ps-main {
+      margin-top: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .ps-card {
+      background: var(--card-bg);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      border: 1px solid rgba(255,255,255,0.8);
+      padding: 20px 18px;
+    }
+    .ps-card-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .ps-card-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+    /* Tabs */
+    .ps-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      gap: 8px;
+    }
+    .ps-tab-btn {
+      border: none;
+      background: transparent;
+      padding: 10px 16px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-radius: 999px 999px 0 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      position: relative;
+    }
+    .ps-tab-btn.ps-active {
+      color: var(--primary);
+      background: #eef3ff;
+    }
+    .ps-tab-btn.ps-active::after {
+      content: "";
+      position: absolute;
+      left: 20%;
+      right: 20%;
+      bottom: -1px;
+      height: 2px;
+      background: var(--primary);
+      border-radius: 999px;
+    }
+    .ps-tabs-content {
+      padding-top: 14px;
+    }
+    .ps-tab-pane {
+      display: none;
+    }
+    .ps-tab-pane.ps-active {
+      display: block;
+    }
+    /* Form */
+    .ps-form-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 1.1fr;
+      gap: 16px;
+    }
+    .ps-form-group {
+      margin-bottom: 16px;
+    }
+    .ps-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+    .ps-input,
+    .ps-select,
+    .ps-textarea {
+      width: 100%;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      padding: 10px 11px;
+      font-size: 14px;
+      outline: none;
+      background-color: #fff;
+      transition: border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+    }
+    .ps-input:focus,
+    .ps-select:focus,
+    .ps-textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 1px rgba(26,115,232,0.18);
+      transform: translateY(-0.5px);
+    }
+    .ps-textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+    .ps-help {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    /* Buttons */
+    .ps-btn {
+      border-radius: 999px;
+      border: none;
+      padding: 11px 20px;
+      font-size: 14px;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: transform var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
+    }
+    .ps-btn-primary {
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 6px 14px rgba(26,115,232,0.35);
+    }
+    .ps-btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 20px rgba(26,115,232,0.4);
+    }
+    .ps-btn-secondary {
+      background: #fff;
+      color: var(--primary);
+      border: 1px solid var(--border);
+    }
+    .ps-btn[disabled] {
+      opacity: 0.7;
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: none;
+    }
+    /* Risk & results */
+    .ps-results-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.2fr);
+      gap: 16px;
+    }
+    .ps-risk-banner {
+      border-radius: 16px;
+      padding: 16px 16px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .ps-risk-low {
+      background: var(--success-soft);
+      border-left: 4px solid var(--success);
+    }
+    .ps-risk-medium {
+      background: var(--warning-soft);
+      border-left: 4px solid var(--warning);
+    }
+    .ps-risk-high {
+      background: var(--danger-soft);
+      border-left: 4px solid var(--danger);
+    }
+    .ps-risk-title {
+      font-size: 16px;
+      font-weight: 600;
+    }
+    .ps-risk-meta {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .ps-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      border-radius: 999px;
+      padding: 4px 8px;
+      background: rgba(255,255,255,0.7);
+    }
+    .ps-section-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .ps-list {
+      margin: 0;
+      padding-left: 18px;
+      font-size: 13px;
+      color: var(--text-main);
+    }
+    .ps-list li {
+      margin-bottom: 4px;
+    }
+    .ps-evidence-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: #f8f9fb;
+      margin-bottom: 6px;
+      font-size: 12px;
+    }
+    .ps-evidence-type {
+      font-weight: 600;
+      color: var(--primary);
+      min-width: 64px;
+      text-transform: uppercase;
+      font-size: 11px;
+    }
+    .ps-evidence-influence {
+      margin-left: auto;
+      color: var(--text-muted);
+      font-size: 11px;
+    }
+    /* Clinician cards */
+    .ps-clinician-card {
+      border-radius: 14px;
+      padding: 14px 14px 12px;
+      border: 1px solid var(--border);
+      margin-bottom: 10px;
+      background: #fff;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .ps-clinician-meta {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .ps-badge-risk {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      border-radius: 999px;
+      padding: 3px 8px;
+    }
+    .ps-badge-risk-high {
+      background: var(--danger-soft);
+      color: var(--danger);
+    }
+    .ps-badge-risk-medium {
+      background: var(--warning-soft);
+      color: #8a6b0a;
+    }
+    .ps-badge-risk-low {
+      background: var(--success-soft);
+      color: var(--success);
+    }
+    /* Toast */
+    .ps-toast {
+      position: fixed;
+      bottom: 20px;
+      right: 16px;
+      background: #202124;
+      color: #fff;
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: var(--shadow-md);
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+      z-index: 999;
+    }
+    .ps-toast.ps-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    /* Disclaimer */
+    .ps-disclaimer {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #fff3cd;
+      border: 1px solid #ffeeba;
+      font-size: 12px;
+      color: #856404;
+    }
+    /* Responsive */
+    @media (max-width: 840px) {
+      .ps-form-grid,
+      .ps-results-grid {
+        grid-template-columns: 1fr;
+      }
+      header.ps-header {
+        border-radius: 0 0 24px 24px;
+      }
+      .ps-shell {
+        margin-top: 0;
+        padding-top: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="ps-shell">
+    <header class="ps-header" aria-label="PediScreen AI header">
+      <div class="ps-header-top">
+        <div>
+          <div class="ps-title">
+            <i class="fa-solid fa-child-reaching"></i>
+            <span>PediScreen AI</span>
+          </div>
+          <p class="ps-subtitle">
+            MedGemma-powered pediatric developmental screening. Designed for community health workers and clinicians, as a clinical decision support tool—not a diagnostic device.
+          </p>
+        </div>
+        <div class="ps-badges">
+          <span class="ps-badge">
+            <i class="fa-solid fa-brain"></i> Google MedGemma
+          </span>
+          <span class="ps-badge">
+            <i class="fa-solid fa-mobile-screen"></i> Edge-friendly UI
+          </span>
+          <span class="ps-badge">
+            <i class="fa-solid fa-shield-heart"></i> CDS, not diagnosis
+          </span>
+        </div>
+      </div>
+    </header>
+
+    <main class="ps-main">
+      <!-- Tabs: CHW vs Clinician -->
+      <section class="ps-card" aria-label="PediScreen main interface">
+        <div class="ps-card-title">
+          <i class="fa-solid fa-stethoscope"></i>
+          <span>Interactive Screening Demo</span>
+        </div>
+        <p class="ps-card-subtitle">
+          Try a full end-to-end screening flow. Enter observations as a CHW, see a MedGemma-style structured report, and preview how a clinician might review and sign off.
+        </p>
+
+        <div class="ps-tabs" role="tablist">
+          <button class="ps-tab-btn ps-active" role="tab" aria-selected="true" aria-controls="tab-chw" id="tab-chw-btn">
+            <i class="fa-solid fa-user-nurse"></i>
+            <span>CHW Screening</span>
+          </button>
+          <button class="ps-tab-btn" role="tab" aria-selected="false" aria-controls="tab-clinician" id="tab-clinician-btn">
+            <i class="fa-solid fa-user-doctor"></i>
+            <span>Clinician Review</span>
+          </button>
+        </div>
+
+        <div class="ps-tabs-content">
+          <!-- CHW Tab -->
+          <div id="tab-chw" class="ps-tab-pane ps-active" role="tabpanel" aria-labelledby="tab-chw-btn">
+            <!-- CHW Form + Results -->
+            <div class="ps-form-grid">
+              <!-- Left: Form -->
+              <div>
+                <div class="ps-section-title">Child & Observations</div>
+                <form id="screening-form" novalidate>
+                  <div class="ps-form-group">
+                    <label class="ps-label" for="child-age">
+                      <span>Child age (months)</span>
+                      <span id="age-display" aria-live="polite">24 months</span>
+                    </label>
+                    <input
+                      id="child-age"
+                      name="childAge"
+                      type="range"
+                      min="6"
+                      max="60"
+                      value="24"
+                      class="ps-input"
+                      aria-describedby="age-help"
+                    />
+                    <div class="ps-help" id="age-help">
+                      Typical screenings: 6–60 months. Slide to adjust age.
+                    </div>
+                  </div>
+
+                  <div class="ps-form-group">
+                    <label class="ps-label" for="domain">
+                      <span>Primary developmental domain</span>
+                    </label>
+                    <select id="domain" name="domain" class="ps-select">
+                      <option value="">Select a domain</option>
+                      <option value="communication">Communication / Language</option>
+                      <option value="gross-motor">Gross Motor</option>
+                      <option value="fine-motor">Fine Motor</option>
+                      <option value="cognitive">Problem Solving</option>
+                      <option value="social">Personal-Social</option>
+                    </select>
+                    <div class="ps-help">
+                      This helps the model focus its reasoning, but all text is considered.
+                    </div>
+                  </div>
+
+                  <div class="ps-form-group">
+                    <label class="ps-label" for="observations">
+                      <span>Observations from caregiver / CHW</span>
+                      <span style="font-weight: 400; font-size: 12px; color: var(--text-muted);">
+                        Try: “Says about 10 words, points instead of phrases.”
+                      </span>
+                    </label>
+                    <textarea
+                      id="observations"
+                      name="observations"
+                      class="ps-textarea"
+                      rows="4"
+                      required
+                      aria-required="true"
+                      aria-describedby="obs-help"
+                    ></textarea>
+                    <div class="ps-help" id="obs-help">
+                      Describe behaviors, concerns, milestones, regressions, or “gut feelings.”
+                    </div>
+                  </div>
+
+                  <div class="ps-form-group">
+                    <label class="ps-label" for="image-upload">
+                      <span>Visual evidence (optional)</span>
+                      <span style="font-weight: 400; font-size: 12px; color: var(--text-muted);">
+                        Drawings, play, posture, etc.
+                      </span>
+                    </label>
+                    <input
+                      id="image-upload"
+                      type="file"
+                      accept="image/*"
+                      style="display: none"
+                    />
+                    <div
+                      id="image-drop"
+                      style="
+                        border-radius: 10px;
+                        border: 1px dashed var(--border);
+                        padding: 10px 12px;
+                        font-size: 12px;
+                        color: var(--text-muted);
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        cursor: pointer;
+                        background: #fafbff;
+                      "
+                    >
+                      <i class="fa-regular fa-image"></i>
+                      <span id="image-drop-text">
+                        Click to upload an example image or drawing (simulated on-device analysis).
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="ps-form-group" style="margin-top: 14px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
+                      <div style="display: flex; align-items: center; gap: 6px;">
+                        <input id="use-backend" type="checkbox" checked />
+                        <label for="use-backend" class="ps-help" style="margin: 0;">
+                          Use backend API if available (fallback to smart mock).
+                        </label>
+                      </div>
+                      <button id="analyze-btn" type="button" class="ps-btn ps-btn-primary">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        <span>Analyze with MedGemma</span>
+                      </button>
+                    </div>
+                  </div>
+                </form>
+
+                <div class="ps-disclaimer" aria-label="Medical disclaimer">
+                  <strong>Note:</strong> This demo shows a <em>clinical decision support</em> pattern. It does not provide
+                  medical diagnosis and must be reviewed by a qualified clinician.
+                </div>
+              </div>
+
+              <!-- Right: Results -->
+              <div>
+                <div class="ps-section-title">MedGemma Screening Report</div>
+                <div id="results-panel">
+                  <!-- Will be populated by JS -->
+                  <div id="results-placeholder" class="ps-help">
+                    Run an analysis to see a structured risk summary, key findings, recommendations, and evidence.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Clinician Tab -->
+          <div id="tab-clinician" class="ps-tab-pane" role="tabpanel" aria-labelledby="tab-clinician-btn">
+            <div class="ps-results-grid">
+              <div>
+                <div class="ps-section-title">Review queue (simulated)</div>
+                <div id="clinician-queue">
+                  <!-- JS will use mock cases -->
+                </div>
+              </div>
+              <div>
+                <div class="ps-section-title">Selected case (read-only)</div>
+                <div id="clinician-details" class="ps-help">
+                  Select a case from the queue to preview how a clinician might see the AI summary and provide sign-off.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Impact summary / metrics (optional small cards) -->
+      <section class="ps-card">
+        <div class="ps-card-title">
+          <i class="fa-solid fa-chart-line"></i>
+          <span>Impact & safety highlights</span>
+        </div>
+        <p class="ps-card-subtitle">
+          This frontend demonstrates how MedGemma’s structured outputs could be embedded in pediatric workflows:
+          CHW-friendly inputs, safe CDS language, and clear clinician sign-off points.
+        </p>
+        <ul class="ps-list">
+          <li>Age-aware risk bands with explicit confidence levels.</li>
+          <li>Evidence breakdown by text, scores, and (simulated) image analysis.</li>
+          <li>Clinician-facing view that keeps AI as a transparent assistant, not a black box.</li>
+        </ul>
+      </section>
+    </main>
+  </div>
+
+  <!-- Toast container (injected via JS) -->
+  <div id="ps-toast" class="ps-toast" role="status" aria-live="polite"></div>
+
+  <script>
+    // ==========================
+    //  FRONTEND LOGIC
+    // ==========================
+
+    // Simple toast helper
+    function showToast(message) {
+      const toast = document.getElementById('ps-toast');
+      toast.textContent = message;
+      toast.classList.add('ps-visible');
+      setTimeout(() => {
+        toast.classList.remove('ps-visible');
+      }, 2800);
+    }
+
+    // TAB HANDLING
+    const tabButtons = document.querySelectorAll('.ps-tab-btn');
+    const tabPanes = document.querySelectorAll('.ps-tab-pane');
+    tabButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetId = btn.id === 'tab-chw-btn' ? 'tab-chw' : 'tab-clinician';
+        tabButtons.forEach(b => b.classList.remove('ps-active'));
+        tabPanes.forEach(p => p.classList.remove('ps-active'));
+        btn.classList.add('ps-active');
+        document.getElementById(targetId).classList.add('ps-active');
+      });
+    });
+
+    // AGE SLIDER DISPLAY
+    const ageInput = document.getElementById('child-age');
+    const ageDisplay = document.getElementById('age-display');
+    if (ageInput && ageDisplay) {
+      const updateAgeDisplay = () => {
+        ageDisplay.textContent = ageInput.value + ' months';
+      };
+      ageInput.addEventListener('input', updateAgeDisplay);
+      updateAgeDisplay();
+    }
+
+    // IMAGE UPLOAD MOCK
+    const imgDrop = document.getElementById('image-drop');
+    const imgInput = document.getElementById('image-upload');
+    const imgDropText = document.getElementById('image-drop-text');
+    let selectedImageMock = null;
+
+    if (imgDrop && imgInput) {
+      imgDrop.addEventListener('click', () => imgInput.click());
+      imgInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        selectedImageMock = file;
+        imgDropText.textContent = 'Image attached (simulated on-device embedding).';
+        imgDrop.style.background = '#eef3ff';
+        showToast('Image attached – analysis will include image evidence (simulated).');
+      });
+    }
+
+    // SMART MOCK DATA
+    const MOCK_SCENARIOS = [
+      {
+        id: 'hr-1',
+        trigger: /no words|no babbling|regression|lost words/i,
+        ageRange: [18, 36],
+        domain: 'communication',
+        riskLevel: 'high',
+        confidence: 0.95,
+        summary: 'Significant expressive language delay and possible regression. Child is not using single words at an age when 2-word phrases are expected.',
+        keyFindings: [
+          'Parent reports no clear words or phrases at 24+ months.',
+          'Caregiver describes loss of previously used sounds or words.',
+          'Combination of age and regression suggests urgent follow-up.'
+        ],
+        recommendations: [
+          'Urgent referral to pediatrician and speech-language pathologist.',
+          'Immediate hearing evaluation and developmental screening (e.g., ASQ-3, M-CHAT-R).',
+          'Provide caregivers with guidance on early communication strategies while waiting for formal assessment.'
+        ],
+        evidence: [
+          { type: 'text', content: '“No babbling after 12 months, stopped saying “mama”.', influence: 0.9 },
+          { type: 'score', content: 'Communication markers appear well below expected range.', influence: 0.85 }
+        ]
+      },
+      {
+        id: 'mr-1',
+        trigger: /10 words|few words|limited vocabulary|points instead/i,
+        ageRange: [18, 36],
+        domain: 'communication',
+        riskLevel: 'medium',
+        confidence: 0.84,
+        summary: 'Expressive vocabulary is below expectations, but some communication skills are present. Monitoring and targeted support are appropriate.',
+        keyFindings: [
+          'Child uses about 10 single words; typical range is broader at this age.',
+          'Relies on pointing and sounds rather than 2-word phrases.',
+          'No clear loss of skills described; concern is mainly pace of progress.'
+        ],
+        recommendations: [
+          'Schedule a formal language screening within 3 months.',
+          'Encourage daily reading, naming, and turn-taking games.',
+          'If no progress or additional concerns arise, refer to speech-language services.'
+        ],
+        evidence: [
+          { type: 'text', content: '“Says around ten words, points for most things.”', influence: 0.82 }
+        ]
+      },
+      {
+        id: 'lr-1',
+        trigger: /typical|on track|doing well|no concerns/i,
+        ageRange: [12, 60],
+        domain: null,
+        riskLevel: 'low',
+        confidence: 0.9,
+        summary: 'Reported behaviors are broadly consistent with expected developmental milestones for this age group.',
+        keyFindings: [
+          'Caregiver describes age-appropriate play, communication, and motor skills.',
+          'No regression, safety concerns, or major delays mentioned.',
+          'Social engagement and responsiveness appear typical.'
+        ],
+        recommendations: [
+          'Continue routine well-child visits as scheduled.',
+          'Encourage daily play, reading, and talking together.',
+          'Repeat screening at recommended intervals or if new concerns arise.'
+        ],
+        evidence: [
+          { type: 'text', content: 'Observations suggest typical milestone progression.', influence: 0.7 }
+        ]
+      },
+      {
+        id: 'motor-1',
+        trigger: /stumble|clumsy|falls|trip|can.t jump|weak/i,
+        ageRange: [18, 48],
+        domain: 'gross-motor',
+        riskLevel: 'medium',
+        confidence: 0.78,
+        summary: 'Gross motor coordination warrants monitoring. Child may benefit from opportunities to practice balance and strength activities.',
+        keyFindings: [
+          'Caregiver notes frequent stumbling or falls during play.',
+          'Jumping, running, or climbing appear harder than for peers.',
+          'No acute injury or sudden regression described.'
+        ],
+        recommendations: [
+          'Discuss concerns with pediatrician; consider physical or occupational therapy evaluation.',
+          'Promote safe activities that practice balance and coordination.',
+          'Re-screen motor skills in 3–6 months or sooner if concerns increase.'
+        ],
+        evidence: [
+          { type: 'text', content: '“Trips a lot when running, struggles to jump with both feet.”', influence: 0.76 }
+        ]
+      },
+      {
+        id: 'edge-unknown',
+        trigger: /.*/i,
+        ageRange: [6, 60],
+        domain: null,
+        riskLevel: 'unknown',
+        confidence: 0.4,
+        summary: 'The information provided is not specific enough to estimate risk. A structured questionnaire would provide clearer guidance.',
+        keyFindings: [
+          'Observations are brief or unclear.',
+          'No specific delays or regressions are described.',
+          'Additional detail is needed to support a meaningful summary.'
+        ],
+        recommendations: [
+          'Use a standardized developmental screening tool (e.g., ASQ-3).',
+          'Ask caregivers for more examples of skills and concerns.',
+          'Repeat screening once more detailed information is available.'
+        ],
+        evidence: [
+          { type: 'text', content: 'Limited or nonspecific description of behavior.', influence: 0.6 }
+        ]
+      }
+    ];
+
+    function pickMockScenario(age, domain, obsText) {
+      const text = (obsText || '').toLowerCase();
+      const ageNum = Number(age) || 24;
+      const domainVal = domain || null;
+
+      // 1) Try specific matches
+      for (const s of MOCK_SCENARIOS) {
+        const inRange = ageNum >= s.ageRange[0] && ageNum <= s.ageRange[1];
+        const domainMatch = !s.domain || !domainVal || s.domain === domainVal;
+        if (inRange && domainMatch && s.trigger.test(text)) return s;
+      }
+      // 2) Fallback to low risk if “doing well”
+      if (/doing well|on track|no concerns/.test(text)) {
+        return MOCK_SCENARIOS.find(s => s.id === 'lr-1');
+      }
+      // 3) Fallback to unknown
+      return MOCK_SCENARIOS.find(s => s.id === 'edge-unknown');
+    }
+
+    function renderResults(report, screeningId) {
+      const panel = document.getElementById('results-panel');
+      if (!panel) return;
+      panel.innerHTML = '';
+
+      const riskLevel = (report.riskLevel || 'unknown').toLowerCase();
+      const riskClass = {
+        low: 'ps-risk-low',
+        medium: 'ps-risk-medium',
+        high: 'ps-risk-high',
+        unknown: ''
+      }[riskLevel] || '';
+
+      const riskLabel = {
+        low: 'On track',
+        medium: 'Monitor',
+        high: 'Discuss / refer',
+        unknown: 'Unknown'
+      }[riskLevel] || 'Unknown';
+
+      const confidencePct = (report.confidence || 0) * 100;
+
+      const banner = document.createElement('div');
+      banner.className = 'ps-risk-banner ' + riskClass;
+      banner.innerHTML = `
+        <div style="display:flex; align-items:center; gap:8px;">
+          <i class="fa-solid fa-heart-pulse"></i>
+          <div class="ps-risk-title">${riskLabel}</div>
+          <span class="ps-pill">
+            <i class="fa-solid fa-percent"></i>
+            <span>${confidencePct.toFixed(1)}% confidence</span>
+          </span>
+        </div>
+        <div class="ps-risk-meta">
+          Case ID: ${screeningId || 'mock'} &nbsp;•&nbsp;
+          Risk estimated for age and domain based on reported observations.
+        </div>
+      `;
+
+      const summaryCard = document.createElement('div');
+      summaryCard.style.marginTop = '12px';
+      summaryCard.innerHTML = `
+        <div class="ps-section-title">Clinical-style summary</div>
+        <p style="font-size:13px; color:var(--text-main); margin-top:4px;">
+          ${report.summary || 'No summary available.'}
+        </p>
+      `;
+
+      const findingsCard = document.createElement('div');
+      findingsCard.style.marginTop = '10px';
+      findingsCard.innerHTML = `
+        <div class="ps-section-title">Key findings</div>
+        ${
+          report.keyFindings && report.keyFindings.length
+            ? '<ul class="ps-list">' + report.keyFindings.map(f => `<li>${f}</li>`).join('') + '</ul>'
+            : '<p class="ps-help">No specific findings were extracted.</p>'
+        }
+      `;
+
+      const recsCard = document.createElement('div');
+      recsCard.style.marginTop = '10px';
+      recsCard.innerHTML = `
+        <div class="ps-section-title">Suggestions for next steps</div>
+        ${
+          report.recommendations && report.recommendations.length
+            ? '<ul class="ps-list">' + report.recommendations.map(r => `<li>${r}</li>`).join('') + '</ul>'
+            : '<p class="ps-help">No recommendations provided.</p>'
+        }
+      `;
+
+      const evidenceCard = document.createElement('div');
+      evidenceCard.style.marginTop = '10px';
+      const evRows = (report.evidence || []).map(ev => `
+        <div class="ps-evidence-row">
+          <span class="ps-evidence-type">${(ev.type || 'text').toUpperCase()}</span>
+          <span>${ev.content || ''}</span>
+          <span class="ps-evidence-influence">
+            Influence ${(ev.influence != null ? (ev.influence * 100).toFixed(0) : '–')}%
+          </span>
+        </div>
+      `).join('');
+      evidenceCard.innerHTML = `
+        <div class="ps-section-title">Evidence signals</div>
+        ${evRows || '<p class="ps-help">Evidence breakdown not available in this mock.</p>'}
+      `;
+
+      panel.appendChild(banner);
+      panel.appendChild(summaryCard);
+      panel.appendChild(findingsCard);
+      panel.appendChild(recsCard);
+      panel.appendChild(evidenceCard);
+    }
+
+    // ANALYZE BUTTON HANDLER
+    const analyzeBtn = document.getElementById('analyze-btn');
+    const useBackendCheckbox = document.getElementById('use-backend');
+
+    if (analyzeBtn) {
+      analyzeBtn.addEventListener('click', async () => {
+        const age = document.getElementById('child-age').value;
+        const domain = document.getElementById('domain').value;
+        const obs = document.getElementById('observations').value.trim();
+
+        if (!obs) {
+          showToast('Please enter observations before analyzing.');
+          document.getElementById('observations').focus();
+          return;
+        }
+
+        const original = analyzeBtn.innerHTML;
+        analyzeBtn.disabled = true;
+        analyzeBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Analyzing...</span>';
+
+        const wantsBackend = useBackendCheckbox && useBackendCheckbox.checked;
+
+        // Try backend first if enabled
+        let data = null;
+        if (wantsBackend) {
+          try {
+            const formData = new FormData();
+            formData.append('childAge', age);
+            formData.append('domain', domain);
+            formData.append('observations', obs);
+            if (selectedImageMock) {
+              formData.append('image', selectedImageMock, selectedImageMock.name || 'image.jpg');
+            }
+            const resp = await fetch('/api/analyze', {
+              method: 'POST',
+              body: formData
+            });
+            if (resp.ok) {
+              data = await resp.json();
+              showToast('Received response from backend.');
+            } else {
+              showToast('Backend unavailable, using smart mock.');
+            }
+          } catch (e) {
+            console.error(e);
+            showToast('Backend call failed, using smart mock.');
+          }
+        }
+
+        // If backend failed or disabled, use mock
+        if (!data) {
+          const scenario = pickMockScenario(age, domain, obs);
+          const report = {
+            riskLevel: scenario.riskLevel,
+            confidence: scenario.confidence,
+            summary: scenario.summary,
+            keyFindings: scenario.keyFindings,
+            recommendations: scenario.recommendations,
+            evidence: [...scenario.evidence]
+          };
+          if (selectedImageMock) {
+            report.evidence.push({
+              type: 'image',
+              content: 'Image evidence (mock): appears consistent with age-expected motor skills.',
+              influence: 0.6
+            });
+          }
+          renderResults(report, 'PS-MOCK-' + scenario.id.toUpperCase());
+        } else {
+          renderResults(data.report || {}, data.screeningId || 'PS-BACKEND');
+        }
+
+        analyzeBtn.disabled = false;
+        analyzeBtn.innerHTML = original;
+      });
+    }
+
+    // CLINICIAN QUEUE MOCK
+    const clinicianQueue = document.getElementById('clinician-queue');
+    const clinicianDetails = document.getElementById('clinician-details');
+
+    const CLINICIAN_CASES = [
+      {
+        id: 'PS-00123',
+        childName: '“S.” (24mo)',
+        riskLevel: 'high',
+        summary: 'No clear words at 24 months; regression from prior babbling reported.',
+        highlight: 'Urgent referral recommended.',
+        domain: 'Communication',
+        generatedAt: 'Today • 10:14',
+      },
+      {
+        id: 'PS-00487',
+        childName: '“J.” (30mo)',
+        riskLevel: 'medium',
+        summary: 'Uses about 10 words and gestures; language lag may be present.',
+        highlight: 'Monitor and schedule language screening.',
+        domain: 'Communication',
+        generatedAt: 'Yesterday • 16:32',
+      },
+      {
+        id: 'PS-00211',
+        childName: '“A.” (18mo)',
+        riskLevel: 'low',
+        summary: 'Caregiver reports typical play and response to name, no concerns.',
+        highlight: 'Routine monitoring only.',
+        domain: 'All domains',
+        generatedAt: 'Last week',
+      }
+    ];
+
+    function renderClinicianQueue() {
+      if (!clinicianQueue) return;
+      clinicianQueue.innerHTML = '';
+      CLINICIAN_CASES.forEach(caseObj => {
+        const card = document.createElement('div');
+        card.className = 'ps-clinician-card';
+        const badgeClass = {
+          high: 'ps-badge-risk-high',
+          medium: 'ps-badge-risk-medium',
+          low: 'ps-badge-risk-low'
+        }[caseObj.riskLevel] || 'ps-badge-risk-medium';
+        const badgeLabel = {
+          high: 'HIGH RISK',
+          medium: 'Monitor',
+          low: 'On track'
+        }[caseObj.riskLevel] || 'Monitor';
+
+        card.innerHTML = `
+          <div>
+            <div style="font-size:13px; font-weight:600;">
+              ${caseObj.id} • ${caseObj.childName}
+            </div>
+            <div style="margin:4px 0 6px;">
+              <span class="ps-badge-risk ${badgeClass}">
+                <i class="fa-solid fa-circle-exclamation"></i> ${badgeLabel}
+              </span>
+            </div>
+            <div class="ps-clinician-meta">${caseObj.summary}</div>
+            <div class="ps-clinician-meta" style="margin-top:4px;">
+              <strong>${caseObj.domain}</strong> • ${caseObj.generatedAt}
+            </div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            <button class="ps-btn ps-btn-secondary ps-btn-sm" data-case-id="${caseObj.id}">
+              <i class="fa-solid fa-eye"></i> Review
+            </button>
+          </div>
+        `;
+        clinicianQueue.appendChild(card);
+      });
+
+      clinicianQueue.querySelectorAll('button[data-case-id]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.getAttribute('data-case-id');
+          const caseObj = CLINICIAN_CASES.find(c => c.id === id);
+          if (!caseObj || !clinicianDetails) return;
+          clinicianDetails.innerHTML = `
+            <div class="ps-risk-banner ${
+              caseObj.riskLevel === 'high'
+                ? 'ps-risk-high'
+                : caseObj.riskLevel === 'medium'
+                ? 'ps-risk-medium'
+                : 'ps-risk-low'
+            }">
+              <div class="ps-risk-title">Case ${caseObj.id}</div>
+              <div class="ps-risk-meta">${caseObj.childName} • ${caseObj.domain}</div>
+            </div>
+            <div style="margin-top:10px;">
+              <div class="ps-section-title">AI-generated summary</div>
+              <p style="font-size:13px; margin-top:4px;">
+                ${caseObj.summary}
+              </p>
+            </div>
+            <div style="margin-top:10px;">
+              <div class="ps-section-title">Clinician notes (simulated)</div>
+              <p class="ps-help">
+                In a production system, clinicians would review, adjust, and sign off on AI suggestions here.
+              </p>
+            </div>
+          `;
+        });
+      });
+    }
+
+    renderClinicianQueue();
+  </script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PediScreen AI - MedGemma Screening</title>
+  <meta name="description" content="PediScreen AI demo for community health workers and clinicians, powered by MedGemma." />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+  <style>
+    :root {
+      --primary-blue: #1a73e8;
+      --success-green: #e6f4ea;
+      --warning-yellow: #fef7e0;
+      --danger-red: #fce8e6;
+      --bg-light: #f8f9fa;
+      --card-bg: #ffffff;
+      --text-primary: #1a1a1a;
+      --text-secondary: #5f6368;
+      --border-color: #dadce0;
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+      --radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      margin: 0;
+      padding: 20px;
+      line-height: 1.6;
+      color: var(--text-primary);
+    }
+
+    .medical-container {
+      max-width: 960px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+    }
+
+    header.medical-header {
+      background: var(--primary-blue);
+      color: #ffffff;
+      padding: 20px 24px;
+    }
+
+    header.medical-header h1 {
+      margin: 0 0 4px;
+      font-size: 28px;
+      letter-spacing: 0.01em;
+    }
+
+    header.medical-header p {
+      margin: 0;
+      opacity: 0.92;
+      font-size: 14px;
+    }
+
+    .subheader {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 12px;
+      font-size: 13px;
+      opacity: 0.95;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
+      font-size: 12px;
+    }
+
+    .chip i {
+      font-size: 12px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin: 20px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .card-muted {
+      background: var(--bg-light);
+    }
+
+    .risk-low {
+      background: var(--success-green) !important;
+      border-left: 4px solid #34a853;
+    }
+
+    .risk-medium {
+      background: var(--warning-yellow) !important;
+      border-left: 4px solid #fbbc04;
+    }
+
+    .risk-high {
+      background: var(--danger-red) !important;
+      border-left: 4px solid #ea4335;
+    }
+
+    .tabs-header {
+      display: flex;
+      gap: 8px;
+      padding: 16px 20px 12px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .tab-btn {
+      padding: 10px 16px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text-secondary);
+      font-weight: 500;
+      font-size: 14px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .tab-btn i {
+      font-size: 14px;
+    }
+
+    .tab-btn:hover {
+      background: rgba(26, 115, 232, 0.08);
+    }
+
+    .tab-btn.active,
+    .tab-btn[aria-selected="true"] {
+      background: #e8f0fe;
+      color: #174ea6;
+      border-color: #d2e3fc;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+      gap: 24px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+
+    .help-text {
+      display: block;
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      font-size: 14px;
+      font-family: inherit;
+      resize: vertical;
+      min-height: 40px;
+    }
+
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    select:focus,
+    textarea:focus {
+      outline: none;
+      border-color: var(--primary-blue);
+      box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.15);
+    }
+
+    input.error,
+    textarea.error {
+      border-color: #d93025;
+      box-shadow: 0 0 0 1px rgba(217, 48, 37, 0.3);
+    }
+
+    .validation-feedback {
+      font-size: 12px;
+      margin-top: 4px;
+      color: var(--text-secondary);
+    }
+
+    .validation-feedback.error-text {
+      color: #d93025;
+    }
+
+    .slider-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    #child-age {
+      flex: 1;
+      height: 8px;
+      border-radius: 4px;
+      accent-color: var(--primary-blue);
+    }
+
+    #age-display {
+      font-weight: 600;
+      min-width: 80px;
+      text-align: right;
+      color: #174ea6;
+    }
+
+    .chips-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .chips-row .chip {
+      background: #f1f3f4;
+      color: var(--text-secondary);
+      border-radius: 999px;
+      padding: 4px 10px;
+      border: 1px solid #e0e0e0;
+    }
+
+    .btn {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      background: var(--primary-blue);
+      color: #ffffff;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(26, 115, 232, 0.3);
+    }
+
+    .btn-secondary {
+      background: #f1f3f4;
+      color: var(--text-secondary);
+    }
+
+    .btn-secondary:hover {
+      background: #e0e3e7;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-secondary);
+      padding-left: 0;
+    }
+
+    .btn-ghost:hover {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    .btn-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      justify-content: center;
+    }
+
+    .btn[disabled] {
+      opacity: 0.6;
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: none;
+    }
+
+    .loading-skeleton {
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: loading 1.5s infinite;
+    }
+
+    @keyframes loading {
+      0% {
+        background-position: 200% 0;
+      }
+      100% {
+        background-position: -200% 0;
+      }
+    }
+
+    .risk-badge {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      letter-spacing: 0.04em;
+    }
+
+    .risk-badge strong {
+      font-size: 11px;
+    }
+
+    .risk-badge small {
+      font-size: 10px;
+      opacity: 0.85;
+    }
+
+    .risk-low .risk-badge {
+      background: #c8e6c9;
+      color: #0b8043;
+    }
+
+    .risk-medium .risk-badge {
+      background: #ffe8a1;
+      color: #c05c00;
+    }
+
+    .risk-high .risk-badge {
+      background: #f9bdbb;
+      color: #b31412;
+    }
+
+    .evidence-row {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(0, 2.2fr) minmax(0, 0.6fr);
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px dashed #e0e0e0;
+      font-size: 13px;
+      align-items: flex-start;
+    }
+
+    .evidence-row:last-child {
+      border-bottom: none;
+    }
+
+    .evidence-type {
+      font-weight: 600;
+      color: #174ea6;
+    }
+
+    .influence {
+      text-align: right;
+      color: var(--text-secondary);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .queue-row {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .queue-meta {
+      font-size: 13px;
+      color: var(--text-secondary);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .queue-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 14px 18px;
+      border-radius: 8px;
+      color: #ffffff;
+      box-shadow: var(--shadow-md);
+      font-size: 13px;
+      max-width: 320px;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .toast-info {
+      background: #1a73e8;
+    }
+
+    .toast-success {
+      background: #137333;
+    }
+
+    .toast-error {
+      background: #d93025;
+    }
+
+    .toast i {
+      font-size: 16px;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+
+    .badge.risk-high {
+      background: #f9bdbb;
+      color: #b31412;
+    }
+
+    .badge.risk-medium {
+      background: #ffe8a1;
+      color: #c05c00;
+    }
+
+    .badge.risk-low {
+      background: #c8e6c9;
+      color: #0b8043;
+    }
+
+    .badge-muted {
+      background: #f1f3f4;
+      color: var(--text-secondary);
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+      gap: 20px;
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 0;
+      }
+
+      .medical-container {
+        border-radius: 0;
+      }
+
+      .card {
+        margin: 12px 8px;
+        padding: 20px;
+      }
+
+      .form-grid,
+      .dashboard-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .tabs-header {
+        padding-inline: 12px;
+      }
+
+      .tab-btn {
+        flex: 1;
+        padding: 12px;
+        font-size: 16px;
+        min-height: 44px;
+        justify-content: center;
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .clinician-dashboard {
+        display: grid;
+        grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+        gap: 24px;
+        align-items: flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="medical-container" role="main" aria-label="PediScreen AI demo">
+    <header class="medical-header">
+      <h1>🩺 PediScreen AI</h1>
+      <p>MedGemma-powered developmental screening for community health workers and pediatric clinicians.</p>
+      <div class="subheader" aria-hidden="true">
+        <span class="chip">
+          <i class="fa-solid fa-globe-africa"></i>
+          Offline-first community screening
+        </span>
+        <span class="chip">
+          <i class="fa-solid fa-user-nurse"></i>
+          CHW-friendly language &amp; flows
+        </span>
+        <span class="chip">
+          <i class="fa-solid fa-shield-heart"></i>
+          HIPAA-aware, clinician-overseen
+        </span>
+      </div>
+    </header>
+
+    <section class="card card-muted" aria-label="Mode selection">
+      <div
+        class="tabs-header"
+        role="tablist"
+        aria-label="Choose workflow role: community health worker or clinician"
+      >
+        <button
+          class="tab-btn active"
+          data-tab="chw"
+          id="tab-chw"
+          role="tab"
+          aria-selected="true"
+          aria-controls="chw-tab"
+          tabindex="0"
+        >
+          <i class="fa-solid fa-hand-holding-medical" aria-hidden="true"></i>
+          <span>CHW Screening</span>
+        </button>
+        <button
+          class="tab-btn"
+          data-tab="clinician"
+          id="tab-clinician"
+          role="tab"
+          aria-selected="false"
+          aria-controls="clinician-tab"
+          tabindex="-1"
+        >
+          <i class="fa-solid fa-user-doctor" aria-hidden="true"></i>
+          <span>Clinician Review</span>
+        </button>
+      </div>
+
+      <div id="chw-tab" class="tab-content active" role="tabpanel" aria-labelledby="tab-chw">
+        <div class="form-grid">
+          <article class="card" aria-label="New screening form">
+            <h2 style="margin-top: 0;">📋 New Screening</h2>
+            <p class="help-text">
+              Capture a quick developmental snapshot in the field. No PHI is sent in this demo; all data stays in the
+              browser.
+            </p>
+
+            <form id="screening-form" novalidate>
+              <div class="form-group">
+                <label for="child-name">Child nickname (no full names)</label>
+                <input
+                  id="child-name"
+                  name="childName"
+                  type="text"
+                  placeholder="e.g., Baby A, Little Star"
+                  aria-describedby="child-name-help"
+                  aria-required="true"
+                  required
+                />
+                <small id="child-name-help" class="help-text">
+                  Use a nickname or initials to avoid sharing identifiable information.
+                </small>
+                <div class="validation-feedback" aria-live="polite"></div>
+              </div>
+
+              <div class="form-group">
+                <label for="child-age">Child age in months</label>
+                <div class="slider-row">
+                  <input
+                    type="range"
+                    id="child-age"
+                    name="childAgeMonths"
+                    min="6"
+                    max="60"
+                    value="24"
+                    aria-describedby="age-help"
+                    aria-required="true"
+                    required
+                  />
+                  <span id="age-display" aria-live="polite">24 months</span>
+                </div>
+                <small id="age-help" class="help-text">
+                  Typical PediScreen range: 6–60 months. Move the slider to match the child's age.
+                </small>
+              </div>
+
+              <div class="form-group">
+                <label for="primary-concern">Caregiver concern (in their own words)</label>
+                <textarea
+                  id="primary-concern"
+                  name="primaryConcern"
+                  placeholder="e.g., “She doesn't put two words together yet and seems frustrated when trying to talk.”"
+                  rows="3"
+                  aria-describedby="primary-concern-help"
+                  aria-required="true"
+                  required
+                ></textarea>
+                <small id="primary-concern-help" class="help-text">
+                  Use clear, simple language that mirrors what the caregiver said.
+                </small>
+                <div class="validation-feedback" aria-live="polite"></div>
+              </div>
+
+              <div class="form-group">
+                <label for="language-environment">Language environment</label>
+                <select
+                  id="language-environment"
+                  name="languageEnvironment"
+                  aria-describedby="language-environment-help"
+                  aria-required="true"
+                  required
+                >
+                  <option value="" disabled selected>Select one</option>
+                  <option value="monolingual">Mostly one language</option>
+                  <option value="bilingual">Two languages daily</option>
+                  <option value="multilingual">Three or more languages daily</option>
+                </select>
+                <small id="language-environment-help" class="help-text">
+                  Helps the AI avoid mislabeling bilingual language patterns as delays.
+                </small>
+                <div class="validation-feedback" aria-live="polite"></div>
+              </div>
+
+              <div class="form-group">
+                <label>Key observations this visit</label>
+                <div class="chips-row" aria-label="Key observation quick selects">
+                  <button type="button" class="chip btn-ghost btn" data-observation="No clear words">
+                    No clear words
+                  </button>
+                  <button type="button" class="chip btn-ghost btn" data-observation="Few gestures">
+                    Few gestures
+                  </button>
+                  <button type="button" class="chip btn-ghost btn" data-observation="Limited eye contact">
+                    Limited eye contact
+                  </button>
+                  <button type="button" class="chip btn-ghost btn" data-observation="Motor seems on track">
+                    Motor seems on track
+                  </button>
+                </div>
+                <textarea
+                  id="observations"
+                  name="observations"
+                  rows="3"
+                  placeholder="Summarize what you saw. Example: Walks steadily, points to favorite toy, but no two-word phrases."
+                  aria-describedby="observations-help"
+                  aria-required="true"
+                  required
+                ></textarea>
+                <small id="observations-help" class="help-text">
+                  Combine your own observations with caregiver concerns in neutral, non-judgmental language.
+                </small>
+                <div class="validation-feedback" aria-live="polite"></div>
+              </div>
+
+              <div class="form-group">
+                <label for="recording-note">Optional: recording / video note</label>
+                <input
+                  id="recording-note"
+                  name="recordingNote"
+                  type="text"
+                  placeholder="e.g., 30-second video during play, audio of typical day at home"
+                  aria-describedby="recording-note-help"
+                />
+                <small id="recording-note-help" class="help-text">
+                  In real deployments, PediScreen can analyze audio/video on-device and send only de-identified features.
+                </small>
+              </div>
+
+              <div class="form-group" style="margin-top: 20px; display: flex; align-items: center; gap: 12px;">
+                <button id="submit-screening" type="submit" class="btn btn-primary">
+                  <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
+                  <span>Run PediScreen AI</span>
+                </button>
+                <button type="button" class="btn btn-ghost" id="reset-form">
+                  <i class="fa-solid fa-rotate" aria-hidden="true"></i>
+                  <span>Clear for next child</span>
+                </button>
+                <span class="sr-only">Press Enter to submit screening when focused on the button.</span>
+              </div>
+            </form>
+          </article>
+
+          <aside class="card" aria-label="AI analysis and next steps">
+            <h2 style="margin-top: 0;">🔍 AI analysis preview</h2>
+            <p class="help-text">
+              This panel shows how MedGemma summarizes risk, explains its reasoning, and suggests next steps. In this
+              demo, results are generated from a smart mock, not real PHI.
+            </p>
+
+            <div id="ai-result-card" class="card card-muted loading-skeleton" aria-live="polite" aria-busy="false">
+              <p style="margin: 0; font-size: 13px; color: var(--text-secondary);">
+                AI results will appear here within 1–2 seconds after you submit a screening.
+              </p>
+            </div>
+          </aside>
+        </div>
+      </div>
+
+      <div id="clinician-tab" class="tab-content" role="tabpanel" aria-labelledby="tab-clinician">
+        <section class="clinician-dashboard" aria-label="Clinician review dashboard">
+          <article class="card" aria-label="Review queue">
+            <h2 style="margin-top: 0;">👩‍⚕️ Review queue</h2>
+            <p class="help-text">
+              High-priority cases from CHW screenings, sorted by AI-estimated developmental risk and caregiver concern.
+            </p>
+            <div id="review-queue"></div>
+          </article>
+
+          <aside class="card card-muted" aria-label="Clinical decision support">
+            <h3 style="margin-top: 0;">Clinical decision support</h3>
+            <ul style="padding-left: 20px; margin-top: 8px; font-size: 13px; color: var(--text-secondary);">
+              <li>AI never replaces clinician judgment; it flags patterns and suggests next steps.</li>
+              <li>Cases emphasize equity: multilingual families, preterm birth, limited access to early intervention.</li>
+              <li>Audit trail and consent (via PediScreen blockchain) ensure transparent data use.</li>
+            </ul>
+
+            <div style="margin-top: 16px; display: flex; gap: 8px; flex-wrap: wrap;">
+              <span class="badge badge-muted">
+                <i class="fa-solid fa-scale-balanced" aria-hidden="true"></i>
+                Clinician-in-the-loop
+              </span>
+              <span class="badge badge-muted">
+                <i class="fa-solid fa-universal-access" aria-hidden="true"></i>
+                WCAG 2.1 AA minded
+              </span>
+              <span class="badge badge-muted">
+                <i class="fa-solid fa-hand-holding-heart" aria-hidden="true"></i>
+                Caregiver-first language
+              </span>
+            </div>
+          </aside>
+        </section>
+      </div>
+    </section>
+  </div>
+
+  <script src="components.js"></script>
+  <script src="mocks.js"></script>
+  <script>
+    function setupAgeSlider() {
+      const slider = document.getElementById("child-age");
+      const display = document.getElementById("age-display");
+      if (!slider || !display) return;
+      const update = () => {
+        const value = Number(slider.value || 0);
+        display.textContent = value + (value === 1 ? " month" : " months");
+      };
+      slider.addEventListener("input", update);
+      slider.addEventListener("change", update);
+      update();
+    }
+
+    function setupValidation() {
+      const inputs = document.querySelectorAll("input[required], textarea[required], select[required]");
+      inputs.forEach((input) => {
+        input.addEventListener("blur", function () {
+          const value = this.value.trim();
+          const feedback = this.parentNode.querySelector(".validation-feedback");
+          if (!value) {
+            this.setCustomValidity("This field is required");
+            this.classList.add("error");
+            if (feedback) {
+              feedback.textContent = "Please complete this field before submitting.";
+              feedback.classList.add("error-text");
+            }
+          } else {
+            this.setCustomValidity("");
+            this.classList.remove("error");
+            if (feedback) {
+              feedback.textContent = "✓ Looks good";
+              feedback.classList.remove("error-text");
+            }
+          }
+        });
+      });
+    }
+
+    function setupTabs() {
+      const tabButtons = Array.from(document.querySelectorAll(".tab-btn"));
+      const tabPanels = Array.from(document.querySelectorAll(".tab-content"));
+
+      function activateTab(targetId) {
+        tabButtons.forEach((btn) => {
+          const isActive = btn.dataset.tab === targetId;
+          btn.classList.toggle("active", isActive);
+          btn.setAttribute("aria-selected", String(isActive));
+          btn.tabIndex = isActive ? 0 : -1;
+        });
+
+        tabPanels.forEach((panel) => {
+          const isActive = panel.id === targetId + "-tab";
+          panel.classList.toggle("active", isActive);
+          if (isActive) {
+            panel.focus?.();
+          }
+        });
+      }
+
+      tabButtons.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const target = btn.dataset.tab;
+          if (!target) return;
+          activateTab(target);
+        });
+
+        btn.addEventListener("keydown", (event) => {
+          const currentIndex = tabButtons.indexOf(btn);
+          if (event.key === "ArrowRight") {
+            event.preventDefault();
+            const next = tabButtons[(currentIndex + 1) % tabButtons.length];
+            next.focus();
+            next.click();
+          } else if (event.key === "ArrowLeft") {
+            event.preventDefault();
+            const prev = tabButtons[(currentIndex - 1 + tabButtons.length) % tabButtons.length];
+            prev.focus();
+            prev.click();
+          } else if (event.key === "Home") {
+            event.preventDefault();
+            tabButtons[0].focus();
+            tabButtons[0].click();
+          } else if (event.key === "End") {
+            event.preventDefault();
+            tabButtons[tabButtons.length - 1].focus();
+            tabButtons[tabButtons.length - 1].click();
+          }
+        });
+      });
+    }
+
+    function setupObservationChips() {
+      const chips = document.querySelectorAll("[data-observation]");
+      const observationsField = document.getElementById("observations");
+      if (!observationsField) return;
+
+      chips.forEach((chip) => {
+        chip.addEventListener("click", () => {
+          const text = chip.getAttribute("data-observation");
+          if (!text) return;
+          const current = observationsField.value.trim();
+          if (!current.includes(text)) {
+            observationsField.value = current ? current + "; " + text : text;
+          }
+          observationsField.dispatchEvent(new Event("blur"));
+        });
+      });
+    }
+
+    function renderScreeningResult(result) {
+      const card = document.getElementById("ai-result-card");
+      if (!card) return;
+
+      card.classList.remove("loading-skeleton", "risk-low", "risk-medium", "risk-high");
+      card.classList.add("risk-" + result.riskLevel.toLowerCase());
+      card.setAttribute("aria-busy", "false");
+
+      const badgeHtml = MedicalUI.createRiskBadge(result.riskLevel.toLowerCase(), result.confidence);
+      const evidenceHtml = (result.evidence || [])
+        .map((ev) => MedicalUI.createEvidenceRow(ev))
+        .join("");
+
+      card.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
+          <div>
+            <h3 style="margin-top: 0; margin-bottom: 4px;">AI developmental risk estimate</h3>
+            <p style="margin: 0; font-size: 13px; color: var(--text-secondary);">
+              For this age, language, and caregiver concern, PediScreen estimates the child's current developmental risk.
+            </p>
+          </div>
+          <div>${badgeHtml}</div>
+        </div>
+
+        <div style="margin-top: 12px; font-size: 14px;">
+          <p style="margin-top: 0;"><strong>Summary:</strong> ${result.summary}</p>
+        </div>
+
+        <div style="margin-top: 12px;">
+          <h4 style="margin: 0 0 4px; font-size: 13px;">Top signals the AI noticed</h4>
+          <div>${evidenceHtml}</div>
+        </div>
+
+        <div style="margin-top: 12px;">
+          <h4 style="margin: 0 0 4px; font-size: 13px;">Suggested next steps (for clinician review)</h4>
+          <ul style="padding-left: 20px; margin: 0; font-size: 13px;">
+            ${result.nextSteps.map((step) => `<li>${step}</li>`).join("")}
+          </ul>
+        </div>
+      `;
+    }
+
+    function setupForm() {
+      const form = document.getElementById("screening-form");
+      const submitButton = document.getElementById("submit-screening");
+      const resetButton = document.getElementById("reset-form");
+      const resultCard = document.getElementById("ai-result-card");
+
+      if (!form || !submitButton || !resultCard) return;
+
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+
+        let isValid = true;
+        const requiredFields = form.querySelectorAll("input[required], textarea[required], select[required]");
+        requiredFields.forEach((field) => {
+          if (!field.value.trim()) {
+            field.dispatchEvent(new Event("blur"));
+            isValid = false;
+          }
+        });
+
+        if (!isValid) {
+          MedicalUI.showToast("Please complete all required fields before running PediScreen AI.", "error");
+          return;
+        }
+
+        submitButton.disabled = true;
+        resultCard.classList.add("loading-skeleton");
+        resultCard.setAttribute("aria-busy", "true");
+        resultCard.innerHTML =
+          '<p style="margin: 0; font-size: 13px; color: var(--text-secondary);">Running PediScreen AI… this takes about 1–2 seconds in the demo.</p>';
+
+        MedicalUI.showToast("Running PediScreen AI on this case (demo mock)…", "info");
+
+        setTimeout(() => {
+          renderScreeningResult(window.MOCK_SCREENING_RESULT || {});
+          MedicalUI.showToast("AI analysis ready. Review with a clinician.", "success");
+          submitButton.disabled = false;
+        }, 1200);
+      });
+
+      if (resetButton) {
+        resetButton.addEventListener("click", () => {
+          form.reset();
+          const validations = form.querySelectorAll(".validation-feedback");
+          validations.forEach((node) => {
+            node.textContent = "";
+            node.classList.remove("error-text");
+          });
+          const errored = form.querySelectorAll(".error");
+          errored.forEach((node) => node.classList.remove("error"));
+          setupAgeSlider();
+          resultCard.classList.remove("risk-low", "risk-medium", "risk-high");
+          resultCard.classList.remove("loading-skeleton");
+          resultCard.innerHTML =
+            '<p style="margin: 0; font-size: 13px; color: var(--text-secondary);">AI results will appear here within 1–2 seconds after you submit a screening.</p>';
+        });
+      }
+    }
+
+    function renderClinicianQueue() {
+      const container = document.getElementById("review-queue");
+      const queue = window.MOCK_CLINICIAN_QUEUE || [];
+      if (!container) return;
+
+      if (!queue.length) {
+        container.innerHTML =
+          '<p style="font-size: 13px; color: var(--text-secondary); margin: 0;">No cases in the queue yet. As CHWs submit screenings, high-risk cases will appear here for review.</p>';
+        return;
+      }
+
+      container.innerHTML = "";
+      queue.forEach((caseItem) => {
+        const row = document.createElement("div");
+        row.className = "queue-row card risk-" + caseItem.riskLevel.toLowerCase();
+        row.innerHTML = `
+          <div>
+            <h3 style="margin: 0 0 4px; font-size: 15px;">
+              Case ${caseItem.caseId} • ${caseItem.childLabel} • ${caseItem.ageMonths} months
+            </h3>
+            <div class="queue-meta">
+              <span class="badge risk-${caseItem.riskLevel.toLowerCase()}">${caseItem.riskLabel}</span>
+              <span>CHW: ${caseItem.chwName}</span>
+              <span>${caseItem.location}</span>
+              <span>${caseItem.timeAgo}</span>
+            </div>
+          </div>
+          <p style="margin: 8px 0 0; font-size: 13px;"><strong>AI summary:</strong> ${caseItem.aiSummary}</p>
+          <p style="margin: 4px 0 0; font-size: 12px; color: var(--text-secondary);">
+            Caregiver concern: “${caseItem.caregiverQuote}”
+          </p>
+          <div class="queue-actions">
+            <button class="btn btn-primary btn-icon" aria-label="Open full review for ${caseItem.childLabel}">
+              <i class="fa-solid fa-arrow-right"></i>
+            </button>
+            <button class="btn btn-secondary">
+              Approve plan
+            </button>
+            <button class="btn btn-ghost">
+              Request follow-up
+            </button>
+          </div>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    function setupMobileGestures() {
+      const container = document.querySelector(".medical-container");
+      const tabButtons = Array.from(document.querySelectorAll(".tab-btn"));
+      if (!container || !tabButtons.length) return;
+
+      let touchStartX = null;
+
+      container.addEventListener(
+        "touchstart",
+        (event) => {
+          const touch = event.touches[0];
+          touchStartX = touch.clientX;
+        },
+        { passive: true }
+      );
+
+      container.addEventListener(
+        "touchend",
+        (event) => {
+          if (touchStartX === null) return;
+          const touch = event.changedTouches[0];
+          const deltaX = touch.clientX - touchStartX;
+          const threshold = 60;
+          if (Math.abs(deltaX) < threshold) {
+            touchStartX = null;
+            return;
+          }
+          const activeIndex = tabButtons.findIndex((btn) => btn.classList.contains("active"));
+          if (activeIndex === -1) return;
+
+          let newIndex = activeIndex;
+          if (deltaX < 0 && activeIndex < tabButtons.length - 1) {
+            newIndex = activeIndex + 1;
+          } else if (deltaX > 0 && activeIndex > 0) {
+            newIndex = activeIndex - 1;
+          }
+          if (newIndex !== activeIndex) {
+            tabButtons[newIndex].click();
+          }
+          touchStartX = null;
+        },
+        { passive: true }
+      );
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      setupAgeSlider();
+      setupValidation();
+      setupTabs();
+      setupObservationChips();
+      setupForm();
+      renderClinicianQueue();
+      setupMobileGestures();
+    });
+  </script>
+</body>
+</html>
+

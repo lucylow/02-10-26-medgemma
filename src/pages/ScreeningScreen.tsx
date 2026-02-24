@@ -264,6 +264,8 @@ const ScreeningScreen = () => {
         confidence: lastResult.confidence,
         modelUsed: lastResult.modelUsed,
         modelParseOk: lastResult.modelParseOk,
+        localProcessing: lastResult.localProcessing,
+        blockchain: lastResult.blockchain,
       },
     });
     clearScreening();

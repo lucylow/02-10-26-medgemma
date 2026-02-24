@@ -57,6 +57,7 @@ import IntegrationsPage from "./pages/IntegrationsPage";
 import GuidelinesPage from "./pages/GuidelinesPage";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { ThemeProvider } from "./theme";
+import { AccessiblePediScreenProvider } from "./components/a11y/AccessiblePediScreenProvider";
 
 const queryClient = new QueryClient();
 
@@ -158,9 +159,11 @@ const App = ({ router: customRouter }: AppProps = {}) => {
           <TooltipProvider>
             <AgentProvider>
               <ScreeningProvider>
-                <Toaster />
-                <Sonner />
-                <RouterProvider router={router} />
+                <AccessiblePediScreenProvider>
+                  <Toaster />
+                  <Sonner />
+                  <RouterProvider router={router} />
+                </AccessiblePediScreenProvider>
               </ScreeningProvider>
             </AgentProvider>
           </TooltipProvider>

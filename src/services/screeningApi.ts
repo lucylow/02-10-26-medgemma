@@ -1,4 +1,4 @@
-import { DEMO_MODE, MOCK_SERVER_URL } from '@/config';
+import { DEMO_MODE, MOCK_SERVER_URL, MOCK_FALLBACK } from '@/config';
 
 const API_BASE_URL = import.meta.env.VITE_MEDGEMMA_API_URL ||
   (import.meta.env.DEV ? 'http://localhost:8000/api' : 'https://api.pediscreen.ai/v1');
@@ -35,6 +35,13 @@ export type FollowUp = {
   redFlagsToWatch: string[];
 };
 
+export type ScreeningBlockchainInfo = {
+  screeningIdHash: string;
+  reportHash: string;
+  chainId?: number;
+  registryAddress?: string;
+};
+
 export type ScreeningResult = {
   success: boolean;
   screeningId?: string;
@@ -68,6 +75,7 @@ export type ScreeningResult = {
   localProcessing?: boolean;
   confidence?: number;
   evidenceGrounding?: Record<string, unknown>;
+  blockchain?: ScreeningBlockchainInfo;
 };
 
 export type ScreeningRequest = {
@@ -196,6 +204,7 @@ export const submitScreening = async (request: ScreeningRequest): Promise<Screen
         },
         timestamp: data.timestamp ? String(data.timestamp) : new Date().toISOString(),
         confidence: r.confidence,
+        blockchain: data.blockchain as ScreeningBlockchainInfo | undefined,
       };
     }
 
@@ -252,6 +261,7 @@ export const submitScreening = async (request: ScreeningRequest): Promise<Screen
         },
         timestamp: data.timestamp ? String(data.timestamp) : new Date().toISOString(),
         confidence: r.confidence,
+        blockchain: data.blockchain as ScreeningBlockchainInfo | undefined,
       };
     }
 
@@ -363,6 +373,7 @@ export const submitScreening = async (request: ScreeningRequest): Promise<Screen
       timestamp: data.timestamp || new Date().toISOString(),
       confidence: riskStrat.confidence || data.confidence,
       evidenceGrounding: data.evidence_grounding,
+      blockchain: data.blockchain as ScreeningBlockchainInfo | undefined,
     };
   } catch (error) {
     console.error('MedGemma API Error:', error);
@@ -373,15 +384,20 @@ export const submitScreening = async (request: ScreeningRequest): Promise<Screen
         message: 'Request timed out. Please try again.',
       };
     }
-    // Fallback to local simulation if API is unavailable (network/fetch error)
-    if (error instanceof TypeError && error.message.includes('fetch')) {
-      console.warn('API unavailable, using local simulation...');
+
+    // When MOCK_FALLBACK is enabled, return a clearly labeled local draft result
+    // instead of failing hard. This is used when the model service is unavailable.
+    if (MOCK_FALLBACK) {
+      console.warn('Analysis service error; MOCK_FALLBACK enabled — returning local draft result instead.', error);
       return simulateLocalAnalysis({
         childAge: request.childAge,
         domain: request.domain,
         observations: request.observations,
       });
     }
+
+    // Without MOCK_FALLBACK, surface the error to the UI
+    // (offline queue + UI messaging handle resilience).
 
     return {
       success: false,

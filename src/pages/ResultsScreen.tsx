@@ -18,14 +18,25 @@ import AccessibilityBar from '@/components/pediscreen/AccessibilityBar';
 import ClinicianReview from '@/components/pediscreen/ClinicianReview';
 import DisclaimerBanner from '@/components/pediscreen/DisclaimerBanner';
 import { FeedbackCard } from '@/components/pediscreen/FeedbackCard';
-import { ScreeningResultBlockchain, ConnectWalletButton } from '@/components/blockchain';
+import { BlockchainAnchorCard } from '@/components/blockchain';
 
 type RiskLevel = 'on_track' | 'low' | 'monitor' | 'medium' | 'refer' | 'high';
 
 const ResultsScreen = () => {
   const location = useLocation();
   const { toast } = useToast();
-  const { screeningId, report, childAge, domain, confidence, imagePreview, modelUsed, modelParseOk } = location.state || {};
+  const {
+    screeningId,
+    report,
+    childAge,
+    domain,
+    confidence,
+    imagePreview,
+    modelUsed,
+    modelParseOk,
+    localProcessing,
+    blockchain,
+  } = location.state || {};
   const [activeTab, setActiveTab] = React.useState<'caregiver' | 'clinician'>('caregiver');
 
   if (!report || !screeningId) {
@@ -131,6 +142,23 @@ const ResultsScreen = () => {
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-6" id="results-content">
       <DisclaimerBanner />
+      {localProcessing && (
+        <div
+          className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+          role="status"
+          aria-live="polite"
+        >
+          <AlertTriangle className="w-4 h-4 mt-0.5 text-amber-700" />
+          <div>
+            <p className="font-semibold">
+              Model service unavailable — showing a draft result.
+            </p>
+            <p>
+              This is a mock screening summary to help keep care moving. A clinician must review and confirm this before any action.
+            </p>
+          </div>
+        </div>
+      )}
       {/* Report Header */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
@@ -805,27 +833,17 @@ const ResultsScreen = () => {
         </div>
       </motion.div>
 
-      {/* Blockchain: on-chain record & mint NFT */}
+      {/* Blockchain integrity / anchoring */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
+        transition={{ delay: 0.6 }}
       >
-        <Card className="bg-muted/20 border-border">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Shield className="w-4 h-4" />
-              On-chain record
-            </CardTitle>
-            <p className="text-muted-foreground text-sm font-normal">
-              Optional: save a hash of this result on-chain or mint a screening NFT. Connect your wallet to enable.
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <ConnectWalletButton />
-            <ScreeningResultBlockchain screeningId={screeningId} report={report} />
-          </CardContent>
-        </Card>
+        <BlockchainAnchorCard
+          screeningId={screeningId}
+          report={report}
+          blockchainHints={blockchain}
+        />
       </motion.div>
 
       {/* Disclaimer */}

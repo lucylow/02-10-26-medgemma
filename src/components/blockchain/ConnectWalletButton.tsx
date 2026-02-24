@@ -5,6 +5,7 @@
 import { usePediScreenWallet } from "@/hooks/usePediScreenWallet";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useA11yContext } from "@/components/a11y/AccessiblePediScreenProvider";
 
 export interface ConnectWalletButtonProps {
   className?: string;
@@ -17,6 +18,7 @@ export function ConnectWalletButton({
   onConnect,
   onDisconnect,
 }: ConnectWalletButtonProps) {
+  const a11y = useA11yContext(false);
   const {
     address,
     chainId,
@@ -32,8 +34,16 @@ export function ConnectWalletButton({
     `${address.slice(0, 6)}…${address.slice(address.length - 4)}`;
 
   if (isConnected && address) {
+    a11y?.announce?.("Wallet connected");
     return (
-      <div className={cn("flex flex-col gap-1", className)}>
+      <div
+        className={cn("flex flex-col gap-1", className)}
+        data-wallet-status
+        tabIndex={-1}
+        aria-label={`Wallet connected, address ${shortAddress}${
+          chainId != null ? ` on chain ${chainId}` : ""
+        }`}
+      >
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
@@ -41,6 +51,7 @@ export function ConnectWalletButton({
             onClick={() => {
               disconnect();
               onDisconnect?.();
+              a11y?.announce?.("Wallet disconnected");
             }}
           >
             Disconnect
@@ -61,7 +72,12 @@ export function ConnectWalletButton({
       <Button
         variant="outline"
         size="sm"
-        onClick={() => connect().then(onConnect)}
+        onClick={() =>
+          connect().then(() => {
+            onConnect?.();
+            a11y?.announce?.("Wallet connection requested");
+          })
+        }
         disabled={isConnecting}
       >
         {isConnecting ? "Connecting…" : "Connect wallet"}

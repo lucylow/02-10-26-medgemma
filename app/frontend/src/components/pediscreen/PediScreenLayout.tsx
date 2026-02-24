@@ -1,6 +1,27 @@
 import React from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
-import { Baby, Home, Plus, History, ArrowLeft, Menu, Sparkles, ChevronRight, UserCircle, Settings, BookOpen, FileText, Users, Stethoscope, Heart } from 'lucide-react';
+import {
+  Baby,
+  Home,
+  Plus,
+  History,
+  ArrowLeft,
+  Menu,
+  Sparkles,
+  ChevronRight,
+  UserCircle,
+  Settings,
+  BookOpen,
+  FileText,
+  Users,
+  Stethoscope,
+  Heart,
+  Shield,
+  Watch,
+  ActivitySquare,
+  Scan,
+  Mic,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -14,7 +35,14 @@ const navItems = [
   { title: 'Dashboard', path: '/pediscreen', icon: Home },
   { title: 'Profiles', path: '/pediscreen/profiles', icon: UserCircle },
   { title: 'New Screening', path: '/pediscreen/screening', icon: Plus },
-  { title: 'History', path: '/pediscreen/history', icon: History },
+  { title: 'Parent Portal', path: '/pediscreen/parent-portal', icon: Heart },
+  { title: 'History & Trends', path: '/pediscreen/history', icon: History },
+  { title: 'Monitoring', path: '/pediscreen/monitoring', icon: ActivitySquare },
+  { title: 'Wearables', path: '/pediscreen/wearables', icon: Watch },
+  { title: 'Clinician Queue', path: '/pediscreen/clinician-review', icon: Shield },
+  { title: 'CT 3D Edge', path: '/pediscreen/ct-3d', icon: Scan },
+  { title: 'Virtual Assistants', path: '/pediscreen/virtual-assistants', icon: Mic },
+  { title: 'Team', path: '/pediscreen/team', icon: Users },
   { title: 'Education', path: '/pediscreen/education', icon: BookOpen },
   { title: 'Settings', path: '/pediscreen/settings', icon: Settings },
   { title: 'Technical Writer', path: '/pediscreen/technical-writer', icon: FileText },
@@ -25,6 +53,16 @@ const getBreadcrumbs = (pathname: string) => {
   if (pathname.includes('/profiles')) crumbs.push({ label: 'Profiles', path: '/pediscreen/profiles' });
   if (pathname.includes('/screening')) crumbs.push({ label: 'New Screening', path: '/pediscreen/screening' });
   if (pathname.includes('/history')) crumbs.push({ label: 'History', path: '/pediscreen/history' });
+  if (pathname.includes('/monitoring')) crumbs.push({ label: 'Monitoring', path: '/pediscreen/monitoring' });
+  if (pathname.includes('/parent-portal')) crumbs.push({ label: 'Parent Portal', path: '/pediscreen/parent-portal' });
+  if (pathname.includes('/wearables')) crumbs.push({ label: 'Wearables', path: '/pediscreen/wearables' });
+  if (pathname.includes('/clinician-review')) crumbs.push({ label: 'Clinician Review', path: '/pediscreen/clinician-review' });
+  if (pathname.includes('/ct-3d')) crumbs.push({ label: 'CT 3D Edge', path: '/pediscreen/ct-3d' });
+  if (pathname.includes('/virtual-assistants')) crumbs.push({ label: 'Virtual Assistants', path: '/pediscreen/virtual-assistants' });
+  if (pathname.includes('/team')) crumbs.push({ label: 'Team', path: '/pediscreen/team' });
+  if (pathname.includes('/onboarding')) crumbs.push({ label: 'Onboarding', path: '/pediscreen/onboarding' });
+  if (pathname.includes('/admin')) crumbs.push({ label: 'Admin Panel', path: '/pediscreen/admin' });
+  if (pathname.includes('/agents')) crumbs.push({ label: 'Agents', path: '/pediscreen/agents' });
   if (pathname.includes('/education')) crumbs.push({ label: 'Education', path: '/pediscreen/education' });
   if (pathname.includes('/settings')) crumbs.push({ label: 'Settings', path: '/pediscreen/settings' });
   if (pathname.includes('/results')) crumbs.push({ label: 'Results', path: pathname });
