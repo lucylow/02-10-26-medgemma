@@ -292,7 +292,6 @@ const App = ({ router: customRouter }: AppProps = {}) => {
                         <Toaster />
                         <Sonner />
                         <RouterProvider router={router} />
-                        <GlobalSearch />
                       </IoTProvider>
                     </AccessiblePediScreenProvider>
                   </ScreeningProvider>
