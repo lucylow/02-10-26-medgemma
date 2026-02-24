@@ -143,6 +143,7 @@ const Profiles = () => {
               <p className="text-xs text-muted-foreground/60 mt-2 text-center">Track multiple children's developmental milestones separately.</p>
             </Card>
           </motion.div>
+          )}
         </div>
 
         {/* Info Section */}

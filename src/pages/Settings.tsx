@@ -24,7 +24,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { isAnalyticsOptedIn, setAnalyticsOptIn } from '@/analytics';
 import { ConnectWalletButton, FedLearningClient } from '@/components/blockchain';
 import { isBlockchainConfigured } from '@/config/blockchain';
-import { Link } from 'react-router-dom';
 
 const Settings = () => {
   const [analyticsOptIn, setAnalyticsOptInState] = useState(false);

@@ -2,8 +2,9 @@ import React, { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, FileText, Sparkles, ClipboardList, ArrowRight, Search, ChevronDown, ChevronUp, User } from 'lucide-react';
+import { Plus, FileText, Sparkles, ClipboardList, ArrowRight, Search, ChevronDown, ChevronUp, User, MessageSquare, Activity, Puzzle, Hand, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -18,6 +19,22 @@ import { MOCK_SCREENING_HISTORY, MOCK_CHILDREN_BY_ID } from '@/data/demoMockData
 type SortOption = 'newest' | 'oldest';
 type RiskFilter = 'all' | string;
 
+const domainIcons: Record<string, React.ElementType> = {
+  communication: MessageSquare,
+  gross_motor: Activity,
+  fine_motor: Hand,
+  cognitive: Puzzle,
+  social: Heart,
+};
+
+function getRiskBadgeClass(riskLevel: string): string {
+  const r = riskLevel?.toLowerCase() ?? '';
+  if (r === 'on track' || r === 'low' || r === 'on_track') return 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-200 dark:border-emerald-700';
+  if (r === 'monitor' || r === 'medium') return 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/40 dark:text-amber-200 dark:border-amber-700';
+  if (r === 'refer' || r === 'high') return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/40 dark:text-red-200 dark:border-red-700';
+  return 'bg-primary/10 text-primary border-primary/20';
+}
+
 const ScreeningHistory = () => {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
@@ -29,19 +46,21 @@ const ScreeningHistory = () => {
     let list = MOCK_SCREENING_HISTORY.map((h) => ({
       id: h.id,
       date: h.date,
-      childAge: h.childName,
-      domain: h.domainLabel,
+      childName: h.childName,
+      childId: h.childId,
+      domain: h.domain,
+      domainLabel: h.domainLabel,
       riskLevel: h.riskLevel,
       summary: h.summary,
-      childId: h.childId,
     }));
 
     const q = search.trim().toLowerCase();
     if (q) {
       list = list.filter(
         (s) =>
-          s.childAge.toLowerCase().includes(q) ||
-          s.domain.toLowerCase().includes(q) ||
+          s.childName.toLowerCase().includes(q) ||
+          s.domainLabel.toLowerCase().includes(q) ||
+          (s.domain && s.domain.toLowerCase().includes(q)) ||
           (s.summary && s.summary.toLowerCase().includes(q))
       );
     }
@@ -171,7 +190,7 @@ const ScreeningHistory = () => {
                           <CardHeader className="cursor-pointer hover:bg-muted/30 transition-colors rounded-t-lg">
                             <div className="flex items-center justify-between">
                               <CardTitle className="text-lg">{screening.date}</CardTitle>
-                              <span className="text-sm px-4 py-1.5 rounded-full bg-primary/10 text-primary font-medium flex items-center gap-2">
+                              <span className={cn('text-sm px-4 py-1.5 rounded-full font-medium border flex items-center gap-2', getRiskBadgeClass(screening.riskLevel))}>
                                 {screening.riskLevel}
                                 {screening.summary ? (
                                   expandedId === screening.id ? (
@@ -182,13 +201,23 @@ const ScreeningHistory = () => {
                                 ) : null}
                               </span>
                             </div>
-                            <CardDescription className="flex items-center gap-4 flex-wrap">
+                            <CardDescription className="flex items-center gap-3 flex-wrap">
                               <span className="flex items-center gap-1.5">
-                                <User className="w-4 h-4" />
-                                {screening.childAge}
+                                <User className="w-4 h-4 text-muted-foreground" />
+                                {screening.childName}
                               </span>
-                              <span>•</span>
-                              <span>{screening.domain}</span>
+                              <span className="text-muted-foreground/70">•</span>
+                              <span className="flex items-center gap-1.5">
+                                {(() => {
+                                  const DomainIcon = domainIcons[screening.domain] || FileText;
+                                  return (
+                                    <>
+                                      <DomainIcon className="w-4 h-4 text-muted-foreground" />
+                                      {screening.domainLabel}
+                                    </>
+                                  );
+                                })()}
+                              </span>
                             </CardDescription>
                           </CardHeader>
                         </CollapsibleTrigger>
@@ -243,7 +272,7 @@ const ScreeningHistory = () => {
                 <h4 className="font-medium text-foreground mb-1">Track Development Over Time</h4>
                 <p className="text-sm text-muted-foreground">
                   Regular screenings help identify developmental trends and ensure children receive timely support when
-                  needed.
+                  needed. Results are aligned with tools like ASQ-3 and CDC &quot;Learn the Signs. Act Early.&quot;
                 </p>
               </div>
             </div>
