@@ -84,6 +84,7 @@ import { IoTProvider } from "./components/iot";
 import IoTMonitoring from "./pages/iot/IoTMonitoring";
 import PatientDashboard from "./pages/iot/PatientDashboard";
 import DeviceSetup from "./pages/iot/DeviceSetup";
+import ROPScreening from "./pages/ROPScreening";
 
 interface RouterFutureConfig {
   v7_startTransition?: boolean;
@@ -212,6 +213,7 @@ const appRoutes = createRoutesFromElements(
       <Route path="case/:id" element={<PediScreenCaseDetail />} />
       <Route path="patients" element={<HumanCenteredPatientsPage />} />
       <Route path="patient/:id" element={<PatientScreening />} />
+      <Route path="rop" element={<ROPScreening />} />
     </Route>
     <Route path="*" element={<NotFound />} />
   </>
