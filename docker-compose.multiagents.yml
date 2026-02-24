@@ -1,0 +1,71 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: pediscreen
+      POSTGRES_PASSWORD: pediscreen
+      POSTGRES_DB: pediscreen
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pediscreen"]
+      interval: 10s
+      retries: 5
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+  modelserver:
+    build:
+      context: ./modelserver
+      dockerfile: Dockerfile
+    environment:
+      - LISTEN_HOST=0.0.0.0
+      - LISTEN_PORT=8001
+    ports:
+      - "8001:8001"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8001/health || exit 1"]
+      interval: 10s
+      retries: 5
+
+  orchestrator:
+    build:
+      context: ./orchestrator
+      dockerfile: Dockerfile
+    depends_on:
+      - postgres
+      - redis
+      - modelserver
+    environment:
+      - DATABASE_URL=postgresql://pediscreen:pediscreen@postgres:5432/pediscreen
+      - REDIS_URL=redis://redis:6379/0
+      - RQ_QUEUE_NAME=tasks
+      - HOST=0.0.0.0
+      - PORT=8080
+    ports:
+      - "8080:8080"
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080", "--reload"]
+    volumes:
+      - ./orchestrator:/app
+
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    depends_on:
+      - redis
+      - modelserver
+      - orchestrator
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - RQ_QUEUE_NAME=tasks
+
+volumes:
+  pgdata:
