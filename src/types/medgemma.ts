@@ -83,8 +83,27 @@ export interface WearableRiskResult {
   hrvAssessment?: string;
   activityAssessment?: string;
   sleepAssessment?: string;
+  spo2Assessment?: string;
   alerts: string[];
   recommendations: string[];
   developmentalRelevance?: string;
+  trendInsights?: string;
   model_used: boolean;
+  ai_error?: string;
+}
+
+export interface MilestoneDomain {
+  expected: string[];
+  redFlags: string[];
+}
+
+export interface MilestoneLookupResult {
+  ageRange: string;
+  milestones: Record<string, MilestoneDomain>;
+  screeningTools: string[];
+  parentActivities: string[];
+  nextScreeningAge?: number;
+  sources?: string[];
+  model_used: boolean;
+  trace_id?: string;
 }

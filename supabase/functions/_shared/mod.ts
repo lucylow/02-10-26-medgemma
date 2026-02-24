@@ -1,7 +1,8 @@
 /**
- * Shared utilities for PediScreen AI edge functions v4.0.
+ * Shared utilities for PediScreen AI edge functions v5.0.
  * CORS, Supabase client, errors, metrics, rate limiting,
- * hashing, tracing, consent verification, PHI logging.
+ * hashing, tracing, consent verification, PHI logging,
+ * retry with exponential backoff, circuit breaker.
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -30,9 +31,12 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
 
 // ── Constants ───────────────────────────────────────────────────
 export const MODEL_ID = "google/gemini-3-flash-preview";
-export const AGENT_VERSION = "pediscreen-edge-v4.0";
+export const MODEL_ID_PRO = "google/gemini-3-pro-preview";
+export const AGENT_VERSION = "pediscreen-edge-v5.0";
 export const COST_PER_1K_TOKENS = 0.00015;
-export const EDGE_VERSION = "4.0.0";
+export const COST_PER_1K_TOKENS_PRO = 0.00125;
+export const EDGE_VERSION = "5.0.0";
+export const AI_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
 // ── Error responses ─────────────────────────────────────────────
 export function errorResponse(
@@ -75,6 +79,181 @@ export function extractContext(req: Request): RequestContext {
     userRole: req.headers.get("x-user-role") || null,
     apiKey: req.headers.get("apikey") || null,
   };
+}
+
+// ── Retry with exponential backoff ──────────────────────────────
+export interface RetryOptions {
+  maxRetries?: number;
+  baseDelayMs?: number;
+  maxDelayMs?: number;
+  retryableStatuses?: number[];
+}
+
+export async function fetchWithRetry(
+  url: string,
+  init: RequestInit,
+  options: RetryOptions = {},
+): Promise<Response> {
+  const {
+    maxRetries = 2,
+    baseDelayMs = 500,
+    maxDelayMs = 4000,
+    retryableStatuses = [500, 502, 503, 504],
+  } = options;
+
+  let lastError: Error | null = null;
+  let lastResponse: Response | null = null;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const resp = await fetch(url, init);
+
+      // Don't retry on 402 (payment) or 429 (rate limit) — these are user-actionable
+      if (resp.ok || resp.status === 402 || resp.status === 429) return resp;
+
+      if (retryableStatuses.includes(resp.status) && attempt < maxRetries) {
+        lastResponse = resp;
+        const delay = Math.min(baseDelayMs * Math.pow(2, attempt), maxDelayMs);
+        const jitter = Math.random() * delay * 0.3;
+        console.warn(`[retry] attempt ${attempt + 1}/${maxRetries} after ${resp.status}, waiting ${Math.round(delay + jitter)}ms`);
+        await new Promise((r) => setTimeout(r, delay + jitter));
+        continue;
+      }
+
+      return resp;
+    } catch (e) {
+      lastError = e instanceof Error ? e : new Error(String(e));
+      if (attempt < maxRetries) {
+        const delay = Math.min(baseDelayMs * Math.pow(2, attempt), maxDelayMs);
+        console.warn(`[retry] attempt ${attempt + 1}/${maxRetries} after error: ${lastError.message}`);
+        await new Promise((r) => setTimeout(r, delay));
+        continue;
+      }
+    }
+  }
+
+  if (lastResponse) return lastResponse;
+  throw lastError || new Error("fetchWithRetry exhausted");
+}
+
+// ── AI Gateway helper (retry + deadline + error normalization) ──
+export interface AICallResult {
+  ok: boolean;
+  result?: Record<string, unknown>;
+  usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
+  error?: string;
+  status?: number;
+  latencyMs?: number;
+}
+
+export async function callAIGateway(
+  messages: { role: string; content: string }[],
+  options: {
+    tools?: unknown[];
+    tool_choice?: unknown;
+    model?: string;
+    temperature?: number;
+    max_tokens?: number;
+    deadlineMs?: number;
+  } = {},
+): Promise<AICallResult> {
+  if (!LOVABLE_API_KEY) return { ok: false, error: "no_api_key" };
+
+  const {
+    tools,
+    tool_choice,
+    model = MODEL_ID,
+    temperature = 0.2,
+    max_tokens,
+    deadlineMs = 15000,
+  } = options;
+
+  const start = performance.now();
+
+  try {
+    const body: Record<string, unknown> = {
+      model,
+      messages,
+      temperature,
+    };
+    if (tools) body.tools = tools;
+    if (tool_choice) body.tool_choice = tool_choice;
+    if (max_tokens) body.max_tokens = max_tokens;
+
+    const resp = await withDeadline(
+      fetchWithRetry(AI_GATEWAY_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      }, { maxRetries: 2, baseDelayMs: 800 }),
+      deadlineMs,
+    );
+
+    const latencyMs = Math.round(performance.now() - start);
+
+    if (!resp.ok) {
+      const errText = await resp.text();
+      console.error(`[ai-gateway] error ${resp.status}:`, errText);
+      return { ok: false, status: resp.status, error: errText, latencyMs };
+    }
+
+    const data = await resp.json();
+    const usage = data.usage;
+
+    // Try tool call first
+    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
+    if (toolCall?.function?.arguments) {
+      try {
+        const parsed = JSON.parse(toolCall.function.arguments);
+        return { ok: true, result: parsed, usage, latencyMs };
+      } catch {
+        return { ok: false, error: "tool_call_parse_failure", usage, latencyMs };
+      }
+    }
+
+    // Fallback: extract JSON from content
+    const content = data.choices?.[0]?.message?.content;
+    if (content) {
+      const first = content.indexOf("{");
+      const last = content.lastIndexOf("}");
+      if (first !== -1 && last !== -1) {
+        try {
+          const parsed = JSON.parse(content.slice(first, last + 1));
+          return { ok: true, result: parsed, usage, latencyMs };
+        } catch { /* fall through */ }
+      }
+      // Return raw content as result
+      return { ok: true, result: { raw_content: content }, usage, latencyMs };
+    }
+
+    return { ok: false, error: "no_output", usage, latencyMs };
+  } catch (e) {
+    const latencyMs = Math.round(performance.now() - start);
+    const isTimeout = e instanceof Error && e.message === "DEADLINE_EXCEEDED";
+    console.error("[ai-gateway] call failed:", e);
+    return { ok: false, error: isTimeout ? "MODEL_TIMEOUT" : String(e), latencyMs };
+  }
+}
+
+// ── Handle AI error responses (402/429) ─────────────────────────
+export function handleAIErrorResponse(
+  aiResult: AICallResult,
+  traceId: string,
+  extraHeaders: Record<string, string> = {},
+): Response | null {
+  if (aiResult.status === 429) {
+    return errorResponse("RATE_LIMITED", "AI rate limit exceeded. Please try again shortly.", 429, traceId, {
+      ...extraHeaders,
+      "Retry-After": "30",
+    });
+  }
+  if (aiResult.status === 402) {
+    return errorResponse("PAYMENT_REQUIRED", "AI credits exhausted. Please add credits to continue.", 402, traceId, extraHeaders);
+  }
+  return null;
 }
 
 // ── Metrics recording ───────────────────────────────────────────
@@ -147,7 +326,6 @@ export async function verifyConsent(
 // ── Rate limiter (per-instance in-memory with cleanup) ──────────
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 
-// Cleanup stale entries every 5 minutes
 setInterval(() => {
   const now = Date.now();
   for (const [key, entry] of rateLimitMap) {

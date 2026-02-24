@@ -10,6 +10,7 @@ import type {
   ParentNotesResult,
   WearableMetrics,
   WearableRiskResult,
+  MilestoneLookupResult,
 } from "@/types/medgemma";
 
 // ── MedGemma Screening Analysis ─────────────────────────────────
@@ -30,7 +31,17 @@ export function useMedGemmaAnalysis() {
         },
       });
 
-      if (error) throw new Error(error.message || "Analysis failed");
+      if (error) {
+        // Surface specific error types from edge function
+        const msg = error.message || "Analysis failed";
+        if (msg.includes("429") || msg.includes("RATE_LIMITED")) {
+          throw new Error("AI rate limit exceeded. Please wait a moment and try again.");
+        }
+        if (msg.includes("402") || msg.includes("PAYMENT_REQUIRED")) {
+          throw new Error("AI credits exhausted. Please add credits to continue.");
+        }
+        throw new Error(msg);
+      }
       if (!data?.success) throw new Error(data?.message || "Analysis returned unsuccessful result");
       return data as MedGemmaScreeningResult;
     },
@@ -106,5 +117,25 @@ export function useScreeningDetail(screeningId: string | undefined) {
       return data;
     },
     enabled: !!screeningId,
+  });
+}
+
+// ── Milestone Lookup ────────────────────────────────────────────
+export function useMilestoneLookup() {
+  return useMutation<MilestoneLookupResult, Error, { ageMonths: number; domains?: string[] }>({
+    mutationKey: ["milestone-lookup"],
+    mutationFn: async ({ ageMonths, domains }) => {
+      const { data, error } = await supabase.functions.invoke("milestone-lookup", {
+        body: { ageMonths, domains },
+      });
+
+      if (error) {
+        const msg = error.message || "Milestone lookup failed";
+        if (msg.includes("429")) throw new Error("Rate limit exceeded. Please try again shortly.");
+        if (msg.includes("402")) throw new Error("AI credits exhausted.");
+        throw new Error(msg);
+      }
+      return data as MilestoneLookupResult;
+    },
   });
 }
