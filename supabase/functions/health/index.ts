@@ -24,7 +24,7 @@ serve(async (req) => {
         const t = performance.now();
         try {
           const result = await withDeadline(
-            supabase.from("screenings").select("id", { count: "exact", head: true }),
+            supabase.from("screenings").select("id", { count: "exact", head: true }).then((r: { count: number | null; error: { message: string } | null }) => r),
             3000,
           ) as { count: number | null; error: { message: string } | null };
           return { connected: !result.error, latency_ms: Math.round(performance.now() - t), total_screenings: result.count || 0 };

@@ -105,7 +105,7 @@ const ScreeningHistory = () => {
                 report: screening.report,
                 childAge: String(screening.child_age_months),
                 domain: screening.domain,
-                confidence: screening.report?.confidence,
+                confidence: (screening.report as any)?.confidence,
               }}>
                 <Card className="hover:shadow-lg transition-all duration-300 border-none shadow-md cursor-pointer">
                   <CardHeader>

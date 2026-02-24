@@ -46,7 +46,7 @@ export function TechnicalWriterEditor({
       setError(null);
       try {
         const r = await fetchReport(reportId);
-        const draft = r.draft_json ?? r;
+        const draft: TechnicalReportData = (r.draft_json ?? r) as TechnicalReportData;
         if (cancelled) return;
         setReport(draft);
         setEdit({
@@ -117,7 +117,7 @@ export function TechnicalWriterEditor({
     return ev.map((e) => (
       <div key={e.id} className="border rounded-lg p-2 my-2 bg-muted/30">
         <div className="text-xs text-muted-foreground">
-          Provenance: {e.provenance?.model ?? 'baseline'}
+          Provenance: {(e.provenance?.model as string) ?? 'baseline'}
         </div>
         <div className="text-sm mt-1">{e.summary}</div>
       </div>

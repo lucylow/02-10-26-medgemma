@@ -232,29 +232,29 @@ function handleIoTMessage(message: IoTMessage, dispatch: React.Dispatch<IoTActio
   switch (message.type) {
     case "vitals":
       if (message.vitals) {
-        dispatch({ type: "VITALS_UPDATE", payload: message.vitals });
+        dispatch({ type: "VITALS_UPDATE", payload: message.vitals as PediatricVitalSigns });
       }
       break;
     case "device":
       if (message.device) {
-        dispatch({ type: "DEVICE_UPDATE", payload: message.device });
+        dispatch({ type: "DEVICE_UPDATE", payload: message.device as IoTDevice });
       }
       break;
     case "devices":
       if (Array.isArray(message.devices)) {
         for (const device of message.devices) {
-          dispatch({ type: "DEVICE_UPDATE", payload: device });
+          dispatch({ type: "DEVICE_UPDATE", payload: device as IoTDevice });
         }
       }
       break;
     case "alerts":
       if (Array.isArray(message.alerts)) {
-        dispatch({ type: "ALERTS_REPLACE", payload: message.alerts });
+        dispatch({ type: "ALERTS_REPLACE", payload: message.alerts as VitalAlert[] });
       }
       break;
     case "alert":
       if (message.alert) {
-        dispatch({ type: "ALERT_UPSERT", payload: message.alert });
+        dispatch({ type: "ALERT_UPSERT", payload: message.alert as VitalAlert });
       }
       break;
     case "ping":

@@ -107,8 +107,8 @@ describe("technicalWriter (MedGemma end2end API)", () => {
       expect(result.ok).toBe(true);
       expect(result.final).toBeDefined();
       expect(result.final!.status).toBe("finalized");
-      expect(result.final!.clinician_approval).toBeDefined();
-      expect(result.final!.clinician_approval!.note).toContain("SLP referral placed");
+      expect((result.final as any).clinician_approval).toBeDefined();
+      expect((result.final as any).clinician_approval!.note).toContain("SLP referral placed");
       expect(result.pdf_base64).toBeDefined();
       expect(typeof result.pdf_base64).toBe("string");
     });

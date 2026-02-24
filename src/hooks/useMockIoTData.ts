@@ -202,7 +202,7 @@ const makeDevicesForPatient = (
 
   return kinds.map((kind, idx) => {
     const id = `${patient.id}-dev-${idx + 1}`;
-    const status = choose(statuses, statuses);
+    const status = statuses[Math.floor(rng() * statuses.length)];
     const now = new Date();
     const lastSeen = new Date(
       now.getTime() - Math.floor(rng() * 20 * 60 * 1000),
@@ -354,7 +354,7 @@ const generateAnomalies = (
 
     const severity = template.type;
 
-    const summaryMap: Record<typeof kind, string> = {
+    const summaryMap: Record<string, string> = {
       tachycardia: "Sustained tachycardia during active play window",
       bradycardia: "Bradycardia cluster during overnight period",
       desaturation: "Brief desaturation episodes with rapid recovery",
