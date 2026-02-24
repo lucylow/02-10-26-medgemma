@@ -471,12 +471,40 @@ export type ScreeningListItem = {
  * Supabase: /list_screenings when VITE_SUPABASE_FUNCTION_URL is set.
  */
 export const listScreenings = async (params?: { limit?: number; page?: number }): Promise<{ items: ScreeningListItem[] }> => {
+  const limit = params?.limit ?? 50;
+  const page = params?.page ?? 0;
+
+  // Primary path: query Supabase screenings table directly
+  try {
+    const { supabase } = await import('@/integrations/supabase/client');
+    const from = page * limit;
+    const to = from + limit - 1;
+    const { data, error } = await supabase
+      .from('screenings')
+      .select('id, screening_id, child_age_months, domain, observations, image_path, report, created_at')
+      .order('created_at', { ascending: false })
+      .range(from, to);
+    if (!error && data) {
+      const items: ScreeningListItem[] = data.map((d) => ({
+        id: d.id,
+        screening_id: d.screening_id,
+        child_age_months: d.child_age_months,
+        domain: d.domain,
+        observations: d.observations,
+        image_path: d.image_path,
+        report: (d.report as Record<string, unknown>) || {},
+        created_at: d.created_at,
+      }));
+      return { items };
+    }
+  } catch {
+    // fall through to legacy paths
+  }
+
   if (DEMO_MODE && MOCK_SERVER_URL) {
     const res = await fetch(`${MOCK_SERVER_URL}/cases`);
     if (!res.ok) return { items: [] };
     const list = (await res.json()) as { case_id: string; age_months?: number; locale?: string; risk?: string; thumb?: string }[];
-    const limit = params?.limit ?? 50;
-    const page = params?.page ?? 0;
     const start = page * limit;
     const items = (list || []).slice(start, start + limit).map((c) => ({
       id: c.case_id,
@@ -490,37 +518,8 @@ export const listScreenings = async (params?: { limit?: number; page?: number })
     }));
     return { items };
   }
-  if (PEDISCREEN_BACKEND_URL) {
-    const limit = params?.limit ?? 50;
-    const skip = ((params?.page ?? 0) * limit);
-    const headers: Record<string, string> = {};
-    if (API_KEY) headers['x-api-key'] = API_KEY;
-    const res = await fetch(`${PEDISCREEN_BACKEND_URL}/api/screenings?limit=${limit}&skip=${skip}`, { headers });
-    if (!res.ok) throw new Error(await res.text());
-    const data = await res.json();
-    const items = (data.items || []).map((d: Record<string, unknown>) => ({
-      id: String(d._id || d.screening_id),
-      screening_id: String(d.screening_id || d._id),
-      child_age_months: Number(d.childAge ?? 0),
-      domain: d.domain as string | null,
-      observations: d.observations as string | null,
-      image_path: d.image_path as string | null,
-      report: (d.report as Record<string, unknown>) || {},
-      created_at: d.timestamp ? new Date((d.timestamp as number) * 1000).toISOString() : '',
-    }));
-    return { items };
-  }
-  if (!SUPABASE_FUNCTION_URL) {
-    return { items: [] };
-  }
-  const limit = params?.limit ?? 50;
-  const page = params?.page ?? 0;
-  const url = `${SUPABASE_FUNCTION_URL}/list_screenings?limit=${limit}&page=${page}`;
-  const { getAuthHeaders } = await import('@/lib/apiAuth');
-  const headers = await getAuthHeaders();
-  const res = await fetch(url, { headers });
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
+
+  return { items: [] };
 };
 
 /**
@@ -530,6 +529,30 @@ export const listScreenings = async (params?: { limit?: number; page?: number })
  * Supabase: /get_screening when VITE_SUPABASE_FUNCTION_URL is set.
  */
 export const getScreening = async (screeningId: string): Promise<ScreeningListItem | null> => {
+  // Primary: Supabase direct query
+  try {
+    const { supabase } = await import('@/integrations/supabase/client');
+    const { data, error } = await supabase
+      .from('screenings')
+      .select('id, screening_id, child_age_months, domain, observations, image_path, report, created_at')
+      .eq('screening_id', screeningId)
+      .maybeSingle();
+    if (!error && data) {
+      return {
+        id: data.id,
+        screening_id: data.screening_id,
+        child_age_months: data.child_age_months,
+        domain: data.domain,
+        observations: data.observations,
+        image_path: data.image_path,
+        report: (data.report as Record<string, unknown>) || {},
+        created_at: data.created_at,
+      };
+    }
+  } catch {
+    // fall through
+  }
+
   if (DEMO_MODE && MOCK_SERVER_URL) {
     const res = await fetch(`${MOCK_SERVER_URL}/case/${encodeURIComponent(screeningId)}`);
     if (!res.ok) return null;
@@ -545,29 +568,8 @@ export const getScreening = async (screeningId: string): Promise<ScreeningListIt
       created_at: doc.created_at ?? new Date().toISOString(),
     };
   }
-  if (PEDISCREEN_BACKEND_URL) {
-    const headers: Record<string, string> = {};
-    if (API_KEY) headers['x-api-key'] = API_KEY;
-    const res = await fetch(`${PEDISCREEN_BACKEND_URL}/api/screenings/${encodeURIComponent(screeningId)}`, { headers });
-    if (!res.ok) return null;
-    const d = await res.json();
-    return {
-      id: String(d._id || d.screening_id),
-      screening_id: String(d.screening_id || d._id),
-      child_age_months: Number(d.childAge ?? 0),
-      domain: d.domain as string | null,
-      observations: d.observations as string | null,
-      image_path: d.image_path as string | null,
-      report: d.report || {},
-      created_at: d.timestamp ? new Date(d.timestamp * 1000).toISOString() : '',
-    };
-  }
-  if (!SUPABASE_FUNCTION_URL) return null;
-  const { getAuthHeaders } = await import('@/lib/apiAuth');
-  const headers = await getAuthHeaders();
-  const res = await fetch(`${SUPABASE_FUNCTION_URL}/get_screening?id=${encodeURIComponent(screeningId)}`, { headers });
-  if (!res.ok) return null;
-  return res.json();
+
+  return null;
 };
 
 /**
