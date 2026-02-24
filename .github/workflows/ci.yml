@@ -1,59 +1,275 @@
-# CI: tests and linting for PediScreen/MedGemma
-name: CI
+name: "🚀 PediScreen AI CI/CD (Medical Grade)"
 
 on:
   push:
-    branches: [main, master]
+    branches: [main, develop, staging]
   pull_request:
-    branches: [main, master]
+    branches: [main]
+
+env:
+  NODE_VERSION: "20"
+  PLAYWRIGHT_VERSION: "1.48.0"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
+  # TypeScript + ESLint + Prettier
+  lint:
+    name: "🔍 Lint & Type Check"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "📥 Checkout code"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: "🟢 Setup Node.js"
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: "**/package-lock.json"
+
+      - name: "📦 Install dependencies"
+        run: npm ci
+
+      - name: "📝 Lint"
+        run: npm run lint
+
+      - name: "🔎 TypeScript Check"
+        run: npm run type-check
+
+      - name: "🎨 Prettier Check"
+        run: npx prettier --check .
+
+  # Unit + Integration Tests (Vitest)
+  test:
+    name: "🧪 Unit & Integration Tests"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "📥 Checkout code"
+        uses: actions/checkout@v4
+
+      - name: "🟢 Setup Node.js"
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: "📦 Install dependencies"
+        run: npm ci
+
+      - name: "🧪 Run tests"
+        run: npm test -- --coverage
+
+      - name: "📊 Upload coverage"
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage/lcov.info
+          fail_ci_if_error: false
+
+  # E2E Tests (Playwright)
+  e2e:
+    name: "🔄 E2E Tests (Playwright)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "📥 Checkout code"
+        uses: actions/checkout@v4
+
+      - name: "🟢 Setup Node.js"
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: "📦 Install dependencies"
+        run: npm ci
+
+      - name: "🔧 Install Playwright"
+        run: npx playwright@${{ env.PLAYWRIGHT_VERSION }} install --with-deps
+
+      - name: "🌐 Start app and run Playwright"
+        run: |
+          npm run build
+          npx concurrently -k -s first -n "SERVER,TEST" -c magenta,blue \
+            "npm start" \
+            "npx wait-on http://localhost:8080 && npx playwright test"
+
+      - name: "📸 Save E2E artifacts"
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-report-${{ github.sha }}
+          path: playwright-report/
+          retention-days: 30
+
+  # Build & Bundle Analysis
+  build:
+    name: "🏗️ Build & Bundle Analysis"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "📥 Checkout code"
+        uses: actions/checkout@v4
+
+      - name: "🟢 Setup Node.js"
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: "📦 Install dependencies"
+        run: npm ci
+
+      - name: "🏗️ Production Build"
+        run: npm run build
+
+      - name: "📦 Bundle Analysis"
+        uses: webpack-bundle-analyzer/analyze-action@master
+        with:
+          generateReport: true
+          uploadToGitHubArtifacts: true
+
+  # Medical Compliance & Security
+  security:
+    name: "🛡️ Security & Compliance Scan"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "📥 Checkout code"
+        uses: actions/checkout@v4
+
+      - name: "🛡️ Dependency Security Scan"
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: "🔒 Snyk Security Scan"
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+
+      - name: "🩺 Medical Compliance Check"
+        run: |
+          # Check for hardcoded PHI/secrets (excluding commented lines)
+          if grep -rE "(password|secret|key|token|ssn|passport)" src/ --include="*.ts*" --include="*.js*" | grep -v "//"; then
+            echo "❌ Hardcoded secrets detected!"
+            exit 1
+          fi
+          # Check accessibility requirements via ESLint
+          npx eslint . --max-warnings=0 --ext .ts,.tsx
+
+  # Backend tests (FastAPI, MedGemma)
   backend-tests:
+    name: "🧪 Backend Tests"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python
+      - name: "🟢 Setup Python"
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Install backend deps
+      - name: "📦 Install backend deps"
         run: |
           cd backend && pip install -r requirements.txt -r requirements-dev.txt
-      - name: Run backend tests
+      - name: "🧪 Run backend tests"
         run: |
           cd backend && pytest -q --tb=short
         env:
           API_KEY: test-key
           MOCK_FALLBACK: "true"
 
+  # Root-level Python tests (models, orchestration)
   root-tests:
+    name: "🧪 Core Python Tests"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python
+      - name: "🟢 Setup Python"
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Install deps (root / pedi_screen)
+      - name: "📦 Install deps (root / pedi_screen)"
         run: |
           pip install pytest pytest-asyncio
           pip install pydantic
-      - name: Run root tests (model loader, inference fallback, circuit)
+      - name: "🧪 Run root tests (model loader, inference fallback, circuit)"
         run: |
           export PYTHONPATH="${GITHUB_WORKSPACE}:${GITHUB_WORKSPACE}/backend"
           pytest tests/test_model_loader.py tests/test_inference_fallback.py tests/test_circuit_breaker.py -q --tb=short
         continue-on-error: true
 
-  lint:
+  # Backend linting (Ruff)
+  backend-lint:
+    name: "✨ Backend Lint (Ruff)"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python
+      - name: "🟢 Setup Python"
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Ruff
+      - name: "✨ Ruff"
         run: |
           pip install ruff
           ruff check backend/app configs utils monitoring pedi_screen/medgemma_core pedi_screen/monitoring --ignore E501
         continue-on-error: true
+
+  # Lovable Deployment Preview
+  preview:
+    name: "🚀 Lovable Preview Deploy"
+    if: github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    needs: [lint, test, e2e, build, security, backend-tests, root-tests]
+    steps:
+      - name: "🚀 Notify Lovable Deploy"
+        run: |
+          echo "✅ All checks passed! Lovable will auto-deploy from GitHub."
+          echo "📱 Preview: https://lovable.dev/lucylow/02-10-26-medgemma"
+
+  # Production Deploy (manual trigger)
+  deploy-prod:
+    name: "🚀 Production Deploy"
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs: [lint, test, e2e, build, security, backend-tests, root-tests]
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: "🚀 Deploy to Vercel Production"
+        uses: vercel/action@v1
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.ORG_ID }}
+          vercel-project-id: ${{ secrets.PROJECT_ID }}
+          vercel-args: "--prod"
+          working-directory: "./"
+
+  # Kaggle Submission Validation
+  kaggle:
+    name: "🥇 Kaggle Submission Check"
+    runs-on: ubuntu-latest
+    if: contains(github.event.head_commit.message, 'kaggle') || github.ref == 'refs/heads/kaggle-submission'
+    steps:
+      - name: "📥 Checkout code"
+        uses: actions/checkout@v4
+
+      - name: "🏆 Validate Kaggle Assets"
+        run: |
+          # Check required Kaggle files exist
+          [[ -f "medical/research/kaggle-submission.md" ]] || (echo "❌ Missing Kaggle submission" && exit 1)
+          [[ -f "README.md" ]] || (echo "❌ Missing README" && exit 1)
+
+          # Validate README badges render
+          grep -q "Kaggle" README.md || echo "⚠️ Add Kaggle badge to README"
+
+      - name: "📊 Generate Submission Report"
+        run: |
+          echo "## Kaggle Submission Ready ✅" >> $GITHUB_STEP_SUMMARY
+          echo "- [ ] Video demo uploaded" >> $GITHUB_STEP_SUMMARY
+          echo "- [ ] Technical write-up complete" >> $GITHUB_STEP_SUMMARY
+          echo "- [ ] Code passes all CI checks" >> $GITHUB_STEP_SUMMARY
+

@@ -1,0 +1,39 @@
+name: "🔒 Security & Secret Scanning"
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 2 * * 1"
+
+jobs:
+  secrets-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: "🔍 TruffleHog Secret Scan"
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          extra_args: --exclude-paths .trufflehog-ignore.txt
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+
+  dependency-review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: "📥 Checkout"
+        uses: actions/checkout@v4
+
+      - name: "🔍 Dependency Review"
+        uses: actions/dependency-review-action@v4
+        with:
+          deny-licenses: "GPL-1.0-or-later"
+
+

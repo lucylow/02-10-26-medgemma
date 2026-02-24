@@ -1,8 +1,65 @@
-# PediScreen AI — Technical Reference
+# 🩺 PediScreen AI - MedGemma Pediatric Screening
 
-**Super-technical README: MedGemma-based developmental screening platform.**
+[![CI/CD](https://github.com/lucylow/02-10-26-medgemma/actions/workflows/ci.yml/badge.svg)](https://github.com/lucylow/02-10-26-medgemma/actions/workflows/ci.yml)
+[![Security](https://github.com/lucylow/02-10-26-medgemma/actions/workflows/security.yml/badge.svg)](https://github.com/lucylow/02-10-26-medgemma/actions/workflows/security.yml)
+[![Lovable](https://img.shields.io/badge/Lovable-Preview-brightgreen)](https://lovable.dev/lucylow/02-10-26-medgemma)
+[![Kaggle](https://img.shields.io/badge/Kaggle-MedGemma%20Impact%20Challenge-blue)](https://www.kaggle.com/competitions/medgemma-impact-challenge)
+[![License](https://img.shields.io/github/license/lucylow/02-10-26-medgemma)](LICENSE)
 
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+## 🚀 Live Demo
+[pediscreen.ai](https://pediscreen.ai) • [Lovable Preview](https://lovable.dev/lucylow/02-10-26-medgemma)
+
+## 🏥 Medical-Grade Features
+- **MedGemma 4B multimodal** (text + image analysis)
+- **Real-time vitals monitoring** (rPPG from webcam)
+- **ASQ-3 aligned screening flows** (0–60 months)
+- **HIPAA-ready** embedding-first, on-device friendly architecture
+- **Longitudinal tracking** with developmental trends and growth-style charts
+
+## 🛠️ Quick Start (Lovable + Self-Host)
+
+```bash
+# 1. Clone (Lovable GitHub sync)
+git clone https://github.com/lucylow/02-10-26-medgemma
+cd 02-10-26-medgemma
+
+# 2. Install frontend deps
+npm ci
+
+# 3. Environment (Supabase + MedGemma backend)
+cp .env.example .env
+# Edit VITE_MEDGEMMA_API_URL / VITE_PEDISCREEN_BACKEND_URL / Supabase keys
+
+# 4. Dev server (Vite)
+npm run dev
+# Open http://localhost:8080/pediscreen
+```
+
+## 📊 Architecture Overview
+
+PediScreen AI is a full-stack MedGemma deployment:
+
+- **Frontend**: React 18 + Vite + shadcn-ui, with a Next.js-style `src/app` scaffold for future App Router migration.
+- **Backend**: FastAPI MedGemma service, HAI-DEF multi-agent orchestration, Supabase functions, and optional OpenVINO / edge pipelines.
+- **Model**: MedGemma 2B/4B with LoRA/QLoRA adapters for pediatric developmental reasoning.
+
+See the sections below and `docs/architecture.md` for full C4 and sequence diagrams.
+
+## 🩺 Compliance & Safety Snapshot
+
+- ✅ CDS-style **decision support only** (not a diagnostic device)
+- ✅ **Human-in-the-loop** clinician review and sign-off
+- ✅ **Audit trail** for all screenings and model calls
+- ✅ **Embedding-first** design to minimize PHI exposure
+- ✅ Accessibility and UX tuned for CHWs and clinicians
+
+## 🎯 Kaggle & Research
+
+PediScreen AI is structured for the **MedGemma Impact Challenge** and similar research settings:
+
+- Reproducible training and evaluation pipelines (`training/`, `eval/`)
+- Clear model provenance and adapter tracking
+- `medical/` folder with validation, prompts, and Kaggle write-up stubs
 
 ---
 

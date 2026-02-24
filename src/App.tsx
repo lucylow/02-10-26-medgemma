@@ -33,6 +33,7 @@ import PediScreenHome from "./pages/PediScreenHome";
 import ScreeningScreen from "./pages/ScreeningScreen";
 import ResultsScreen from "./pages/ResultsScreen";
 import ScreeningHistory from "./pages/ScreeningHistory";
+import EdgeDevices from "./pages/EdgeDevices";
 import Profiles from "./pages/Profiles";
 import Settings from "./pages/Settings";
 import Education from "./pages/Education";
@@ -77,7 +78,14 @@ import { ThemeProvider } from "./theme";
 import { ThemeProvider as ClinicalTokensProvider } from "./providers/ThemeProvider";
 import { AccessiblePediScreenProvider } from "./components/a11y/AccessiblePediScreenProvider";
 import { WalletHeader } from "./components/blockchain";
+import PatientContextBar from "./components/layout/patient-context-bar";
+import GlobalSearch from "./components/layout/global-search";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import IoTDashboardPage from "./pages/IoTDashboard";
+import { IoTProvider } from "./components/iot";
+import IoTMonitoring from "./pages/iot/IoTMonitoring";
+import PatientDashboard from "./pages/iot/PatientDashboard";
+import DeviceSetup from "./pages/iot/DeviceSetup";
 
 const queryClient = new QueryClient();
 
@@ -86,15 +94,75 @@ const appRoutes = createRoutesFromElements(
     <Route path="/" element={<Index />} />
     <Route path="/screen" element={<Navigate to="/pediscreen/screening" replace />} />
     <Route element={<MainLayout />}>
-      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-      <Route path="/health-dashboard" element={<ProtectedRoute><HealthDashboard /></ProtectedRoute>} />
-      <Route path="/cases" element={<ProtectedRoute><CasesIndex /></ProtectedRoute>} />
-      <Route path="/cases/:id" element={<ProtectedRoute><CaseDetail /></ProtectedRoute>} />
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/health-dashboard"
+        element={
+          <ProtectedRoute>
+            <HealthDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/iot"
+        element={
+          <ProtectedRoute>
+            <IoTMonitoring />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/iot/patient"
+        element={
+          <ProtectedRoute>
+            <PatientDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/iot/devices"
+        element={
+          <ProtectedRoute>
+            <DeviceSetup />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/cases"
+        element={
+          <ProtectedRoute>
+            <CasesIndex />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/cases/:id"
+        element={
+          <ProtectedRoute>
+            <CaseDetail />
+          </ProtectedRoute>
+        }
+      />
       <Route path="/auth/login" element={<Login />} />
       <Route path="/auth/signup" element={<Signup />} />
       <Route path="/profile" element={<Profile />} />
       <Route path="/reports" element={<Reports />} />
       <Route path="/settings" element={<Settings />} />
+      <Route
+        path="/iot-dashboard"
+        element={
+          <ProtectedRoute>
+            <IoTDashboardPage />
+          </ProtectedRoute>
+        }
+      />
     </Route>
     <Route path="/telemetry" element={<Telemetry />} />
     <Route path="/smart/launch" element={<SmartLaunch />} />
@@ -107,6 +175,7 @@ const appRoutes = createRoutesFromElements(
       <Route path="dashboard" element={<AgentDashboard />} />
       <Route path="agent-pipeline" element={<AgentPipelineScreen />} />
       <Route path="multi-agent-health" element={<MultiAgentHealthDashboard />} />
+      <Route path="edge-devices" element={<EdgeDevices />} />
       <Route path="voice" element={<VoiceInputScreen />} />
       <Route path="screening" element={<ScreeningScreen />} />
       <Route path="results" element={<ResultsScreen />} />
@@ -194,26 +263,39 @@ const App = ({ router: customRouter }: AppProps = {}) => {
     return () => window.removeEventListener("online", handleOnline);
   }, []);
 
+  const currentPatient = {
+    id: "emma-001",
+    name: "Emma Rodriguez",
+    ageMonths: 24,
+    status: "active" as const,
+    riskLevel: "MEDIUM" as const,
+    lastScreeningAt: new Date().toISOString(),
+  };
+
   return (
     <ErrorBoundary>
       <ThemeProvider>
         <ClinicalTokensProvider>
-        <QueryClientProvider client={queryClient}>
-          <SupabaseAuthProvider>
-            <TooltipProvider>
-              <AgentProvider>
-                <ScreeningProvider>
-                  <AccessiblePediScreenProvider>
-                    <WalletHeader />
-                    <Toaster />
-                    <Sonner />
-                    <RouterProvider router={router} />
-                  </AccessiblePediScreenProvider>
-                </ScreeningProvider>
-              </AgentProvider>
-            </TooltipProvider>
-          </SupabaseAuthProvider>
-        </QueryClientProvider>
+          <QueryClientProvider client={queryClient}>
+            <SupabaseAuthProvider>
+              <TooltipProvider>
+                <AgentProvider>
+                  <ScreeningProvider>
+                    <AccessiblePediScreenProvider>
+                      <IoTProvider>
+                        <WalletHeader />
+                        <PatientContextBar patient={currentPatient} />
+                        <Toaster />
+                        <Sonner />
+                        <RouterProvider router={router} />
+                        <GlobalSearch />
+                      </IoTProvider>
+                    </AccessiblePediScreenProvider>
+                  </ScreeningProvider>
+                </AgentProvider>
+              </TooltipProvider>
+            </SupabaseAuthProvider>
+          </QueryClientProvider>
         </ClinicalTokensProvider>
       </ThemeProvider>
     </ErrorBoundary>

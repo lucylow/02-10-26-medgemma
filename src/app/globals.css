@@ -1,0 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Bridge file for a future Next.js App Router migration.
+ * The active Vite app still uses src/index.css as its main entrypoint. */
+

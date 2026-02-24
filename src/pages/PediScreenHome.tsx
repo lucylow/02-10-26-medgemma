@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Baby, ClipboardList, Shield, Brain, ArrowRight, History, Sparkles, CheckCircle2, Users, HeartHandshake, Stethoscope } from 'lucide-react';
+import { Baby, ClipboardList, Shield, Brain, ArrowRight, History, Sparkles, CheckCircle2, Users, HeartHandshake, Stethoscope, Radio } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const PediScreenHome = () => {
@@ -130,6 +130,18 @@ const PediScreenHome = () => {
               <Button size="lg" variant="secondary" className="gap-2 w-full sm:w-auto rounded-xl">
                 <Brain className="w-5 h-5" />
                 AI Orchestrator Dashboard
+              </Button>
+            </Link>
+          </motion.div>
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+            <Link to="/iot">
+              <Button
+                size="lg"
+                variant="outline"
+                className="gap-2 w-full sm:w-auto rounded-xl border-primary text-primary"
+              >
+                <Radio className="w-4 h-4" />
+                IoT Remote Patient Monitoring
               </Button>
             </Link>
           </motion.div>

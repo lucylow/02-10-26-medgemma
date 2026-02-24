@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.telemetry]
 verify_jwt = false
+
+[functions.edge-metrics]
+verify_jwt = false

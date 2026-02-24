@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import { PARENT_ONE_LINER } from '@/constants/disclaimers';
-import { Baby, Home, Plus, History, ArrowLeft, Menu, Sparkles, ChevronRight, UserCircle, Settings, BookOpen, Scan, Layers, FileText, FlaskConical, Mic, Lock, Wallet, Link2, Puzzle, BookMarked, ClipboardList, Info, HelpCircle, Shield, MessageCircle, Users } from 'lucide-react';
+import { Baby, Home, Plus, History, ArrowLeft, Menu, Sparkles, ChevronRight, UserCircle, Settings, BookOpen, Scan, Layers, FileText, FlaskConical, Mic, Lock, Wallet, Link2, Puzzle, BookMarked, ClipboardList, Info, HelpCircle, Shield, MessageCircle, Users, Cpu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
@@ -22,6 +22,7 @@ const mainNavItems = [
 const toolsNavItems = [
   { title: 'Voice', path: '/pediscreen/voice', icon: Mic },
   { title: 'Agent Pipeline', path: '/pediscreen/agent-pipeline', icon: Sparkles },
+  { title: 'Edge Devices', path: '/pediscreen/edge-devices', icon: Cpu },
   { title: 'Education', path: '/pediscreen/education', icon: BookOpen },
   { title: 'Guidelines', path: '/pediscreen/guidelines', icon: BookMarked },
   { title: 'Integrations', path: '/pediscreen/integrations', icon: Puzzle },
@@ -55,6 +56,7 @@ const getBreadcrumbs = (pathname: string) => {
   if (pathname.includes('/history')) crumbs.push({ label: 'History', path: '/pediscreen/history' });
   if (pathname.includes('/education')) crumbs.push({ label: 'Education', path: '/pediscreen/education' });
   if (pathname.includes('/settings')) crumbs.push({ label: 'Settings', path: '/pediscreen/settings' });
+  if (pathname.includes('/edge-devices')) crumbs.push({ label: 'Edge Devices', path: '/pediscreen/edge-devices' });
   if (pathname.includes('/radiology')) crumbs.push({ label: 'Radiology Worklist', path: '/pediscreen/radiology' });
   if (pathname.includes('/ct-3d')) crumbs.push({ label: 'CT 3D Edge', path: '/pediscreen/ct-3d' });
   if (pathname.includes('/technical-writer')) crumbs.push({ label: 'Technical Writer', path: '/pediscreen/technical-writer' });
