@@ -7,7 +7,7 @@ describe("CFreeFHIRClient", () => {
 
   beforeAll(() => {
     // Ensure any previous fetch mocks are cleared.
-    // @ts-expect-error vitest global
+    // vitest global
     vi.restoreAllMocks?.();
   });
 

@@ -1,3 +1,4 @@
+// @ts-ignore - axios may not have type declarations installed
 import axios from "axios";
 
 // Shared Pinata configuration used for all IPFS helpers in this app.

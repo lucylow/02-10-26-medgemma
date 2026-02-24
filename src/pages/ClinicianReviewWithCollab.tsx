@@ -16,7 +16,7 @@ function mapReportToDraft(draft: ReportDraft | null): Record<string, unknown> | 
   if (!draft) return null;
   return {
     clinical_summary: draft.clinical_summary,
-    technical_summary: (draft as Record<string, unknown>).technical_summary,
+    technical_summary: (draft as unknown as Record<string, unknown>).technical_summary,
     parent_summary: draft.plain_language_summary ?? draft.clinical_summary,
     parentFriendlyExplanation: draft.plain_language_summary ?? draft.clinical_summary,
     summary: draft.clinical_summary,

@@ -31,6 +31,7 @@ const STATUS_STYLES: Record<
   AgentStatus,
   { bg: string; pulse: boolean; badgeBg?: string }
 > = {
+  idle: { bg: '#F1F5F9', pulse: false },
   pending: { bg: '#E2E8F0', pulse: false },
   running: { bg: 'transparent', pulse: true, badgeBg: '#F59E0B' },
   streaming: { bg: '#3B82F620', pulse: true, badgeBg: '#3B82F6' },

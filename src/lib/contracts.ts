@@ -39,7 +39,7 @@ export interface ScreeningNFTMetadata {
 }
 
 function getBrowserProvider(windowEthereum: unknown): BrowserProvider {
-  return new BrowserProvider(windowEthereum as unknown as object);
+  return new BrowserProvider(windowEthereum as any);
 }
 
 /**

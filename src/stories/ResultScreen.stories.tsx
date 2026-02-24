@@ -5,7 +5,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import React from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { ResultsScreen } from '@/pages/ResultsScreen';
+import ResultsScreen from '@/pages/ResultsScreen';
 import { caseToResultState } from './fixtures/resultState';
 
 // Import mock cases (Vite resolves from project root)
@@ -75,7 +75,7 @@ export const LowConfidence: Story = {
         parent_text: 'We had limited information. Consider a follow-up screening.',
         explainability: [{ type: 'text', detail: 'Short caregiver description', score: 0.4 }],
         confidence: 0.42,
-        uncertainty_reason: 'Limited caregiver description; consider follow-up questions.',
+        // uncertainty_reason removed - not in MockInference type
       },
     }),
   },

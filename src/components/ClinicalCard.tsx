@@ -29,7 +29,6 @@ export function ClinicalCard({
   children,
   actions,
 }: ClinicalCardProps) {
-  const t = useTokens();
   const gradient = riskGradients[risk];
 
   return (

@@ -17,10 +17,10 @@ export function OracleStatus({ screeningId = 1 }: OracleStatusProps) {
     if (loading) return "Checking…";
     if (error) return "Error";
     if (!record) return "No verification yet";
-    return record.oracleMatch ? "✅ VERIFIED" : "❌ MISMATCH";
+    return record.verified ? "✅ VERIFIED" : "❌ MISMATCH";
   }, [isConfigured, loading, error, record]);
 
-  const cardColorClass = record?.oracleMatch
+  const cardColorClass = record?.verified
     ? "border-emerald-500 bg-emerald-50/60"
     : "border-red-500 bg-red-50/60";
 
@@ -62,11 +62,11 @@ export function OracleStatus({ screeningId = 1 }: OracleStatusProps) {
                 <h3 className="text-2xl font-bold text-gray-900 mb-1">
                   Screening #{String(screeningId)}
                 </h3>
-                {record?.requestId && (
+                {record?.ipfsCid && (
                   <div className="flex items-center gap-2 text-xs text-gray-600">
-                    <span>Request ID:</span>
+                    <span>IPFS CID:</span>
                     <code className="font-mono bg-white/80 px-2 py-1 rounded text-[11px] truncate max-w-xs">
-                      {record.requestId}
+                      {record.ipfsCid}
                     </code>
                   </div>
                 )}
@@ -74,7 +74,7 @@ export function OracleStatus({ screeningId = 1 }: OracleStatusProps) {
               <div
                 className={cn(
                   "px-4 py-2 rounded-full text-xs md:text-sm font-bold shadow-lg",
-                  record?.oracleMatch ? "bg-emerald-500 text-white" : "bg-red-500 text-white",
+                  record?.verified ? "bg-emerald-500 text-white" : "bg-red-500 text-white",
                 )}
               >
                 {statusLabel}

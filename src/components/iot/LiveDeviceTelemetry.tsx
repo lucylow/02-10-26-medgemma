@@ -200,10 +200,10 @@ export function LiveDeviceTelemetry() {
             <div className="w-2 h-2 bg-red-500 rounded-full mt-2 flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <div className="font-semibold text-red-900 text-sm mb-1 dark:text-red-100">
-                {(alert.payload as AlertPayload).title}
+              {(alert.payload as any).title}
               </div>
               <div className="text-xs text-red-800 truncate dark:text-red-200">
-                {(alert.payload as AlertPayload).message}
+                {(alert.payload as any).message}
               </div>
               <div className="text-[11px] text-red-600 mt-1 dark:text-red-300">
                 {new Date(alert.timestamp).toLocaleTimeString()}

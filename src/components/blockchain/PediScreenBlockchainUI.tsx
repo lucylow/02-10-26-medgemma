@@ -111,7 +111,7 @@ async function loadNftMetadata(
     const domains = assessment.domains ?? DEFAULT_DOMAINS;
     return {
       tokenId: String(tokenId),
-      riskLevel: typeof riskLevel === "string" ? riskLevel : "LOW",
+      riskLevel: (typeof riskLevel === "string" ? riskLevel : "LOW") as RiskLevel,
       childAgeMonths: Number(assessment.childAgeMonths ?? 0),
       assessmentTimestamp: Number(assessment.assessmentTimestamp ?? Math.floor(Date.now() / 1000)),
       domains,
@@ -141,7 +141,7 @@ async function loadNftMetadataByTokenId(
     const domains = assessment.domains ?? DEFAULT_DOMAINS;
     return {
       tokenId: String(id),
-      riskLevel: typeof riskLevel === "string" ? riskLevel : "LOW",
+      riskLevel: (typeof riskLevel === "string" ? riskLevel : "LOW") as RiskLevel,
       childAgeMonths: Number(assessment.childAgeMonths ?? 0),
       assessmentTimestamp: Number(assessment.assessmentTimestamp ?? Math.floor(Date.now() / 1000)),
       domains,
@@ -155,7 +155,7 @@ async function signScreeningMessage(data: ScreeningData): Promise<string> {
   const w = typeof window !== "undefined" ? (window as unknown as { ethereum?: unknown }).ethereum : undefined;
   if (!w) throw new Error("Wallet not available for signing");
   const ProviderClass = getBrowserProviderClass();
-  const provider = new ProviderClass(w);
+  const provider = new ProviderClass(w) as any;
   const signer = await provider.getSigner();
   const message = `PediScreen Screening Certificate:\n${JSON.stringify(data)}`;
   return await signer.signMessage(message);

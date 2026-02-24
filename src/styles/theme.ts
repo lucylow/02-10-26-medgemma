@@ -3,14 +3,10 @@
  * CSS variables are defined in index.css / globals.css
  */
 
-import { colors, typography, spacing, radius, breakpoints } from "./tokens";
+import { tokens } from "./tokens";
 
 export const theme = {
-  colors,
-  typography,
-  spacing,
-  radius,
-  breakpoints,
+  ...tokens,
 } as const;
 
 export type Theme = typeof theme;

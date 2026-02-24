@@ -39,22 +39,20 @@ serve(async (req) => {
     }
 
     // Parallel: fetch screening + audit trail
-    const queries: Promise<unknown>[] = [
-      supabase.from("screenings").select("*").eq("screening_id", screeningId).single(),
-    ];
-    if (includeAudit) {
-      queries.push(
-        supabase.from("audit_events")
+    const screeningQuery = supabase.from("screenings").select("*").eq("screening_id", screeningId).maybeSingle();
+    const auditQuery = includeAudit
+      ? supabase.from("audit_events")
           .select("action, created_at, model_id, adapter_id, is_mock, user_id, payload")
           .eq("screening_id", screeningId)
           .order("created_at", { ascending: true })
-          .limit(50),
-      );
-    }
+          .limit(50)
+      : null;
 
-    const results = await Promise.all(queries);
-    const screeningRes = results[0] as { data: Record<string, unknown> | null; error: unknown };
-    const auditRes = includeAudit ? results[1] as { data: Record<string, unknown>[] | null } : { data: [] };
+    const [screeningRes, auditRes] = await Promise.all([
+      screeningQuery,
+      auditQuery ?? Promise.resolve({ data: [] as Record<string, unknown>[] }),
+    ]);
+    // screeningRes and auditRes are already typed from the parallel queries above
 
     if (screeningRes.error || !screeningRes.data) {
       await recordMetric("get_screening", "error", performance.now() - start, "not_found");

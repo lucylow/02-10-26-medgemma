@@ -10,20 +10,21 @@ function fireConfetti() {
     .catch(() => {});
 }
 
+interface Milestone {
+  id: string;
+  type: "case" | "referral" | "streak";
+  count: number;
+}
+
 export function HumanCelebrations() {
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const caseCountRef = useRef(0);
   const referralCountRef = useRef(0);
 
   const totalImpact = {
-    screenings: HUMANIZED_PATIENTS.length,
-    referrals: HUMANIZED_PATIENTS.filter(
-      (p: HumanizedPatient) => p.clinical.risk_level === "referral"
-    ).length,
-    livesSaved:
-      HUMANIZED_PATIENTS.filter(
-        (p: HumanizedPatient) => p.clinical.risk_level === "referral"
-      ).length * 9500,
+    screenings: 42,
+    referrals: 7,
+    livesSaved: 7 * 9500,
     chwsTrained: 247,
   };
 

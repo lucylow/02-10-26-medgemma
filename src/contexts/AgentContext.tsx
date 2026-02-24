@@ -9,7 +9,7 @@ import { useAgentOrchestrator } from '@/hooks/useAgentOrchestrator';
 import { AgentOrchestratorContext } from './AgentOrchestratorContext';
 
 export type AgentType = 'intake' | 'medgemma' | 'temporal' | 'embedding' | 'safety' | 'summarizer';
-export type AgentStatus = 'pending' | 'running' | 'streaming' | 'success' | 'failed' | 'error' | 'offline';
+export type AgentStatus = 'idle' | 'pending' | 'running' | 'streaming' | 'success' | 'failed' | 'error' | 'offline';
 
 export interface Agent {
   id: AgentType;
