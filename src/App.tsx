@@ -42,6 +42,7 @@ import DetailedReportEditor from "./pages/DetailedReportEditor";
 import ClinicianDashboard from "./pages/ClinicianDashboard";
 import RealtimeHitlDashboard from "./pages/RealtimeHitlDashboard";
 import EndToEndDemo from "./pages/EndToEndDemo";
+import InteractiveScreeningDemo from "./pages/InteractiveScreeningDemo";
 import AgentPipelineScreen from "./pages/AgentPipelineScreen";
 import AgentDashboard from "./pages/AgentDashboard";
 import VoiceInputScreen from "./pages/VoiceInputScreen";
@@ -97,6 +98,7 @@ const appRoutes = createRoutesFromElements(
       <Route path="ct-3d" element={<CT3DEdge />} />
       <Route path="technical-writer" element={<TechnicalWriter />} />
       <Route path="end2end-demo" element={<EndToEndDemo />} />
+      <Route path="demo" element={<InteractiveScreeningDemo />} />
       <Route path="federated" element={<FederatedLearningPage />} />
       <Route path="blockchain" element={<BlockchainPage />} />
       <Route path="blockchain-dashboard" element={<BlockchainPage />} />

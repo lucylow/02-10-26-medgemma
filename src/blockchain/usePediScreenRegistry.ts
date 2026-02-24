@@ -2,9 +2,11 @@ import { useCallback, useEffect, useState } from "react";
 import * as ethers from "ethers";
 import { PEDISCREEN_REGISTRY_ABI } from "./pediscreenRegistryAbi";
 
-// Support both ethers v5 (Web3Provider) and v6 (BrowserProvider) for Lovable/ESM builds
+// Support both ethers v5 (Web3Provider) and v6 (BrowserProvider) for Lovable/ESM builds.
+// Use computed key to avoid Rollup requiring BrowserProvider from ethers ESM bundle.
+const BROWSER_PROVIDER_KEY = "Browser" + "Provider";
 const getBrowserProviderClass = (): new (provider: unknown) => ethers.Provider =>
-  (ethers as any)["BrowserProvider"] ?? (ethers as any).providers?.["Web3Provider"];
+  (ethers as any)[BROWSER_PROVIDER_KEY] ?? (ethers as any).providers?.["Web3Provider"];
 
 const REGISTRY_ADDRESS = import.meta.env.VITE_REGISTRY_ADDRESS as string | undefined;
 const TARGET_CHAIN_ID = Number(

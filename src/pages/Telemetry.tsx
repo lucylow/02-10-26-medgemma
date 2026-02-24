@@ -12,6 +12,15 @@ import { UsageTimeseries } from "@/components/charts/UsageTimeseries";
 import { ModelTable } from "@/components/charts/ModelTable";
 import { FairnessBarChart, type FairnessDataPoint } from "@/components/charts/FairnessBarChart";
 
+const BACKEND_URL = import.meta.env.VITE_PEDISCREEN_BACKEND_URL;
+const API_KEY = import.meta.env.VITE_API_KEY || "dev-example-key";
+
+interface FairnessItem {
+  group_value?: string;
+  false_positive_rate?: number;
+  false_negative_rate?: number;
+}
+
 interface OverviewData {
   active_connection: boolean;
   last_used: string | null;
@@ -67,6 +76,8 @@ export default function Telemetry() {
   const [fallbackReasons, setFallbackReasons] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("overview");
+  const [fairnessData, setFairnessData] = useState<FairnessDataPoint[]>([]);
+  const [fairnessLoading, setFairnessLoading] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -104,6 +115,7 @@ export default function Telemetry() {
   const fetchFairness = async () => {
     if (!BACKEND_URL) {
       setFairnessData([]);
+      setFairnessLoading(false);
       return;
     }
     setFairnessLoading(true);
@@ -253,6 +265,7 @@ export default function Telemetry() {
                 </Badge>
               )}
             </TabsTrigger>
+            <TabsTrigger value="fairness">Fairness</TabsTrigger>
           </TabsList>
 
           {/* Usage Trend */}

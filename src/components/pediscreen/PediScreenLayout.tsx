@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import { PARENT_ONE_LINER } from '@/constants/disclaimers';
-import { Baby, Home, Plus, History, ArrowLeft, Menu, Sparkles, ChevronRight, UserCircle, Settings, BookOpen, Scan, Layers, FileText, FlaskConical, Mic, Lock, Wallet, Link2, Puzzle, BookMarked } from 'lucide-react';
+import { Baby, Home, Plus, History, ArrowLeft, Menu, Sparkles, ChevronRight, UserCircle, Settings, BookOpen, Scan, Layers, FileText, FlaskConical, Mic, Lock, Wallet, Link2, Puzzle, BookMarked, ClipboardList } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
@@ -32,6 +32,7 @@ const toolsNavItems = [
   { title: 'CT 3D Edge', path: '/pediscreen/ct-3d', icon: Layers },
   { title: 'Technical Writer', path: '/pediscreen/technical-writer', icon: FileText },
   { title: 'End2End Demo', path: '/pediscreen/end2end-demo', icon: FlaskConical },
+  { title: 'Interactive Demo', path: '/pediscreen/demo', icon: ClipboardList },
 ];
 
 const getBreadcrumbs = (pathname: string) => {
@@ -56,6 +57,7 @@ const getBreadcrumbs = (pathname: string) => {
   if (pathname.includes('/results')) crumbs.push({ label: 'Results', path: pathname });
   if (pathname.includes('/case/')) crumbs.push({ label: 'Case Detail', path: pathname });
   if (pathname.includes('/learn-more')) crumbs.push({ label: 'Architecture', path: '/pediscreen/learn-more' });
+  if (pathname === '/pediscreen/demo') crumbs.push({ label: 'Interactive Demo', path: '/pediscreen/demo' });
   return crumbs;
 };
 

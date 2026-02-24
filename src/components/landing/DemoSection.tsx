@@ -18,6 +18,9 @@ import {
   Smartphone,
   WifiOff,
   MapPin,
+  Sparkles,
+  Brain,
+  TrendingUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -295,11 +298,23 @@ export function DemoSection() {
                   </div>
                 </div>
 
-                {/* Output Section */}
+                {/* Output Section — Research & Analytics style */}
                 <div className="lg:border-l lg:pl-12 border-border">
-                  <h3 className="font-heading text-xl font-semibold mb-6">
-                    MedGemma Analysis Results
-                  </h3>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <BarChart3 className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-heading text-xl font-semibold text-foreground">
+                        MedGemma Analysis Results
+                      </h3>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                        <Sparkles className="w-3 h-3" />
+                        AI research outputs · XAI transparency
+                      </p>
+                    </div>
+                  </div>
+                  <div className="h-px bg-gradient-to-r from-primary/20 to-transparent mb-6" />
 
                   {!showResults ? (
                     <div className="h-64 bg-muted rounded-xl flex items-center justify-center">
@@ -393,46 +408,48 @@ export function DemoSection() {
                         </div>
                       </motion.div>
 
-                      {/* Clinical Interpretation */}
-                      <div>
+                      {/* Clinical Interpretation — Analytics block */}
+                      <div className="rounded-xl border border-border/80 bg-muted/20 p-4">
                         <div className="flex items-center gap-2 mb-2">
+                          <Brain className="h-4 w-4 text-primary" />
                           <h4 className="font-heading text-sm font-semibold">
                             Clinical Interpretation
                           </h4>
-                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-1">
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-1 border-primary/30 text-primary">
                             <Eye className="h-3 w-3" />
                             XAI
                           </Badge>
                         </div>
-                        <p className="text-sm text-muted-foreground">
-                          The reported language development for a 24-month-old shows potential 
-                          delays. While receptive language (understanding) appears within expected 
-                          range, expressive vocabulary is below the typical 50+ words expected at 
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          The reported language development for a 24-month-old shows potential
+                          delays. While receptive language (understanding) appears within expected
+                          range, expressive vocabulary is below the typical 50+ words expected at
                           this age.
                         </p>
                       </div>
 
-                      {/* Developmental Markers */}
-                      <div>
-                        <h4 className="font-heading text-sm font-semibold mb-2">
+                      {/* Developmental Markers — graph-style list */}
+                      <div className="rounded-xl border border-border/80 bg-card p-4">
+                        <h4 className="font-heading text-sm font-semibold mb-3 flex items-center gap-2">
+                          <TrendingUp className="h-4 w-4 text-primary" />
                           Key Developmental Markers Checked
                         </h4>
-                        <ul className="space-y-2 text-sm text-muted-foreground">
-                          <li className="flex items-start gap-2">
+                        <ul className="space-y-2.5 text-sm text-muted-foreground">
+                          <li className="flex items-start gap-2 p-2 rounded-lg bg-muted/30">
                             <CheckCircle className={`h-4 w-4 shrink-0 mt-0.5 ${riskLevel === "medium" ? "text-warning" : "text-success"}`} />
-                            Vocabulary size (~10 words, expected: 50+ at {age} months)
+                            <span>Vocabulary size (~10 words, expected: 50+ at {age} months)</span>
                           </li>
-                          <li className="flex items-start gap-2">
+                          <li className="flex items-start gap-2 p-2 rounded-lg bg-muted/30">
                             <CheckCircle className={`h-4 w-4 shrink-0 mt-0.5 ${riskLevel === "medium" ? "text-warning" : "text-success"}`} />
-                            Word combinations ({riskLevel === "medium" ? "none" : "emerging"}, expected: emerging at 18-24 months)
+                            <span>Word combinations ({riskLevel === "medium" ? "none" : "emerging"}, expected: emerging at 18-24 months)</span>
                           </li>
-                          <li className="flex items-start gap-2">
+                          <li className="flex items-start gap-2 p-2 rounded-lg bg-muted/30">
                             <CheckCircle className="h-4 w-4 text-success shrink-0 mt-0.5" />
-                            Following simple instructions (yes, expected: yes)
+                            <span>Following simple instructions (yes, expected: yes)</span>
                           </li>
-                          <li className="flex items-start gap-2">
+                          <li className="flex items-start gap-2 p-2 rounded-lg bg-muted/30">
                             <CheckCircle className="h-4 w-4 text-success shrink-0 mt-0.5" />
-                            Pointing to communicate (yes, expected: established)
+                            <span>Pointing to communicate (yes, expected: established)</span>
                           </li>
                         </ul>
                       </div>

@@ -11,6 +11,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import VisualEvidenceCard from '@/components/pediscreen/VisualEvidenceCard';
 import ConfidenceIndicator from '@/components/pediscreen/ConfidenceIndicator';
 import ExplainabilityPanel from '@/components/pediscreen/ExplainabilityPanel';
+import { MedGemmaAnalyticsPanel } from '@/components/pediscreen/MedGemmaAnalyticsPanel';
 import EmotionalSupportBanner from '@/components/pediscreen/EmotionalSupportBanner';
 import VisualMilestoneTimeline from '@/components/pediscreen/VisualMilestoneTimeline';
 import ProgressiveHelp from '@/components/pediscreen/ProgressiveHelp';
@@ -406,6 +407,25 @@ const ResultsScreen = () => {
           ].filter(Boolean) as string[]}
         />
       )}
+
+      {/* MedGemma Research & Analytics — domain charts, evidence influence, key findings */}
+      <MedGemmaAnalyticsPanel
+        reportId={screeningId}
+        domainBreakdown={report.domainBreakdown}
+        confidence={confidence ?? report.confidence}
+        evidence={[
+          ...(evidence?.fromParentReport?.map((item: string) => ({ type: 'text', summary: item.slice(0, 120), influence: 0.9 })) || []),
+          ...(evidence?.fromVisualAnalysis?.map((item: string) => ({ type: 'image', summary: item.slice(0, 120), influence: 0.7 })) || []),
+          ...(evidence?.fromAssessmentScores?.map((item: string) => ({ type: 'score', summary: item.slice(0, 120), influence: 0.85 })) || []),
+          ...(modelEvidence?.map((e: { type: string; content: string; influence?: number }) => ({
+            type: e.type,
+            summary: (e.content ?? '').slice(0, 120),
+            influence: e.influence ?? 0.5,
+          })) || []),
+        ]}
+        keyFindings={report.keyFindings}
+        compact={false}
+      />
 
       {/* Clinical Summary */}
       <motion.div
