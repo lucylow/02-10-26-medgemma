@@ -17,7 +17,10 @@
     "gen:mock": "node scripts/generate_mock_data.js",
     "validate:mock": "node scripts/validate_mock_data.js",
     "start:demo": "vite --mode demo",
-    "test:healthchain": "npx hardhat test test/HealthChainPOC.test.js"
+    "test:healthchain": "npx hardhat test test/HealthChainPOC.test.js",
+    "lovable:dev": "lovable dev",
+    "lovable:deploy": "lovable deploy",
+    "db:studio": "npx supabase db studio"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -105,6 +108,9 @@
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.38.0",
     "vite": "^5.4.19",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "@lovable/cli": "^0.2.1",
+    "@lovable/edge-runtime": "^0.1.0",
+    "next": "15.0.0-rc.0"
   }
 }

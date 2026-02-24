@@ -1,3 +1,19 @@
+module.exports = {
+  platform: "lovable",
+  functions: {
+    directory: "src/api/edge",
+    runtime: "edge"
+  },
+  build: {
+    command: "npm run build",
+    output: ".lovable/output"
+  },
+  supabase: {
+    url: process.env.SUPABASE_URL,
+    anonKey: process.env.SUPABASE_ANON_KEY
+  }
+};
+
 /**
  * Lovable Cloud configuration for PediScreen AI
  * Used for Lovable Cloud deployment and build orchestration.

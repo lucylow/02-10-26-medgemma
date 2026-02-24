@@ -64,6 +64,7 @@ import HelpPage from "./pages/HelpPage";
 import ClinicianReviewWithCollab from "./pages/ClinicianReviewWithCollab";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { ThemeProvider } from "./theme";
+import { ThemeProvider as ClinicalTokensProvider } from "./providers/ThemeProvider";
 import { AccessiblePediScreenProvider } from "./components/a11y/AccessiblePediScreenProvider";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 
@@ -174,6 +175,7 @@ const App = ({ router: customRouter }: AppProps = {}) => {
   return (
     <ErrorBoundary>
       <ThemeProvider>
+        <ClinicalTokensProvider>
         <QueryClientProvider client={queryClient}>
           <SupabaseAuthProvider>
             <TooltipProvider>
@@ -189,6 +191,7 @@ const App = ({ router: customRouter }: AppProps = {}) => {
             </TooltipProvider>
           </SupabaseAuthProvider>
         </QueryClientProvider>
+        </ClinicalTokensProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );

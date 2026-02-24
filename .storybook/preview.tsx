@@ -1,6 +1,7 @@
 import type { Preview } from "@storybook/react";
 import React from "react";
 import { ThemeProvider } from "../src/theme";
+import { ThemeProvider as ClinicalTokensProvider } from "../src/providers/ThemeProvider";
 import "../src/index.css";
 
 const preview: Preview = {
@@ -15,7 +16,9 @@ const preview: Preview = {
   decorators: [
     (Story) => (
       <ThemeProvider>
-        <Story />
+        <ClinicalTokensProvider>
+          <Story />
+        </ClinicalTokensProvider>
       </ThemeProvider>
     ),
   ],
