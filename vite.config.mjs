@@ -1,5 +1,5 @@
 import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
+import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
@@ -18,8 +18,9 @@ function getLovableTagger(mode) {
 }
 
 export default defineConfig(({ mode }) => ({
+  root: ".",
   server: {
-    host: "127.0.0.1",
+    host: "::",
     port: 8080,
     strictPort: false,
     hmr: { overlay: false },
@@ -27,5 +28,8 @@ export default defineConfig(({ mode }) => ({
   plugins: [react(), getLovableTagger(mode)].filter(Boolean),
   resolve: {
     alias: { "@": path.resolve(__dirname, "./src") },
+  },
+  build: {
+    outDir: "dist",
   },
 }));

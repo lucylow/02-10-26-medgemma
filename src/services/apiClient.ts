@@ -21,14 +21,19 @@ export interface ApiError {
 export class ApiClientError extends Error {
   code: string;
   status?: number;
+  /** True for network/timeout/5xx — callers may retry */
+  isRetryable?: boolean;
 
-  constructor(message: string, code = "UNKNOWN", status?: number) {
+  constructor(message: string, code = "UNKNOWN", status?: number, isRetryable?: boolean) {
     super(message);
     this.name = "ApiClientError";
     this.code = code;
     this.status = status;
+    this.isRetryable = isRetryable ?? (status != null && status >= 500);
   }
 }
+
+const DEFAULT_TIMEOUT_MS = 30000;
 
 async function handleResponse<T>(response: Response): Promise<T> {
   const contentType = response.headers.get("content-type");
@@ -37,24 +42,33 @@ async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     let message = `HTTP ${response.status}`;
     let code = "HTTP_ERROR";
+    let bodyConsumed = false;
 
     if (isJson) {
       try {
         const data = await response.json();
+        bodyConsumed = true;
         message = data.detail || data.message || data.error || message;
         code = data.code || code;
       } catch {
-        // use default message
+        if (!bodyConsumed) {
+          try {
+            message = (await response.text()) || message;
+          } catch {
+            // use default message
+          }
+        }
       }
     } else {
       try {
-        message = await response.text() || message;
+        message = (await response.text()) || message;
       } catch {
         // use default message
       }
     }
 
-    throw new ApiClientError(message, code, response.status);
+    const isRetryable = response.status >= 500 || response.status === 408 || response.status === 429;
+    throw new ApiClientError(message, code, response.status, isRetryable);
   }
 
   if (response.status === 204) {
@@ -71,6 +85,8 @@ async function handleResponse<T>(response: Response): Promise<T> {
 export interface RequestOptions extends RequestInit {
   params?: Record<string, string | number | boolean | undefined>;
   skipAuth?: boolean;
+  /** Request timeout in ms (default 30000). Uses AbortSignal.timeout when supported. */
+  timeoutMs?: number;
 }
 
 /**
@@ -80,7 +96,7 @@ export async function apiClient<T>(
   path: string,
   options: RequestOptions = {}
 ): Promise<T> {
-  const { params, skipAuth, ...init } = options;
+  const { params, skipAuth, timeoutMs = DEFAULT_TIMEOUT_MS, ...init } = options;
 
   let url = path.startsWith("http") ? path : `${API_BASE}${path.startsWith("/") ? "" : "/"}${path}`;
 
@@ -104,12 +120,30 @@ export async function apiClient<T>(
     if (token) headers["Authorization"] = `Bearer ${token}`;
   }
 
-  const response = await fetch(url, {
-    ...init,
-    headers,
-  });
+  const timeoutSignal =
+    typeof AbortSignal?.timeout === "function" ? AbortSignal.timeout(timeoutMs) : undefined;
+  const signal = init.signal ?? timeoutSignal;
 
-  return handleResponse<T>(response);
+  try {
+    const response = await fetch(url, {
+      ...init,
+      headers,
+      signal,
+    });
+
+    return handleResponse<T>(response);
+  } catch (err) {
+    if (err instanceof ApiClientError) throw err;
+    const message = err instanceof Error ? err.message : String(err);
+    const isNetwork = err instanceof TypeError && (message.includes("fetch") || message.includes("Failed to fetch"));
+    const isAbort = err instanceof Error && err.name === "AbortError";
+    throw new ApiClientError(
+      isAbort ? "Request timed out" : isNetwork ? "Network error. Please check your connection." : message,
+      isAbort ? "TIMEOUT" : isNetwork ? "NETWORK_ERROR" : "REQUEST_FAILED",
+      undefined,
+      isNetwork || isAbort
+    );
+  }
 }
 
 export default apiClient;

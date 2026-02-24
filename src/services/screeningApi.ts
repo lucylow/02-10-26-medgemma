@@ -10,6 +10,9 @@ const SUPABASE_FUNCTION_URL = import.meta.env.VITE_SUPABASE_FUNCTION_URL;
 const PEDISCREEN_BACKEND_URL = import.meta.env.VITE_PEDISCREEN_BACKEND_URL;
 const API_KEY = import.meta.env.VITE_API_KEY || 'dev-example-key';
 
+/** Default request timeout for screening API calls (ms) */
+const SCREENING_TIMEOUT_MS = 60000;
+
 export type RiskLevel = 'low' | 'medium' | 'high' | 'unknown' | 'on_track' | 'monitor' | 'refer';
 
 export type SupportingEvidence = {
@@ -120,15 +123,20 @@ function mapMockInferenceToReport(mi: {
 export const submitScreening = async (request: ScreeningRequest): Promise<ScreeningResult> => {
   try {
     if (DEMO_MODE && MOCK_SERVER_URL) {
-      const listRes = await fetch(`${MOCK_SERVER_URL}/cases`);
+      const signal = typeof AbortSignal?.timeout === 'function' ? AbortSignal.timeout(SCREENING_TIMEOUT_MS) : undefined;
+      const listRes = await fetch(`${MOCK_SERVER_URL}/cases`, { signal });
       const cases = (await listRes.json()) as { case_id: string }[];
       const caseId = cases?.length ? cases[Math.floor(Math.random() * cases.length)].case_id : 'case-0001';
       const inferRes = await fetch(`${MOCK_SERVER_URL}/infer`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ case_id: caseId }),
+        signal: typeof AbortSignal?.timeout === 'function' ? AbortSignal.timeout(SCREENING_TIMEOUT_MS) : undefined,
       });
-      if (!inferRes.ok) throw new Error(await inferRes.text());
+      if (!inferRes.ok) {
+        const errText = await inferRes.text();
+        throw new Error(errText || `HTTP ${inferRes.status}`);
+      }
       const mockInference = await inferRes.json();
       const report = mapMockInferenceToReport(mockInference);
       return {
@@ -160,6 +168,7 @@ export const submitScreening = async (request: ScreeningRequest): Promise<Screen
         method: 'POST',
         headers,
         body: form,
+        signal: typeof AbortSignal?.timeout === 'function' ? AbortSignal.timeout(SCREENING_TIMEOUT_MS) : undefined,
       });
 
       const data = await response.json();
@@ -208,6 +217,7 @@ export const submitScreening = async (request: ScreeningRequest): Promise<Screen
         method: 'POST',
         headers,
         body: form,
+        signal: typeof AbortSignal?.timeout === 'function' ? AbortSignal.timeout(SCREENING_TIMEOUT_MS) : undefined,
       });
 
       const data = await response.json();
@@ -292,6 +302,7 @@ export const submitScreening = async (request: ScreeningRequest): Promise<Screen
       method: 'POST',
       headers,
       body,
+      signal: typeof AbortSignal?.timeout === 'function' ? AbortSignal.timeout(SCREENING_TIMEOUT_MS) : undefined,
     });
 
     if (!response.ok) {
@@ -355,8 +366,14 @@ export const submitScreening = async (request: ScreeningRequest): Promise<Screen
     };
   } catch (error) {
     console.error('MedGemma API Error:', error);
-    
-    // Fallback to local simulation if API is unavailable
+
+    if (error instanceof Error && error.name === 'AbortError') {
+      return {
+        success: false,
+        message: 'Request timed out. Please try again.',
+      };
+    }
+    // Fallback to local simulation if API is unavailable (network/fetch error)
     if (error instanceof TypeError && error.message.includes('fetch')) {
       console.warn('API unavailable, using local simulation...');
       return simulateLocalAnalysis({
@@ -365,7 +382,7 @@ export const submitScreening = async (request: ScreeningRequest): Promise<Screen
         observations: request.observations,
       });
     }
-    
+
     return {
       success: false,
       message: error instanceof Error ? error.message : 'Analysis service unavailable',

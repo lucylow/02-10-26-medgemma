@@ -4,6 +4,7 @@
  */
 
 import React, { createContext, useContext, useCallback, ReactNode } from 'react';
+import { toast } from 'sonner';
 import { useAgentOrchestrator } from '@/hooks/useAgentOrchestrator';
 import { AgentOrchestratorContext } from './AgentOrchestratorContext';
 
@@ -76,7 +77,18 @@ export function AgentProvider({ children }: { children: ReactNode }) {
 
   const startPipeline = useCallback(
     async (input: string, age: number) => {
-      await orch.orchestrate(input, age);
+      try {
+        await orch.orchestrate(input, age);
+      } catch (err) {
+        const message =
+          err && typeof err === 'object' && 'message' in err
+            ? String((err as { message: string }).message)
+            : err instanceof Error
+              ? err.message
+              : 'Orchestration failed';
+        toast.error('Screening failed', { description: message });
+        throw err;
+      }
     },
     [orch]
   );

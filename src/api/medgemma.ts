@@ -7,6 +7,39 @@
 const API_BASE = import.meta.env.VITE_MEDGEMMA_API_URL ||
   (import.meta.env.DEV ? 'http://localhost:8000/api' : 'https://api.pediscreen.ai/v1');
 
+const DEFAULT_TIMEOUT_MS = 60000;
+
+/** Thrown when MedGemma API returns an error or request fails */
+export class MedGemmaApiError extends Error {
+  code: string;
+  status?: number;
+  constructor(message: string, code = "MEDGEMMA_ERROR", status?: number) {
+    super(message);
+    this.name = "MedGemmaApiError";
+    this.code = code;
+    this.status = status;
+  }
+}
+
+async function parseErrorResponse(res: Response): Promise<{ message: string; code: string }> {
+  const contentType = res.headers.get("content-type");
+  const isJson = contentType?.includes("application/json");
+  let message = `HTTP ${res.status}`;
+  let code = "HTTP_ERROR";
+  try {
+    if (isJson) {
+      const data = await res.json();
+      message = (data.detail ?? data.message ?? data.error ?? message) as string;
+      code = (data.code ?? code) as string;
+    } else {
+      message = (await res.text()) || message;
+    }
+  } catch {
+    // keep default message
+  }
+  return { message, code };
+}
+
 export interface MedGemmaPatientInfo {
   patientId: string;
   ageMonths: number;
@@ -85,25 +118,40 @@ export async function inferWithEmbedding(params: {
 }): Promise<InferResult> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (params.apiKey) headers['x-api-key'] = params.apiKey;
-  const res = await fetch(`${API_BASE}/infer`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({
-      case_id: params.case_id,
-      age_months: params.age_months,
-      observations: params.observations,
-      embedding_b64: params.embedding_b64,
-      shape: params.shape ?? [1, 256],
-      emb_version: params.emb_version ?? 'medsiglip-v1',
-      consent_id: params.consent_id,
-      user_id_pseudonym: params.user_id_pseudonym,
-    }),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || err.message || 'Inference failed');
+  const timeoutMs = DEFAULT_TIMEOUT_MS;
+  const signal = typeof AbortSignal?.timeout === 'function' ? AbortSignal.timeout(timeoutMs) : undefined;
+  try {
+    const res = await fetch(`${API_BASE}/infer`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        case_id: params.case_id,
+        age_months: params.age_months,
+        observations: params.observations,
+        embedding_b64: params.embedding_b64,
+        shape: params.shape ?? [1, 256],
+        emb_version: params.emb_version ?? 'medsiglip-v1',
+        consent_id: params.consent_id,
+        user_id_pseudonym: params.user_id_pseudonym,
+      }),
+      signal,
+    });
+    if (!res.ok) {
+      const { message, code } = await parseErrorResponse(res);
+      throw new MedGemmaApiError(message, code, res.status);
+    }
+    return res.json();
+  } catch (err) {
+    if (err instanceof MedGemmaApiError) throw err;
+    const msg = err instanceof Error ? err.message : String(err);
+    if (err instanceof Error && err.name === 'AbortError') {
+      throw new MedGemmaApiError('Inference request timed out', 'TIMEOUT');
+    }
+    if (msg.includes('fetch') || msg.includes('Failed to fetch')) {
+      throw new MedGemmaApiError('Network error. Please check your connection.', 'NETWORK_ERROR');
+    }
+    throw new MedGemmaApiError(msg, 'INFER_FAILED');
   }
-  return res.json();
 }
 
 /**
@@ -124,28 +172,32 @@ export async function generateMedGemmaReport(input: MedGemmaInput): Promise<MedG
     form.append('payload', JSON.stringify(payload));
     input.images!.forEach((img) => form.append('images', img));
 
+    const signal = typeof AbortSignal?.timeout === 'function' ? AbortSignal.timeout(DEFAULT_TIMEOUT_MS) : undefined;
     const res = await fetch(`${API_BASE}/medgemma/generate`, {
       method: 'POST',
       body: form,
+      signal,
     });
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || err.detail || 'MedGemma generation failed');
+      const { message, code } = await parseErrorResponse(res);
+      throw new MedGemmaApiError(message, code, res.status);
     }
 
     return res.json();
   }
 
+  const signal = typeof AbortSignal?.timeout === 'function' ? AbortSignal.timeout(DEFAULT_TIMEOUT_MS) : undefined;
   const res = await fetch(`${API_BASE}/medgemma/generate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
+    signal,
   });
 
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || err.detail || 'MedGemma generation failed');
+    const { message, code } = await parseErrorResponse(res);
+    throw new MedGemmaApiError(message, code, res.status);
   }
 
   return res.json();
@@ -158,23 +210,38 @@ export async function streamMedGemmaReport(
   input: Omit<MedGemmaInput, 'images'>,
   onChunk: (text: string) => void
 ): Promise<void> {
+  const signal = typeof AbortSignal?.timeout === 'function' ? AbortSignal.timeout(DEFAULT_TIMEOUT_MS) : undefined;
   const res = await fetch(`${API_BASE}/medgemma/stream`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
+    signal,
   });
 
   if (!res.ok) {
-    throw new Error('MedGemma stream failed');
+    const { message, code } = await parseErrorResponse(res);
+    throw new MedGemmaApiError(message, code, res.status);
   }
 
-  const reader = res.body!.getReader();
+  const reader = res.body?.getReader();
+  if (!reader) {
+    throw new MedGemmaApiError('Stream not available', 'STREAM_ERROR');
+  }
   const decoder = new TextDecoder();
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    onChunk(decoder.decode(value, { stream: true }));
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      onChunk(decoder.decode(value, { stream: true }));
+    }
+  } catch (err) {
+    if (err instanceof MedGemmaApiError) throw err;
+    const msg = err instanceof Error ? err.message : String(err);
+    if (err instanceof Error && err.name === 'AbortError') {
+      throw new MedGemmaApiError('Stream timed out', 'TIMEOUT');
+    }
+    throw new MedGemmaApiError(msg || 'Stream read failed', 'STREAM_ERROR');
   }
 }
 
@@ -199,12 +266,14 @@ export interface ReportDraft {
 export async function listDrafts(
   authToken: string
 ): Promise<{ items: { report_id: string; screening_id?: string; created_at?: number }[] }> {
+  const signal = typeof AbortSignal?.timeout === 'function' ? AbortSignal.timeout(DEFAULT_TIMEOUT_MS) : undefined;
   const res = await fetch(`${API_BASE}/reports/drafts`, {
     headers: { Authorization: `Bearer ${authToken}` },
+    signal,
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || err.message || 'Failed to list drafts');
+    const { message, code } = await parseErrorResponse(res);
+    throw new MedGemmaApiError(message, code, res.status);
   }
   return res.json();
 }
@@ -222,12 +291,15 @@ export async function getReport(
   const headers: Record<string, string> = {};
   if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
   if (apiKey) headers['x-api-key'] = apiKey;
-  // Try by-screening when id looks like screening (ps-xxx) or when direct get fails
-  let res = await fetch(`${API_BASE}/reports/${reportId}`, { headers });
+  const signal = typeof AbortSignal?.timeout === 'function' ? AbortSignal.timeout(DEFAULT_TIMEOUT_MS) : undefined;
+  let res = await fetch(`${API_BASE}/reports/${reportId}`, { headers, signal });
   if (!res.ok && (reportId.startsWith('ps-') || reportId.includes('-'))) {
-    res = await fetch(`${API_BASE}/reports/by-screening/${reportId}`, { headers });
+    res = await fetch(`${API_BASE}/reports/by-screening/${reportId}`, { headers, signal });
   }
-  if (!res.ok) throw new Error('Report not found');
+  if (!res.ok) {
+    const { message, code } = await parseErrorResponse(res);
+    throw new MedGemmaApiError(message, code, res.status);
+  }
   return res.json();
 }
 
@@ -250,8 +322,8 @@ export async function generateReportFromScreening(
     body: form,
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || err.message || 'Report generation failed');
+    const { message, code } = await parseErrorResponse(res);
+    throw new MedGemmaApiError(message, code, res.status);
   }
   return res.json();
 }
@@ -295,11 +367,12 @@ export async function approveReport(
     method: 'POST',
     headers,
     body: new URLSearchParams(params),
+    signal: typeof AbortSignal?.timeout === 'function' ? AbortSignal.timeout(DEFAULT_TIMEOUT_MS) : undefined,
   });
 
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || err.message || 'Report approval failed');
+    const { message, code } = await parseErrorResponse(res);
+    throw new MedGemmaApiError(message, code, res.status);
   }
   return res.json();
 }
@@ -318,7 +391,10 @@ export async function validateEdit(
     headers,
     body: JSON.stringify({ content }),
   });
-  if (!res.ok) throw new Error('Validation failed');
+  if (!res.ok) {
+    const { message, code } = await parseErrorResponse(res);
+    throw new MedGemmaApiError(message, code, res.status);
+  }
   return res.json();
 }
 
@@ -342,7 +418,10 @@ export async function getFdaMapping(
     `${API_BASE}/reports/regulatory/fda-map?report_id=${encodeURIComponent(reportId)}`,
     { headers }
   );
-  if (!res.ok) throw new Error('FDA mapping not found');
+  if (!res.ok) {
+    const { message, code } = await parseErrorResponse(res);
+    throw new MedGemmaApiError(message, code, res.status);
+  }
   return res.json();
 }
 
@@ -368,8 +447,8 @@ export async function attachPdfToEhr(
     body: form,
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || err.message || 'EHR attach failed');
+    const { message, code } = await parseErrorResponse(res);
+    throw new MedGemmaApiError(message, code, res.status);
   }
   return res.json();
 }
@@ -392,7 +471,10 @@ export async function verifyReportPdf(
     headers,
     body: form,
   });
-  if (!res.ok) throw new Error('Verification failed');
+  if (!res.ok) {
+    const { message, code } = await parseErrorResponse(res);
+    throw new MedGemmaApiError(message, code, res.status);
+  }
   return res.json();
 }
 
@@ -409,7 +491,10 @@ export async function exportReportPdf(
   const headers: Record<string, string> = {};
   if (apiKey) headers['x-api-key'] = apiKey;
   const res = await fetch(`${API_BASE}/reports/export/pdf?${params}`, { headers });
-  if (!res.ok) throw new Error('PDF export failed');
+  if (!res.ok) {
+    const { message, code } = await parseErrorResponse(res);
+    throw new MedGemmaApiError(message, code, res.status);
+  }
   const blob = await res.blob();
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');

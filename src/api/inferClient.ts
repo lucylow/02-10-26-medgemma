@@ -65,10 +65,31 @@ export async function postInfer(payload: InferPayload): Promise<InferResult> {
       body: JSON.stringify(payload),
       signal: AbortSignal.timeout(30000),
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) {
+      let message = `HTTP ${res.status}`;
+      try {
+        const contentType = res.headers.get("content-type");
+        if (contentType?.includes("application/json")) {
+          const data = await res.json();
+          message = (data.detail ?? data.message ?? data.error ?? message) as string;
+        } else {
+          message = (await res.text()) || message;
+        }
+      } catch {
+        // use default message
+      }
+      throw new Error(message);
+    }
     failureCount = 0;
     return (await res.json()) as InferResult;
   } catch (e) {
+    if (e instanceof Error && e.name === "AbortError") {
+      failureCount++;
+      if (failureCount >= FAILURE_THRESHOLD) {
+        circuitOpenUntil = Date.now() + COOLDOWN_MS;
+      }
+      return mockInfer(payload);
+    }
     failureCount++;
     if (failureCount >= FAILURE_THRESHOLD) {
       circuitOpenUntil = Date.now() + COOLDOWN_MS;

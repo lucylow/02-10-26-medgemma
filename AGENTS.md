@@ -1,5 +1,7 @@
 # PediScreen AI — Agent & Composer Guidance
 
+**Repo layout:** See [REPO_STRUCTURE.md](REPO_STRUCTURE.md) for where things live and which paths Lovable Cloud requires at repo root.
+
 ## Training pipeline (Kaggle Gold)
 
 - **Full Composer prompt:** [docs/CURSOR_PROMPT_PEDISCREEN_TRAINING_PIPELINE.md](docs/CURSOR_PROMPT_PEDISCREEN_TRAINING_PIPELINE.md) — 25+ page production fine-tuning (QLoRA MedGemma-2B, ASQ-3, CHW feedback, merge & deploy).
