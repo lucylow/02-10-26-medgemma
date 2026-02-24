@@ -47,6 +47,7 @@ import EndToEndDemo from "./pages/EndToEndDemo";
 import InteractiveScreeningDemo from "./pages/InteractiveScreeningDemo";
 import AgentPipelineScreen from "./pages/AgentPipelineScreen";
 import AgentDashboard from "./pages/AgentDashboard";
+import DevelopmentalChat from "./components/ai/DevelopmentalChat";
 import VoiceInputScreen from "./pages/VoiceInputScreen";
 import PatientScreening from "./pages/PatientScreening";
 import PediScreenCaseDetail from "./pages/pediscreen/PediScreenCaseDetail";
@@ -284,6 +285,7 @@ const App = ({ router: customRouter }: AppProps = {}) => {
                         <Toaster />
                         <Sonner />
                         <RouterProvider router={router} />
+                        <DevelopmentalChat />
                       </IoTProvider>
                     </AccessiblePediScreenProvider>
                   </ScreeningProvider>

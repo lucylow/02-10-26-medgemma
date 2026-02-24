@@ -1,148 +1,275 @@
 /**
- * POST /rop-analyze — ROP (Retinopathy of Prematurity) detection via Lovable AI.
- * Uses Gemini 2.5 Flash vision model for retinal fundus image analysis.
- * Falls back to clinical mock data for demo when AI gateway is unreachable.
+ * POST /rop-analyze — ROP (Retinopathy of Prematurity) detection v5.1.
+ * Uses Lovable AI (Gemini 3 Flash) with structured tool calling,
+ * rate limiting, retry with backoff, and 402/429 error surfacing.
  */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import {
   corsResponse, supabase, errorResponse, jsonResponse,
-  corsHeaders, LOVABLE_API_KEY,
-  recordAIEvent, callAIGateway,
+  extractContext, recordMetric, recordAIEvent, recordAuditEvent,
+  callAIGateway, handleAIErrorResponse,
+  checkRateLimit, rateLimitHeaders, rateLimitKey,
+  LOVABLE_API_KEY, MODEL_ID_VISION,
 } from "../_shared/mod.ts";
 
-const ROP_MODEL = "google/gemini-2.5-flash";
+// ── Structured tool for reliable JSON extraction ────────────────
+const ROP_TOOL = {
+  type: "function" as const,
+  function: {
+    name: "submit_rop_analysis",
+    description: "Submit structured ROP retinal analysis with zone, stage, plus disease, risk assessment, and clinical recommendations.",
+    parameters: {
+      type: "object",
+      properties: {
+        zone: {
+          type: "string",
+          enum: ["1", "2", "3"],
+          description: "ICROP-3 zone classification"
+        },
+        stage: {
+          type: "string",
+          enum: ["normal", "1", "2", "3", "4", "5"],
+          description: "ROP stage (normal = no ROP)"
+        },
+        plusDisease: {
+          type: "boolean",
+          description: "Whether plus disease (vascular tortuosity/dilation) is present"
+        },
+        aggressivePosterior: {
+          type: "boolean",
+          description: "Whether aggressive posterior ROP (A-ROP) is detected"
+        },
+        confidence: {
+          type: "number",
+          description: "Confidence score 0.0-1.0"
+        },
+        riskLevel: {
+          type: "string",
+          enum: ["normal", "pre-threshold", "threshold", "urgent"],
+          description: "Clinical risk classification"
+        },
+        findings: {
+          type: "array",
+          items: { type: "string" },
+          description: "List of clinical findings from the retinal image"
+        },
+        recommendation: {
+          type: "string",
+          description: "Clinical recommendation and next steps"
+        },
+        urgencyHours: {
+          type: "number",
+          description: "If urgent, recommended treatment window in hours (null if not urgent)"
+        },
+        icd10: {
+          type: "string",
+          description: "Relevant ICD-10 code (e.g., H35.10 for ROP)"
+        },
+        differentialDiagnoses: {
+          type: "array",
+          items: { type: "string" },
+          description: "Differential diagnoses to consider"
+        },
+        qualityAssessment: {
+          type: "string",
+          description: "Assessment of image quality and any limitations"
+        },
+      },
+      required: ["zone", "stage", "plusDisease", "confidence", "riskLevel", "findings", "recommendation", "icd10"],
+      additionalProperties: false,
+    }
+  }
+};
 
-const SYSTEM_PROMPT = `You are PediScreen ROP Analyzer, a clinical-grade AI assistant for Retinopathy of Prematurity screening.
+// ── System prompt ───────────────────────────────────────────────
+function buildSystemPrompt(gestationalAge?: number, birthWeight?: number, postnatalAge?: number): string {
+  let context = "";
+  if (gestationalAge) context += `\nGestational age: ${gestationalAge} weeks.`;
+  if (birthWeight) context += `\nBirth weight: ${birthWeight}g.`;
+  if (postnatalAge) context += `\nPostnatal age: ${postnatalAge} weeks.`;
 
-Given a retinal fundus image of a preterm infant, provide a structured JSON analysis:
+  return `You are PediScreen ROP Analyzer v5.1 — a clinical-grade AI for Retinopathy of Prematurity screening.
+${context}
 
-{
-  "zone": "1" | "2" | "3",
-  "stage": "normal" | "1" | "2" | "3" | "4" | "5",
-  "plus_disease": boolean,
-  "aggressive_posterior": boolean,
-  "confidence": 0.0-1.0,
-  "risk_level": "normal" | "pre-threshold" | "threshold" | "urgent",
-  "findings": ["list of clinical findings"],
-  "recommendation": "clinical recommendation text",
-  "urgency_hours": null | number,
-  "icd10": "relevant ICD-10 code"
+CLASSIFICATION FRAMEWORK (ICROP-3, 2021):
+- Zone 1: Posterior pole, centered on optic disc
+- Zone 2: From Zone 1 border to nasal ora serrata
+- Zone 3: Remaining temporal crescent
+- Stages 1-5: Ridge → fibrovascular proliferation → partial/total detachment
+- Plus disease: ≥2 quadrants of venous dilation and arteriolar tortuosity
+- A-ROP: Aggressive posterior ROP with prominent plus disease in Zone 1/posterior Zone 2
+
+TREATMENT CRITERIA:
+- Type 1 ROP (treat within 48-72h): Zone 1 any stage with plus | Zone 1 Stage 3 | Zone 2 Stage 2-3 with plus
+- Type 2 ROP (observe): Zone 1 Stage 1-2 without plus | Zone 2 Stage 3 without plus
+- A-ROP: Immediate referral
+
+REQUIREMENTS:
+- Be conservative: when uncertain, recommend specialist review
+- Assess image quality and note limitations
+- Consider gestational age and birth weight risk factors
+- Provide specific ICD-10 codes (H35.10-H35.17)
+
+Use the submit_rop_analysis tool to provide your structured assessment.`;
 }
 
-Guidelines:
-- Zone 1 Stage 3+ with plus disease = Type 1 ROP → treat within 48-72h
-- Zone 2 Stage 3 with plus disease = Type 1 ROP → treat within 48-72h
-- Always note vessel tortuosity and dilation for plus disease assessment
-- Use ICROP-3 classification (2021)
-- Be conservative: when uncertain, recommend specialist review
-- icd10: H35.1 for ROP, add specificity codes as applicable
-- Return ONLY the JSON object, no markdown fences or extra text.`;
-
-function mockROPResult() {
+// ── Mock fallback ───────────────────────────────────────────────
+function mockROPResult(): Record<string, unknown> {
   return {
-    zone: "1",
-    stage: "3",
-    plus_disease: true,
+    zone: "2",
+    stage: "1",
+    plus_disease: false,
     aggressive_posterior: false,
-    confidence: 0.94,
-    risk_level: "urgent",
+    confidence: 0.45,
+    risk_level: "pre-threshold",
     findings: [
-      "Neovascularization ridge visible in Zone 1",
-      "Vessel tortuosity consistent with plus disease",
-      "Extraretinal fibrovascular proliferation noted",
+      "Demarcation line visible in Zone 2 (Stage 1 ROP)",
+      "No plus disease — vessels appear normal caliber",
+      "Image quality adequate for screening assessment",
     ],
-    recommendation:
-      "Type 1 ROP — urgent laser photocoagulation or anti-VEGF therapy recommended within 48-72 hours. Refer to pediatric retinal specialist immediately.",
-    urgency_hours: 48,
-    icd10: "H35.10",
+    recommendation: "Type 2 ROP — serial examinations recommended every 1-2 weeks. Monitor for progression to plus disease or Stage 3.",
+    urgency_hours: null,
+    icd10: "H35.11",
+    differential_diagnoses: ["Familial exudative vitreoretinopathy (FEVR)", "Persistent fetal vasculature"],
+    quality_assessment: "Mock analysis — no real image analyzed. Submit retinal fundus image for clinical assessment.",
     is_mock: true,
     model: "fallback-mock",
   };
 }
 
+// ── Main handler ────────────────────────────────────────────────
 serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
 
-  const traceId = crypto.randomUUID();
+  const start = performance.now();
+  const ctx = extractContext(req);
+  const traceId = ctx.traceId;
+
+  const rl = checkRateLimit(rateLimitKey(req), 15);
+  const rlH = rateLimitHeaders(rl);
+  if (!rl.allowed) {
+    await recordMetric("rop-analyze", "rate_limited", performance.now() - start, "RATE_LIMITED");
+    return errorResponse("RATE_LIMITED", "Too many requests", 429, traceId, rlH);
+  }
 
   try {
+    if (req.method !== "POST") return errorResponse("METHOD_NOT_ALLOWED", "POST only", 405, traceId, rlH);
+
     const body = await req.json();
     const { image_b64, gestational_age_weeks, birth_weight_grams, postnatal_age_weeks, case_id } = body;
 
-    // Build user prompt with clinical context
-    let userPrompt = "Analyze this retinal fundus image for Retinopathy of Prematurity (ROP).";
-    if (gestational_age_weeks) userPrompt += ` Gestational age: ${gestational_age_weeks} weeks.`;
-    if (birth_weight_grams) userPrompt += ` Birth weight: ${birth_weight_grams}g.`;
-    if (postnatal_age_weeks) userPrompt += ` Postnatal age: ${postnatal_age_weeks} weeks.`;
-    userPrompt += " Return structured JSON only.";
-
-    const messages: Array<Record<string, unknown>> = [
-      { role: "system", content: SYSTEM_PROMPT },
-    ];
+    // Build messages with optional vision input
+    const systemPrompt = buildSystemPrompt(gestational_age_weeks, birth_weight_grams, postnatal_age_weeks);
+    const userContent: unknown[] = [];
 
     if (image_b64) {
-      messages.push({
-        role: "user",
-        content: [
-          {
-            type: "image_url",
-            image_url: { url: `data:image/jpeg;base64,${image_b64}` },
-          },
-          { type: "text", text: userPrompt },
-        ],
+      userContent.push({
+        type: "image_url",
+        image_url: { url: `data:image/jpeg;base64,${image_b64}` },
+      });
+      userContent.push({
+        type: "text",
+        text: "Analyze this retinal fundus image for Retinopathy of Prematurity. Use the submit_rop_analysis tool.",
       });
     } else {
-      messages.push({ role: "user", content: userPrompt });
+      userContent.push({
+        type: "text",
+        text: "No retinal image provided. Based on the clinical context, provide a risk assessment framework. Use the submit_rop_analysis tool.",
+      });
     }
 
-    // Call Lovable AI gateway
+    const messages = [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userContent },
+    ];
+
+    // Call AI with tool calling
+    const aiResult = await callAIGateway(
+      messages as { role: string; content: string }[],
+      {
+        model: MODEL_ID_VISION,
+        tools: [ROP_TOOL],
+        tool_choice: { type: "function", function: { name: "submit_rop_analysis" } },
+        temperature: 0.1,
+        max_tokens: 1500,
+        deadlineMs: 20000,
+      },
+    );
+
+    // Surface 402/429 errors
+    const aiErrorResp = handleAIErrorResponse(aiResult, traceId, rlH);
+    if (aiErrorResp) return aiErrorResp;
+
     let analysis: Record<string, unknown>;
     let usedMock = false;
 
-    try {
-      const aiData = await callAIGateway(messages, {
-        model: ROP_MODEL,
-        temperature: 0.1,
-        max_tokens: 1024,
-      });
-
-      const rawContent = aiData.choices?.[0]?.message?.content ?? "";
-      const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
-      analysis = jsonMatch ? JSON.parse(jsonMatch[0]) : mockROPResult();
-      usedMock = !jsonMatch;
-    } catch (err) {
-      console.error("AI gateway failed, using mock:", err);
+    if (aiResult.ok && aiResult.result && !("raw_content" in aiResult.result)) {
+      const r = aiResult.result;
+      analysis = {
+        zone: r.zone,
+        stage: r.stage,
+        plus_disease: r.plusDisease ?? false,
+        aggressive_posterior: r.aggressivePosterior ?? false,
+        confidence: Math.min(1, Math.max(0, (r.confidence as number) ?? 0.5)),
+        risk_level: r.riskLevel,
+        findings: r.findings || [],
+        recommendation: r.recommendation || "",
+        urgency_hours: r.urgencyHours ?? null,
+        icd10: r.icd10 || "H35.10",
+        differential_diagnoses: r.differentialDiagnoses || [],
+        quality_assessment: r.qualityAssessment || null,
+        is_mock: false,
+        model: MODEL_ID_VISION,
+      };
+    } else {
       analysis = mockROPResult();
       usedMock = true;
     }
 
-    // Log to ai_events
-    await recordAIEvent({
-      event_type: "rop_analysis",
-      case_id: case_id ?? null,
-      model_id: usedMock ? "fallback-mock" : ROP_MODEL,
-      model_provider: "google",
-      confidence: typeof analysis.confidence === "number" ? analysis.confidence : null,
-      risk_level: typeof analysis.risk_level === "string" ? analysis.risk_level as string : null,
-      is_mock: usedMock,
-      trace_id: traceId,
-      metadata: {
-        zone: analysis.zone,
-        stage: analysis.stage,
-        plus_disease: analysis.plus_disease,
-        gestational_age_weeks,
-        birth_weight_grams,
-      },
-    });
+    const totalLatency = Math.round(performance.now() - start);
+
+    // Fire-and-forget telemetry
+    Promise.all([
+      recordMetric("rop-analyze", "success", totalLatency, undefined, {
+        model_used: !usedMock, risk_level: analysis.risk_level,
+        has_image: !!image_b64, gestational_age_weeks, ai_latency_ms: aiResult.latencyMs,
+      }),
+      recordAIEvent({
+        event_type: "rop_analysis",
+        case_id: case_id ?? null,
+        model_id: usedMock ? "fallback-mock" : MODEL_ID_VISION,
+        model_provider: "google",
+        model_version: "v5.1",
+        confidence: typeof analysis.confidence === "number" ? analysis.confidence : null,
+        risk_level: typeof analysis.risk_level === "string" ? analysis.risk_level : null,
+        is_mock: usedMock,
+        fallback: usedMock,
+        fallback_reason: usedMock ? (!LOVABLE_API_KEY ? "no_api_key" : "ai_failure") : null,
+        trace_id: traceId,
+        latency_ms: totalLatency,
+        agent: "rop-v5.1",
+        metadata: {
+          zone: analysis.zone, stage: analysis.stage, plus_disease: analysis.plus_disease,
+          gestational_age_weeks, birth_weight_grams, has_image: !!image_b64,
+          tool_calling: !usedMock, ai_latency_ms: aiResult.latencyMs,
+        },
+      }),
+      recordAuditEvent("rop_screening", {
+        risk_level: analysis.risk_level, model_used: !usedMock,
+        trace_id: traceId, has_image: !!image_b64,
+      }),
+    ]).catch((e) => console.error("[rop-analyze] telemetry error:", e));
 
     return jsonResponse({
       ...analysis,
-      is_mock: usedMock,
-      model: usedMock ? "fallback-mock" : ROP_MODEL,
       trace_id: traceId,
-    });
+      version: "rop-v5.1",
+      timestamp: new Date().toISOString(),
+    }, 200, rlH);
   } catch (err) {
-    console.error("ROP analyze error:", err);
-    return errorResponse("ROP_ERROR", String(err), 500, traceId);
+    console.error("[rop-analyze] error:", err);
+    const totalLatency = performance.now() - start;
+    recordMetric("rop-analyze", "error", totalLatency, "INTERNAL_ERROR").catch(() => {});
+    return errorResponse("INTERNAL_ERROR", String(err), 500, traceId, rlH);
   }
 });
