@@ -5,7 +5,9 @@ import { componentTagger } from "lovable-tagger";
 
 export default defineConfig(({ mode }) => ({
   root: ".",
-  base: process.env.VITE_BASE_URL || "/",
+  // Always build assets at the domain root so Lovable SPA routing works reliably.
+  // Using an env-based base here can break script URLs on Lovable.
+  base: "/",
   server: {
     host: "::",
     port: 8080,

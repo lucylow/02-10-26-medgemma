@@ -10,6 +10,12 @@
   );
 }
 
+@layer utilities {
+  .shadow-3xl {
+    box-shadow: 0 35px 60px -15px rgba(0, 0, 0, 0.3);
+  }
+}
+
 @layer components {
   /* Wallet States - Medical Grade */
   .wallet-medical {
