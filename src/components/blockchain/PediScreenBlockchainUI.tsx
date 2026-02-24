@@ -4,7 +4,11 @@
  * UX: irreversible action warnings, mobile-first, transaction status, NFT gallery, gasless (ERC-4337) flow.
  */
 import React, { useCallback, useEffect, useState } from "react";
-import { BrowserProvider, Contract } from "ethers";
+import * as ethers from "ethers";
+// Support both ethers v5 (Web3Provider) and v6 (BrowserProvider) for Lovable/ESM builds
+const getBrowserProvider = (): new (p: unknown) => ethers.Provider =>
+  (ethers as any).BrowserProvider ?? (ethers as any).providers?.Web3Provider;
+
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { usePediScreenWallet } from "@/hooks/usePediScreenWallet";
@@ -89,7 +93,7 @@ function getChainName(chainId: number): string {
 const IPFS_GATEWAY = "https://gateway.pinata.cloud/ipfs/";
 
 async function loadNftMetadata(
-  contract: Contract,
+  contract: ethers.Contract,
   owner: string,
   index: number,
   registryAddress: string,
@@ -107,7 +111,37 @@ async function loadNftMetadata(
       assessment.riskLevel ?? (assessment.riskLevel === 0 ? "LOW" : assessment.riskLevel === 1 ? "MEDIUM" : "HIGH");
     const domains = assessment.domains ?? DEFAULT_DOMAINS;
     return {
-      tokenId: tokenId.toString(),
+      tokenId: String(tokenId),
+      riskLevel: typeof riskLevel === "string" ? riskLevel : "LOW",
+      childAgeMonths: Number(assessment.childAgeMonths ?? 0),
+      assessmentTimestamp: Number(assessment.assessmentTimestamp ?? Math.floor(Date.now() / 1000)),
+      domains,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** Load NFT metadata by token ID (used when enumeration is not available). */
+async function loadNftMetadataByTokenId(
+  contract: ethers.Contract,
+  tokenId: bigint | string,
+  _registryAddress: string,
+): Promise<PediScreenNft | null> {
+  try {
+    const id = typeof tokenId === "string" ? BigInt(tokenId) : tokenId;
+    const uri = (await contract.tokenURI(id)) as string;
+    const httpUri = uri.startsWith("ipfs://")
+      ? uri.replace("ipfs://", IPFS_GATEWAY)
+      : uri;
+    const res = await fetch(httpUri);
+    const metadata = await res.json();
+    const assessment = metadata?.assessment ?? metadata;
+    const riskLevel =
+      assessment.riskLevel ?? (assessment.riskLevel === 0 ? "LOW" : assessment.riskLevel === 1 ? "MEDIUM" : "HIGH");
+    const domains = assessment.domains ?? DEFAULT_DOMAINS;
+    return {
+      tokenId: String(id),
       riskLevel: typeof riskLevel === "string" ? riskLevel : "LOW",
       childAgeMonths: Number(assessment.childAgeMonths ?? 0),
       assessmentTimestamp: Number(assessment.assessmentTimestamp ?? Math.floor(Date.now() / 1000)),
@@ -121,48 +155,12 @@ async function loadNftMetadata(
 async function signScreeningMessage(data: ScreeningData): Promise<string> {
   const w = typeof window !== "undefined" ? (window as unknown as { ethereum?: unknown }).ethereum : undefined;
   if (!w) throw new Error("Wallet not available for signing");
-  const provider = new BrowserProvider(w as never);
+  const ProviderClass = getBrowserProvider();
+  const provider = new ProviderClass(w);
   const signer = await provider.getSigner();
   const message = `PediScreen Screening Certificate:\n${JSON.stringify(data)}`;
   return await signer.signMessage(message);
 }
-
-// -------------------- Subcomponents --------------------
-
-interface WalletStatusBarProps {
-  address: string | null;
-  chainId: number | null;
-  onCopyAddress: () => void;
-}
-
-const WalletStatusBar: React.FC<WalletStatusBarProps> = ({
-  address,
-  chainId,
-  onCopyAddress,
-}) => {
-  if (!address) return null;
-  const short = `${address.slice(0, 6)}…${address.slice(-4)}`;
-  return (
-    <div className="flex flex-wrap items-center gap-2">
-      <div className="flex items-center gap-1 text-emerald-600 text-sm">
-        <Shield className="h-4 w-4" aria-hidden />
-        <span>Connected</span>
-      </div>
-      {chainId != null && (
-        <span className="text-muted-foreground text-xs">{getChainName(chainId)}</span>
-      )}
-      <button
-        type="button"
-        onClick={onCopyAddress}
-        className="flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-1 text-xs font-mono hover:bg-emerald-200 dark:bg-emerald-900/40 dark:hover:bg-emerald-800/40"
-        title={address}
-      >
-        <Copy className="h-3 w-3" />
-        {short}
-      </button>
-    </div>
-  );
-};
 
 // -------------------- Transaction Preview (irreversible action) --------------------
 
@@ -351,16 +349,46 @@ const NFTGalleryGrid: React.FC<NFTGalleryGridProps> = ({
 interface EmptyNFTGalleryProps {
   txStatus: TxStatus;
   onMint: (data: ScreeningData) => void;
+  /** When set and > 0, user has NFTs but enumeration failed; show "View on explorer". */
+  nftBalanceCount?: number | null;
+  chainId?: number;
+  registryAddress?: string;
 }
 
-const EmptyNFTGallery: React.FC<EmptyNFTGalleryProps> = ({ txStatus, onMint }) => {
+const EmptyNFTGallery: React.FC<EmptyNFTGalleryProps> = ({
+  txStatus,
+  onMint,
+  nftBalanceCount,
+  chainId = 137,
+  registryAddress,
+}) => {
   const defaultData: ScreeningData = { childAgeMonths: 12, riskLevel: "LOW" };
+  const hasBalanceOnly = nftBalanceCount != null && nftBalanceCount > 0;
+  const explorerUrl =
+    registryAddress &&
+    (chainId === 137
+      ? `https://polygonscan.com/token/${registryAddress}`
+      : chainId === 80002
+        ? `https://amoy.polygonscan.com/token/${registryAddress}`
+        : `https://polygonscan.com/token/${registryAddress}`);
+
   return (
     <div className="mx-auto max-w-xl rounded-3xl border border-border bg-card p-8 text-center shadow-lg">
-      <h2 className="mb-2 text-xl font-semibold text-foreground">No screening certificates yet</h2>
+      <h2 className="mb-2 text-xl font-semibold text-foreground">
+        {hasBalanceOnly ? "Your certificates" : "No screening certificates yet"}
+      </h2>
       <p className="mb-6 text-sm text-muted-foreground">
-        Complete a developmental screening to mint a secure, on-chain certificate. Gas can be sponsored by the PediScreen program.
+        {hasBalanceOnly
+          ? `You have ${nftBalanceCount} certificate${nftBalanceCount === 1 ? "" : "s"} in your wallet. View them on the block explorer.`
+          : "Complete a developmental screening to mint a secure, on-chain certificate. Gas can be sponsored by the PediScreen program."}
       </p>
+      {hasBalanceOnly && explorerUrl && (
+        <Button variant="outline" size="lg" className="mb-4 w-full gap-2" asChild>
+          <a href={explorerUrl} target="_blank" rel="noreferrer">
+            View on explorer <ExternalLink className="h-4 w-4" />
+          </a>
+        </Button>
+      )}
       <Button
         size="lg"
         disabled={txStatus === "pending"}
@@ -390,11 +418,15 @@ const ConnectWalletCTA: React.FC = () => (
 
 // -------------------- Main Dashboard --------------------
 
+const NFT_TOKENS_API = "/api/nft/tokens";
+
 export function PediScreenBlockchainUI() {
   const { address, chainId, isConnected } = usePediScreenWallet();
   const [txStatus, setTxStatus] = useState<TxStatus>("idle");
   const [nftGallery, setNftGallery] = useState<PediScreenNft[]>([]);
   const [loadingGallery, setLoadingGallery] = useState(false);
+  /** Set when balance > 0 but we could not enumerate tokens (no tokenOfOwnerByIndex or API). */
+  const [nftBalanceCount, setNftBalanceCount] = useState<number | null>(null);
 
   const registryAddress = PEDISCREEN_REGISTRY_ADDRESS;
   const chainIdNum = chainId ?? 137;
@@ -407,17 +439,45 @@ export function PediScreenBlockchainUI() {
       return;
     }
     setLoadingGallery(true);
+    setNftBalanceCount(null);
     try {
-      const provider = new BrowserProvider(w as never);
-      const contract = new Contract(registryAddress, ERC721_REGISTRY_ABI, provider);
+      const ProviderClass = getBrowserProvider();
+      const provider = new ProviderClass(w);
+      const contract = new ethers.Contract(registryAddress, ERC721_REGISTRY_ABI, provider);
       const balance = (await contract.balanceOf(address)) as bigint;
       const count = Number(balance);
       const nfts: PediScreenNft[] = [];
-      for (let i = 0; i < count; i++) {
-        const nft = await loadNftMetadata(contract, address, i, registryAddress);
-        if (nft) nfts.push(nft);
+
+      // Try on-chain enumeration first (tokenOfOwnerByIndex).
+      let enumerationFailed = false;
+      try {
+        for (let i = 0; i < count; i++) {
+          const nft = await loadNftMetadata(contract, address, i, registryAddress);
+          if (nft) nfts.push(nft);
+        }
+      } catch {
+        enumerationFailed = true;
       }
+
+      // Fallback: fetch token IDs from backend when contract does not support enumeration.
+      if (enumerationFailed && count > 0) {
+        try {
+          const res = await fetch(`${NFT_TOKENS_API}?address=${encodeURIComponent(address)}`);
+          if (res.ok) {
+            const data = (await res.json()) as { tokenIds?: string[] };
+            const tokenIds = data?.tokenIds ?? [];
+            for (const id of tokenIds) {
+              const nft = await loadNftMetadataByTokenId(contract, id, registryAddress);
+              if (nft) nfts.push(nft);
+            }
+          }
+        } catch {
+          // Ignore; we will show balance count only.
+        }
+      }
+
       setNftGallery(nfts);
+      if (nfts.length === 0 && count > 0) setNftBalanceCount(count);
     } catch (e) {
       console.error(e);
       toast.error("Failed to load NFTs. Try again.");
@@ -430,13 +490,6 @@ export function PediScreenBlockchainUI() {
     if (!isConnected || !address) return;
     void fetchNftGallery();
   }, [isConnected, address, fetchNftGallery]);
-
-  const handleCopyAddress = useCallback(() => {
-    if (address) {
-      navigator.clipboard.writeText(address);
-      toast.success("Address copied");
-    }
-  }, [address]);
 
   const showMintPreview = useCallback(
     (data: ScreeningData) => {
@@ -507,11 +560,6 @@ export function PediScreenBlockchainUI() {
           </h1>
           <div className="flex items-center gap-4">
             <AccessibleChainSelector />
-            <WalletStatusBar
-              address={address}
-              chainId={chainId}
-              onCopyAddress={handleCopyAddress}
-            />
             <ConnectWalletButton />
           </div>
         </div>
@@ -532,7 +580,13 @@ export function PediScreenBlockchainUI() {
                 ))}
               </div>
             ) : nftGallery.length === 0 ? (
-              <EmptyNFTGallery txStatus={txStatus} onMint={showMintPreview} />
+              <EmptyNFTGallery
+                txStatus={txStatus}
+                onMint={showMintPreview}
+                nftBalanceCount={nftBalanceCount}
+                chainId={chainIdNum}
+                registryAddress={registryAddress}
+              />
             ) : (
               <NFTGalleryGrid
                 nfts={nftGallery}

@@ -1,9 +1,11 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MOCK_SCREENING_HISTORY } from "@/data/demoMockData";
+import type { MockScreeningHistoryEntry } from "@/data/demoMockData";
+import { listScreenings, mapToReviewEntry } from "@/services/screeningsApi";
 import {
   ClipboardList,
   CheckCircle2,
@@ -13,7 +15,6 @@ import {
   Calendar,
   Video,
   Activity,
-  Waves,
 } from "lucide-react";
 
 const riskColors: Record<string, string> = {
@@ -26,6 +27,28 @@ const riskColors: Record<string, string> = {
 };
 
 const ClinicianReview: React.FC = () => {
+  const [queue, setQueue] = useState<MockScreeningHistoryEntry[]>(MOCK_SCREENING_HISTORY);
+  const [fromBackend, setFromBackend] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    listScreenings({ limit: 50 })
+      .then((res) => {
+        if (!mounted) return;
+        if (res.items?.length) {
+          setQueue(res.items.map((item, i) => mapToReviewEntry(item, i)));
+          setFromBackend(true);
+        }
+      })
+      .catch(() => {});
+    return () => { mounted = false; };
+  }, []);
+
+  const needsDiscussion = queue.filter(
+    (h) => h.riskLevel.toLowerCase() === "monitor" || h.riskLevel.toLowerCase() === "refer"
+  ).length;
+  const onTrack = queue.filter((h) => h.riskLevel.toLowerCase() === "on track").length;
+
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -42,9 +65,16 @@ const ClinicianReview: React.FC = () => {
             </p>
           </div>
         </div>
-        <Badge variant="outline" className="rounded-full px-4 py-1 text-xs font-semibold">
-          {MOCK_SCREENING_HISTORY.length} pending
-        </Badge>
+        <div className="flex items-center gap-2">
+          {fromBackend && (
+            <Badge variant="secondary" className="rounded-full px-3 py-1 text-xs">
+              From backend
+            </Badge>
+          )}
+          <Badge variant="outline" className="rounded-full px-4 py-1 text-xs font-semibold">
+            {queue.length} pending
+          </Badge>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -59,13 +89,7 @@ const ClinicianReview: React.FC = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-1">
-            <p className="text-2xl font-bold text-amber-900">
-              {
-                MOCK_SCREENING_HISTORY.filter(
-                  (h) => h.riskLevel.toLowerCase() === "monitor" || h.riskLevel.toLowerCase() === "refer"
-                ).length
-              }
-            </p>
+            <p className="text-2xl font-bold text-amber-900">{needsDiscussion}</p>
           </CardContent>
         </Card>
         <Card>
@@ -76,20 +100,14 @@ const ClinicianReview: React.FC = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-1">
-            <p className="text-2xl font-bold">
-              {
-                MOCK_SCREENING_HISTORY.filter(
-                  (h) => h.riskLevel.toLowerCase() === "on track"
-                ).length
-              }
-            </p>
+            <p className="text-2xl font-bold">{onTrack}</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-1">
             <CardTitle className="text-sm font-semibold">Median turnaround</CardTitle>
             <CardDescription className="text-xs">
-              For this demo, review times and alerts are simulated.
+              {fromBackend ? "Review times from queue." : "For this demo, review times and alerts are simulated."}
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-1">
@@ -168,7 +186,7 @@ const ClinicianReview: React.FC = () => {
 
       <ScrollArea className="h-[420px] rounded-xl border bg-card">
         <div className="p-4 space-y-3">
-          {MOCK_SCREENING_HISTORY.map((entry) => {
+          {queue.map((entry) => {
             const color =
               riskColors[entry.riskLevel.toLowerCase()] ??
               "bg-slate-50 text-slate-800 border-slate-200";

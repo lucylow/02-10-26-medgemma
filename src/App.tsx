@@ -54,6 +54,7 @@ import FederatedLearningPage from "./pages/FederatedLearningPage";
 import BlockchainPage from "./pages/BlockchainPage";
 import HealthChainPage from "./pages/HealthChainPage";
 import IntegrationsPage from "./pages/IntegrationsPage";
+import CT3DEdge from "./pages/CT3DEdge";
 import GuidelinesPage from "./pages/GuidelinesPage";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { ThemeProvider } from "./theme";
@@ -93,6 +94,7 @@ const appRoutes = createRoutesFromElements(
       <Route path="education" element={<Education />} />
       <Route path="learn-more" element={<LearnMore />} />
       <Route path="radiology" element={<RadiologyQueue />} />
+      <Route path="ct-3d" element={<CT3DEdge />} />
       <Route path="technical-writer" element={<TechnicalWriter />} />
       <Route path="end2end-demo" element={<EndToEndDemo />} />
       <Route path="federated" element={<FederatedLearningPage />} />

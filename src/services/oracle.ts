@@ -3,8 +3,12 @@
  * Frontend focuses on read/subscribe; backend + Chainlink Functions handle writes.
  */
 
-import { BrowserProvider, Contract } from "ethers";
+import * as ethers from "ethers";
 import { PEDISCREEN_ORACLE_ADDRESS } from "@/config/blockchain";
+
+// Support both ethers v5 (Web3Provider) and v6 (BrowserProvider) for Lovable/ESM builds
+const getBrowserProvider = (): new (p: unknown) => ethers.Provider =>
+  (ethers as any).BrowserProvider ?? (ethers as any).providers?.Web3Provider;
 
 const ORACLE_ABI = [
   // Screening record storage
@@ -34,14 +38,15 @@ function ensureOracleConfigured() {
   }
 }
 
-async function getReadOnlyContract(): Promise<Contract> {
+async function getReadOnlyContract(): Promise<ethers.Contract> {
   ensureOracleConfigured();
   if (typeof window === "undefined" || !window.ethereum) {
     throw new Error("Web3 wallet not available in this environment.");
   }
 
-  const provider = new BrowserProvider(window.ethereum);
-  return new Contract(PEDISCREEN_ORACLE_ADDRESS, ORACLE_ABI, provider);
+  const ProviderClass = getBrowserProvider();
+  const provider = new ProviderClass(window.ethereum);
+  return new ethers.Contract(PEDISCREEN_ORACLE_ADDRESS, ORACLE_ABI, provider);
 }
 
 function normalizeRecord(

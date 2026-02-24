@@ -1,13 +1,14 @@
 import React from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import { PARENT_ONE_LINER } from '@/constants/disclaimers';
-import { Baby, Home, Plus, History, ArrowLeft, Menu, Sparkles, ChevronRight, UserCircle, Settings, BookOpen, Scan, FileText, FlaskConical, Mic, Lock, Wallet, Link2, Puzzle, BookMarked } from 'lucide-react';
+import { Baby, Home, Plus, History, ArrowLeft, Menu, Sparkles, ChevronRight, UserCircle, Settings, BookOpen, Scan, Layers, FileText, FlaskConical, Mic, Lock, Wallet, Link2, Puzzle, BookMarked } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ConnectWalletButton } from '@/components/blockchain';
+import { QueueStatus } from '@/components/pediscreen/QueueStatus';
 
 const mainNavItems = [
   { title: 'Home', path: '/pediscreen', icon: Home },
@@ -28,6 +29,7 @@ const toolsNavItems = [
   { title: 'HealthChain', path: '/pediscreen/healthchain', icon: Link2 },
   { title: 'Settings', path: '/pediscreen/settings', icon: Settings },
   { title: 'Radiology', path: '/pediscreen/radiology', icon: Scan },
+  { title: 'CT 3D Edge', path: '/pediscreen/ct-3d', icon: Layers },
   { title: 'Technical Writer', path: '/pediscreen/technical-writer', icon: FileText },
   { title: 'End2End Demo', path: '/pediscreen/end2end-demo', icon: FlaskConical },
 ];
@@ -43,6 +45,7 @@ const getBreadcrumbs = (pathname: string) => {
   if (pathname.includes('/education')) crumbs.push({ label: 'Education', path: '/pediscreen/education' });
   if (pathname.includes('/settings')) crumbs.push({ label: 'Settings', path: '/pediscreen/settings' });
   if (pathname.includes('/radiology')) crumbs.push({ label: 'Radiology Worklist', path: '/pediscreen/radiology' });
+  if (pathname.includes('/ct-3d')) crumbs.push({ label: 'CT 3D Edge', path: '/pediscreen/ct-3d' });
   if (pathname.includes('/technical-writer')) crumbs.push({ label: 'Technical Writer', path: '/pediscreen/technical-writer' });
   if (pathname.includes('/end2end-demo')) crumbs.push({ label: 'End2End Demo', path: '/pediscreen/end2end-demo' });
   if (pathname.includes('/federated')) crumbs.push({ label: 'Federated Learning', path: '/pediscreen/federated' });
@@ -168,25 +171,28 @@ const PediScreenLayout = () => {
         </div>
       </header>
 
-      {/* Breadcrumb Bar */}
+      {/* Breadcrumb Bar + Offline queue status */}
       <div className="bg-card/60 backdrop-blur-sm border-b border-border/80 px-4 py-2.5">
-        <div className="max-w-7xl mx-auto flex items-center gap-1 text-sm">
-          {breadcrumbs.map((crumb, i) => (
-            <React.Fragment key={crumb.path}>
-              {i > 0 && <ChevronRight className="w-4 h-4 text-muted-foreground" />}
-              <Link
-                to={crumb.path}
-                className={cn(
-                  'px-2 py-1 rounded-md transition-colors',
-                  i === breadcrumbs.length - 1
-                    ? 'text-primary font-medium'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                )}
-              >
-                {crumb.label}
-              </Link>
-            </React.Fragment>
-          ))}
+        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-1 text-sm">
+            {breadcrumbs.map((crumb, i) => (
+              <React.Fragment key={crumb.path}>
+                {i > 0 && <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+                <Link
+                  to={crumb.path}
+                  className={cn(
+                    'px-2 py-1 rounded-md transition-colors',
+                    i === breadcrumbs.length - 1
+                      ? 'text-primary font-medium'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                  )}
+                >
+                  {crumb.label}
+                </Link>
+              </React.Fragment>
+            ))}
+          </div>
+          <QueueStatus />
         </div>
       </div>
 

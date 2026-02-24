@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ import {
   Brain,
   MessageCircle,
   Waves,
+  Mic,
 } from "lucide-react";
 import {
   Accordion,
@@ -178,9 +180,17 @@ const Education = () => {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">External Resources</CardTitle>
+                <CardTitle className="text-lg">Resources</CardTitle>
+                <CardDescription>PediScreen guides and external references</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                <Link to="/pediscreen/virtual-assistants" className="flex items-center justify-between p-2 hover:bg-muted rounded-lg transition-colors group">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Mic className="w-4 h-4 text-primary" />
+                    <span>Virtual Assistants &amp; On-Device Voice</span>
+                  </div>
+                  <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </Link>
                 <a href="#" className="flex items-center justify-between p-2 hover:bg-muted rounded-lg transition-colors group">
                   <div className="flex items-center gap-2 text-sm">
                     <CheckCircle2 className="w-4 h-4 text-success" />

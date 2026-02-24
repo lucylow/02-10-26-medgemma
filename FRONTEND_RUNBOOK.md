@@ -21,7 +21,7 @@ npm run dev
 | `VITE_MEDGEMMA_API_URL` | Backend API base (inference, etc.) | `http://localhost:8000/api` (dev) |
 | `VITE_API_KEY` | API key for backend | `dev-example-key` |
 | `VITE_ASSEMBLYAI_KEY` | AssemblyAI for voice transcription | (optional) |
-| `MOCK_FALLBACK` | Use mock inference when endpoint fails | `false` (set `true` to test fallback UI) |
+| `VITE_MOCK_FALLBACK` | Use mock inference when endpoint fails | `false` (set `true` to test fallback UI) |
 
 Create `.env` or `.env.local` with any overrides. For local backend:
 
@@ -36,7 +36,7 @@ VITE_API_KEY=your-key
 2. **Application → Service Workers:** Unregister or set to offline if applicable.
 3. **Code:** In `App.tsx`, online/offline is handled via `window.addEventListener('online', ...)`; queue flush runs when going back online.
 
-Captures are stored in IndexedDB (`pediscreen-offline`). After reconnecting, submissions in the queue are sent via `flush(sendPayload)`.
+Captures are stored in IndexedDB (`pediscreen-offline`). After reconnecting, submissions in the queue are sent via `flush(sendPayload)`. The **QueueStatus** chip in the PediScreen breadcrumb bar shows pending count and a "Sync now" button when online; use it to manually retry uploads without reloading.
 
 ## Major flows to run locally
 
@@ -47,7 +47,7 @@ Captures are stored in IndexedDB (`pediscreen-offline`). After reconnecting, sub
 ## Known limitations
 
 - Consent is stored in browser storage; clearing site data resets consent and the user will see the consent modal again.
-- Mock fallback: when the model endpoint fails or times out and `MOCK_FALLBACK` is enabled, the UI shows a clearly labeled draft result; clinician review is required.
+- Mock fallback: when the model endpoint fails or times out and `VITE_MOCK_FALLBACK` is enabled, the UI shows a clearly labeled draft result; clinician review is required.
 - Voice input depends on Web Speech API (Chrome/Edge); unsupported browsers get a text-area fallback.
 
 ## Lint, test, Storybook

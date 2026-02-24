@@ -1,14 +1,36 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { DriftDashboard } from "@/components/monitoring/DriftDashboard";
 import { BiasDashboard } from "@/components/monitoring/BiasDashboard";
-import { downloadPilotMetricsCsv } from "@/services/telemetryApi";
+import { downloadPilotMetricsCsv, getFairnessMetrics, type FairnessItem } from "@/services/telemetryApi";
 import { toast } from "sonner";
-import { Download, FileSpreadsheet } from "lucide-react";
+import { Download, FileSpreadsheet, Scale } from "lucide-react";
 
 const Monitoring = () => {
   const [exporting, setExporting] = useState(false);
+  const [fairnessItems, setFairnessItems] = useState<FairnessItem[]>([]);
+  const [fairnessLoading, setFairnessLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    getFairnessMetrics({ limit: 100 })
+      .then((res) => {
+        if (mounted) setFairnessItems(res.items ?? []);
+      })
+      .finally(() => {
+        if (mounted) setFairnessLoading(false);
+      });
+    return () => { mounted = false; };
+  }, []);
 
   const handleExportCsv = async () => {
     setExporting(true);
@@ -54,6 +76,50 @@ const Monitoring = () => {
           <BiasDashboard />
         </div>
       </div>
+
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Scale className="w-4 h-4 text-muted-foreground" />
+            Fairness by group
+          </CardTitle>
+          <CardDescription className="text-xs">
+            False positive and false negative rates by protected group (from backend when available).
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="pt-0">
+          {fairnessLoading ? (
+            <p className="text-xs text-muted-foreground py-4">Loading fairness metrics…</p>
+          ) : fairnessItems.length === 0 ? (
+            <p className="text-xs text-muted-foreground py-4">
+              No fairness data yet. Enable Cloud SQL and populate fairness_metrics for live data.
+            </p>
+          ) : (
+            <div className="rounded-md border overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-xs">Group</TableHead>
+                    <TableHead className="text-xs">Attribute</TableHead>
+                    <TableHead className="text-xs">FPR</TableHead>
+                    <TableHead className="text-xs">FNR</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {fairnessItems.slice(0, 15).map((row, i) => (
+                    <TableRow key={row.group_value ?? i}>
+                      <TableCell className="text-xs font-medium">{row.group_value ?? "—"}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{row.protected_attribute ?? "—"}</TableCell>
+                      <TableCell className="text-xs font-mono">{(row.false_positive_rate ?? 0).toFixed(3)}</TableCell>
+                      <TableCell className="text-xs font-mono">{(row.false_negative_rate ?? 0).toFixed(3)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Card className="border-dashed">
         <CardHeader className="pb-2">

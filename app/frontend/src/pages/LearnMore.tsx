@@ -1,7 +1,9 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Shield, Brain, Activity, Stethoscope, CheckCircle2, AlertCircle, Info, ArrowRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Shield, Brain, Activity, Stethoscope, CheckCircle2, AlertCircle, Info, ArrowRight, Mic } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 const LearnMore = () => {
@@ -43,8 +45,14 @@ const LearnMore = () => {
                     Child Activity / Caregiver Input
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="py-3 text-xs text-muted-foreground">
-                  Caregivers provide structured observations and upload child-generated content (drawings, play videos).
+                <CardContent className="py-3 text-xs text-muted-foreground space-y-2">
+                  <p>Caregivers provide structured observations and upload child-generated content (drawings, play videos).</p>
+                  <p>Input can also be triggered via Siri or Google Assistant with on-device processing—no cloud PHI.</p>
+                  <Link to="/pediscreen/virtual-assistants">
+                    <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 px-2">
+                      <Mic className="w-3 h-3" /> Voice assistants
+                    </Button>
+                  </Link>
                 </CardContent>
               </Card>
             </motion.div>

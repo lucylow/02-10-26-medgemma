@@ -22,6 +22,18 @@ import { BlockchainAnchorCard, OracleVerificationCard } from '@/components/block
 
 type RiskLevel = 'on_track' | 'low' | 'monitor' | 'medium' | 'refer' | 'high';
 
+/** Soften clinical terms for caregiver view (consistent UX). */
+function caregiverCopy(text: string): string {
+  if (!text) return text;
+  return text
+    .replace(/\brefer(ral)?\b/gi, 'talk with a specialist')
+    .replace(/\bevaluate?\b/gi, 'check in with')
+    .replace(/\bclinical\b/gi, 'expert')
+    .replace(/\bdiagnos(is|e[sd]?)\b/gi, 'formal assessment')
+    .replace(/fine motor delay/gi, 'developing hand coordination')
+    .replace(/\bSD\b/g, 'variation');
+}
+
 const ResultsScreen = () => {
   const location = useLocation();
   const { toast } = useToast();
@@ -140,7 +152,7 @@ const ResultsScreen = () => {
   const referral = report.referralGuidance;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 space-y-6" id="results-content">
+    <div className="max-w-4xl mx-auto px-4 py-8 space-y-6 pb-24 md:pb-8" id="results-content">
       <DisclaimerBanner />
       {localProcessing && (
         <div
@@ -200,6 +212,40 @@ const ResultsScreen = () => {
           </p>
         )}
       </div>
+
+      {/* Snapshot header — at-a-glance summary above the fold */}
+      <motion.div
+        initial={{ opacity: 0, y: 4 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="flex flex-wrap items-center gap-2 sm:gap-3 p-3 sm:p-4 rounded-xl bg-muted/50 border border-border/80"
+      >
+        <span className={cn('inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium text-white', riskConfig.badgeClass)}>
+          <RiskIcon className="w-3.5 h-3.5" />
+          {riskConfig.label}
+        </span>
+        {childAge && (
+          <span className="text-xs text-muted-foreground">
+            {childAge} mo
+            {domain ? ` · ${getDomainLabel(domain)}` : ''}
+          </span>
+        )}
+        {followUp?.rescreenIntervalDays != null && (
+          <span className="text-xs text-muted-foreground flex items-center gap-1">
+            <Clock className="w-3.5 h-3.5" />
+            Next check-in: {followUp.rescreenIntervalDays} days
+          </span>
+        )}
+        {profile && (profile.strengths?.length > 0 || profile.concerns?.length > 0) && (
+          <span className="text-xs text-muted-foreground truncate max-w-[200px] sm:max-w-none">
+            {profile.strengths?.[0]
+              ? (activeTab === 'caregiver' ? caregiverCopy(profile.strengths[0]) : profile.strengths[0])
+              : profile.concerns?.[0]
+                ? (activeTab === 'caregiver' ? caregiverCopy(profile.concerns[0]) : profile.concerns[0])
+                : ''}
+          </span>
+        )}
+      </motion.div>
 
       {/* Risk Banner */}
       <motion.div
@@ -298,8 +344,8 @@ const ResultsScreen = () => {
         showActions={true}
       />
 
-      {/* Model Evidence (collapsible) - for model-assisted screenings */}
-      {modelEvidence && modelEvidence.length > 0 && (
+      {/* Model Evidence (collapsible) - clinician only; raw output for human review */}
+      {activeTab === 'clinician' && modelEvidence && modelEvidence.length > 0 && (
         <Collapsible className="group">
           <Card className="border-dashed">
             <CollapsibleTrigger asChild>
@@ -387,9 +433,7 @@ const ResultsScreen = () => {
                     </div>
                   ) : (
                     <p>
-                      {report.summary?.replace(/fine motor delay/gi, "developing hand coordination")
-                        .replace(/SD/g, "variation")
-                        .replace(/refer/gi, "talk with a specialist") || 'No summary available.'}
+                      {caregiverCopy(report.summary ?? '') || 'No summary available.'}
                     </p>
                   )}
                 </div>
@@ -471,7 +515,7 @@ const ResultsScreen = () => {
                     {evidence.fromParentReport.map((item: string, idx: number) => (
                       <li key={idx} className="text-sm flex items-start gap-2">
                         <span className="text-primary mt-1">•</span>
-                        <span>{item}</span>
+                        <span>{activeTab === 'caregiver' ? caregiverCopy(item) : item}</span>
                       </li>
                     ))}
                   </ul>
@@ -484,7 +528,7 @@ const ResultsScreen = () => {
                     {evidence.fromAssessmentScores.map((item: string, idx: number) => (
                       <li key={idx} className="text-sm flex items-start gap-2">
                         <span className="text-primary mt-1">•</span>
-                        <span>{item}</span>
+                        <span>{activeTab === 'caregiver' ? caregiverCopy(item) : item}</span>
                       </li>
                     ))}
                   </ul>
@@ -520,7 +564,7 @@ const ResultsScreen = () => {
                     <ul className="space-y-2">
                       {profile.strengths.map((item: string, idx: number) => (
                         <li key={idx} className="text-sm p-2 bg-emerald-50 rounded-lg border border-emerald-100">
-                          {item}
+                          {activeTab === 'caregiver' ? caregiverCopy(item) : item}
                         </li>
                       ))}
                     </ul>
@@ -535,7 +579,7 @@ const ResultsScreen = () => {
                     <ul className="space-y-2">
                       {profile.concerns.map((item: string, idx: number) => (
                         <li key={idx} className="text-sm p-2 bg-amber-50 rounded-lg border border-amber-100">
-                          {item}
+                          {activeTab === 'caregiver' ? caregiverCopy(item) : item}
                         </li>
                       ))}
                     </ul>
@@ -620,9 +664,7 @@ const ResultsScreen = () => {
                         {index + 1}
                       </span>
                       <span className="text-foreground pt-1 leading-relaxed">
-                        {activeTab === 'caregiver' ? rec.replace(/refer/gi, "talk with a specialist")
-                          .replace(/evaluate/gi, "check in with")
-                          .replace(/clinical/gi, "expert") : rec}
+                        {activeTab === 'caregiver' ? caregiverCopy(rec) : rec}
                       </span>
                     </motion.li>
                   ))}
@@ -683,7 +725,9 @@ const ResultsScreen = () => {
                   </Badge>
                 </div>
                 {referral.reason && (
-                  <p className="text-sm text-foreground">{referral.reason}</p>
+                  <p className="text-sm text-foreground">
+                    {activeTab === 'caregiver' ? caregiverCopy(referral.reason) : referral.reason}
+                  </p>
                 )}
                 {referral.specialties?.length > 0 && (
                   <div>
@@ -807,29 +851,31 @@ const ResultsScreen = () => {
           </>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <Button
-            variant="outline"
-            className="gap-2 h-12 rounded-xl"
-            onClick={handleShare}
-          >
-            <Share2 className="w-4 h-4" />
-            {activeTab === 'caregiver' ? 'Share with doctor' : 'Share Report'}
-          </Button>
-          <Button
-            variant="outline"
-            className="gap-2 h-12 rounded-xl"
-            onClick={() => window.print()}
-          >
-            <Printer className="w-4 h-4" />
-            {activeTab === 'caregiver' ? 'Print summary' : 'Print Report'}
-          </Button>
-          <Link to="/pediscreen/screening" className="w-full">
-            <Button className="w-full gap-2 h-12 rounded-xl">
-              <Plus className="w-4 h-4" />
-              {activeTab === 'caregiver' ? 'Start screening' : 'New Screening'}
+        <div className="sticky bottom-0 z-10 -mx-4 bg-background/95 backdrop-blur-sm border-t py-3 px-4 md:static md:mx-0 md:border-0 md:bg-transparent md:py-0 md:px-0">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <Button
+              variant="outline"
+              className="gap-2 h-12 rounded-xl"
+              onClick={handleShare}
+            >
+              <Share2 className="w-4 h-4" />
+              {activeTab === 'caregiver' ? 'Share with doctor' : 'Share Report'}
             </Button>
-          </Link>
+            <Button
+              variant="outline"
+              className="gap-2 h-12 rounded-xl"
+              onClick={() => window.print()}
+            >
+              <Printer className="w-4 h-4" />
+              {activeTab === 'caregiver' ? 'Print summary' : 'Print Report'}
+            </Button>
+            <Link to="/pediscreen/screening" className="w-full">
+              <Button className="w-full gap-2 h-12 rounded-xl">
+                <Plus className="w-4 h-4" />
+                {activeTab === 'caregiver' ? 'Start screening' : 'New Screening'}
+              </Button>
+            </Link>
+          </div>
         </div>
       </motion.div>
 

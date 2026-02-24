@@ -296,7 +296,7 @@ const Settings = () => {
                             });
                           } finally {
                             setDsrLoading(null);
-                          }}
+                          }
                         }}
                       >
                         {dsrLoading === 'rectify' ? 'Sending…' : 'Request correction'}

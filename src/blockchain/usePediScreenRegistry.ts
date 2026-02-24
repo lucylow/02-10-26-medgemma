@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
-import type { BrowserProvider, JsonRpcSigner } from "ethers";
-import { BrowserProvider as EthersBrowserProvider, Contract } from "ethers";
+import * as ethers from "ethers";
 import { PEDISCREEN_REGISTRY_ABI } from "./pediscreenRegistryAbi";
+
+// Support both ethers v5 (Web3Provider) and v6 (BrowserProvider) for Lovable/ESM builds
+const getBrowserProviderClass = (): new (provider: unknown) => ethers.Provider =>
+  (ethers as any).BrowserProvider ?? (ethers as any).providers?.Web3Provider;
 
 const REGISTRY_ADDRESS = import.meta.env.VITE_REGISTRY_ADDRESS as string | undefined;
 const TARGET_CHAIN_ID = Number(
@@ -17,8 +20,8 @@ export interface RegistryScreeningRecord {
 }
 
 export function usePediScreenRegistry() {
-  const [provider, setProvider] = useState<BrowserProvider | null>(null);
-  const [signer, setSigner] = useState<JsonRpcSigner | null>(null);
+  const [provider, setProvider] = useState<ethers.Provider | null>(null);
+  const [signer, setSigner] = useState<ethers.Signer | null>(null);
   const [account, setAccount] = useState<string | null>(null);
   const [chainId, setChainId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +30,8 @@ export function usePediScreenRegistry() {
     if (typeof window === "undefined") return;
     const anyWindow = window as any;
     if (!anyWindow.ethereum) return;
-    const p = new EthersBrowserProvider(anyWindow.ethereum);
+    const ProviderClass = getBrowserProviderClass();
+    const p = new ProviderClass(anyWindow.ethereum);
     setProvider(p);
   }, []);
 
@@ -60,7 +64,7 @@ export function usePediScreenRegistry() {
     if (!REGISTRY_ADDRESS) {
       throw new Error("VITE_REGISTRY_ADDRESS is not configured");
     }
-    return new Contract(REGISTRY_ADDRESS, PEDISCREEN_REGISTRY_ABI, signer);
+    return new ethers.Contract(REGISTRY_ADDRESS, PEDISCREEN_REGISTRY_ABI, signer);
   }, [signer]);
 
   const recordScreening = useCallback(
@@ -81,7 +85,7 @@ export function usePediScreenRegistry() {
       if (!REGISTRY_ADDRESS) {
         throw new Error("VITE_REGISTRY_ADDRESS is not configured");
       }
-      const contract = new Contract(
+      const contract = new ethers.Contract(
         REGISTRY_ADDRESS,
         PEDISCREEN_REGISTRY_ABI,
         provider

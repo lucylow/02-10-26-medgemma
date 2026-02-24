@@ -38,7 +38,7 @@ const integrations = [
     title: "CT 3D & Edge",
     description: "Portable CT, cone-beam, pedCAT WBCT. Preprocess & infer for head, chest, extremity, oncology.",
     icon: Scan,
-    path: "/pediscreen/radiology",
+    path: "/pediscreen/ct-3d",
     doc: "POST /api/ct/preprocess, POST /api/ct/infer",
     color: "from-violet-500/20 to-violet-500/5",
   },
