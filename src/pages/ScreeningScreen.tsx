@@ -214,71 +214,7 @@ const ScreeningScreen = () => {
     if (imageTabInputRef.current) imageTabInputRef.current.value = '';
   };
 
-  if (!isConnected) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-primary/20">
-        <div className="max-w-md w-full mx-auto p-8 bg-card/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-border/40">
-          <div className="text-center mb-8">
-            <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-r from-primary to-primary/80 rounded-3xl flex items-center justify-center">
-              <Wallet className="w-10 h-10 text-primary-foreground" />
-            </div>
-            <h1 className="text-3xl font-black text-foreground mb-3">
-              Wallet required
-            </h1>
-            <p className="text-base text-muted-foreground mb-2">
-              Connect a wallet to securely link this MedGemma screening to a tamper-evident certificate.
-            </p>
-          </div>
-          <Button
-            onClick={() => void connect()}
-            disabled={isConnecting}
-            className="w-full bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-semibold py-3 rounded-2xl shadow-lg hover:shadow-xl transition-all"
-          >
-            {isConnecting ? 'Connecting…' : 'Connect wallet'}
-          </Button>
-          <p className="mt-4 text-xs text-muted-foreground text-center flex items-center justify-center gap-1">
-            <Shield className="w-3.5 h-3.5" />
-            No PHI is stored on-chain — only hashes and certificates.
-          </p>
-          {address && (
-            <p className="mt-2 text-[11px] font-mono text-muted-foreground/80 text-center">
-              {address.slice(0, 6)}…{address.slice(-4)}
-            </p>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  if (isOnWrongChain) {
-    const currentLabel = chainId != null ? getChainLabel(chainId) : 'Unknown';
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 to-orange-50">
-        <div className="max-w-md w-full mx-auto p-8 bg-card/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-border/40">
-          <div className="text-center mb-8">
-            <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-r from-amber-500 to-orange-500 rounded-3xl flex items-center justify-center">
-              <AlertTriangle className="w-10 h-10 text-white" />
-            </div>
-            <h1 className="text-3xl font-black text-foreground mb-3">
-              Switch network to continue
-            </h1>
-            <p className="text-base text-muted-foreground mb-2">
-              Screening certificates for this demo are issued on <span className="font-semibold">{targetChainName}</span>.
-            </p>
-            <p className="text-xs text-muted-foreground">
-              You are currently connected to <span className="font-semibold">{currentLabel}</span>. Switch networks in your wallet or use the button below.
-            </p>
-          </div>
-          <Button
-            onClick={() => void switchChain(CHAIN_ID)}
-            className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold py-3 rounded-2xl shadow-lg hover:shadow-xl transition-all"
-          >
-            Switch to {targetChainName}
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  // Wallet is now optional — no gate. Users can screen without MetaMask.
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -435,6 +371,93 @@ const ScreeningScreen = () => {
         
         <Progress value={progress} className="h-2" />
         <p className="text-xs text-muted-foreground mt-2 text-right">{progress}% complete</p>
+      </motion.div>
+
+      {/* Optional Wallet Connection */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05 }}
+      >
+        <Card className={cn(
+          "shadow-md border overflow-hidden",
+          isConnected ? "border-primary/30 bg-primary/5" : "border-border"
+        )}>
+          <CardContent className="py-4 px-5">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className={cn(
+                  "w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0",
+                  isConnected ? "bg-primary/15" : "bg-muted"
+                )}>
+                  <Wallet className={cn("w-5 h-5", isConnected ? "text-primary" : "text-muted-foreground")} />
+                </div>
+                <div className="min-w-0">
+                  {isConnected ? (
+                    <>
+                      <p className="text-sm font-medium text-foreground">
+                        Wallet connected
+                        <span className="ml-2 font-mono text-xs text-muted-foreground">
+                          {address?.slice(0, 6)}…{address?.slice(-4)}
+                        </span>
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Screening will be linked to a tamper-evident certificate
+                        {isOnWrongChain && (
+                          <span className="text-destructive ml-1">
+                            — wrong network, please switch to {targetChainName}
+                          </span>
+                        )}
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm font-medium text-foreground">Blockchain verification</p>
+                      <p className="text-xs text-muted-foreground">
+                        Optional — connect MetaMask to mint a tamper-evident screening certificate
+                      </p>
+                    </>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {isConnected ? (
+                  isOnWrongChain ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="text-xs"
+                      onClick={() => void switchChain(CHAIN_ID)}
+                    >
+                      Switch to {targetChainName}
+                    </Button>
+                  ) : (
+                    <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+                      <CheckCircle2 className="w-3 h-3 mr-1" />
+                      Ready
+                    </Badge>
+                  )
+                ) : (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="bg-background text-foreground"
+                    onClick={() => void connect()}
+                    disabled={isConnecting}
+                  >
+                    {isConnecting ? (
+                      <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Connecting…</>
+                    ) : (
+                      'Connect wallet'
+                    )}
+                  </Button>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </motion.div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
