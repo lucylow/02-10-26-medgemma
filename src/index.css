@@ -59,6 +59,13 @@
     --shadow-card-hover: 0 20px 40px -8px rgba(0, 0, 0, 0.1), 0 8px 16px -4px rgba(0, 0, 0, 0.06);
     --shadow-button: 0 4px 14px -2px hsl(212 65% 32% / 0.35);
     --shadow-header: 0 1px 0 0 hsl(var(--border)), 0 2px 8px -2px rgba(0, 0, 0, 0.04);
+
+    /* Medical color system (AMA-aligned) */
+    --medical-referral: 0 72% 51%;
+    --medical-urgent: 38 92% 50%;
+    --medical-monitor: 45 93% 47%;
+    --medical-ontrack: 152 58% 42%;
+    --medical-primary: 224 76% 48%;
   }
 
   .dark {

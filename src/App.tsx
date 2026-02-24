@@ -62,6 +62,7 @@ import FAQPage from "./pages/FAQPage";
 import PrivacyPage from "./pages/PrivacyPage";
 import HelpPage from "./pages/HelpPage";
 import ClinicianReviewWithCollab from "./pages/ClinicianReviewWithCollab";
+import PediatricShowcasePage from "./pages/PediatricShowcasePage";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { ThemeProvider } from "./theme";
 import { ThemeProvider as ClinicalTokensProvider } from "./providers/ThemeProvider";
@@ -106,6 +107,7 @@ const appRoutes = createRoutesFromElements(
       <Route path="technical-writer" element={<TechnicalWriter />} />
       <Route path="end2end-demo" element={<EndToEndDemo />} />
       <Route path="demo" element={<InteractiveScreeningDemo />} />
+      <Route path="pediatric" element={<PediatricShowcasePage />} />
       <Route path="federated" element={<FederatedLearningPage />} />
       <Route path="blockchain" element={<BlockchainPage />} />
       <Route path="blockchain-dashboard" element={<BlockchainPage />} />

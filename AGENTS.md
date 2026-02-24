@@ -44,6 +44,14 @@ The app reimagines the screening pipeline by deploying **HAI-DEF models as intel
 
 Full multi-agent spec (Embedder, ModelReasoner, TriageScorer, Audit, EHR, etc.): [docs/CURSOR_PROMPT_SPECIALIZED_MULTI_AI_AGENTS.md](docs/CURSOR_PROMPT_SPECIALIZED_MULTI_AI_AGENTS.md).
 
+## HAI-DEF observability (W&B, OpenTelemetry, Prometheus)
+
+- **W&B:** `src/lib/tracing/wandb.ts` — optional when `WANDB_API_KEY` is set; `initWandBTrace`, `logInferenceTrace`, `finishWandBTrace`; project `pediscreen-prod`.
+- **OpenTelemetry:** `src/lib/tracing/opentelemetry.ts` — `traceInference('medgemma.inference', fn)` and `startSpan`; tracer `pediscreen`.
+- **Prometheus:** `src/lib/metrics/prometheus.ts` — `recordInference`, `recordSafetyRejection`; GET `/metrics` via `src/api/edge/metrics.ts` (Lovable edge).
+- **Edge infer:** `src/api/edge/infer.ts` wires all three: every POST /infer gets a W&B trace (if key set), an OTel span, and Prometheus counters/histogram.
+- **Tests:** Vitest stubs for optional deps in `src/test/stubs/` and `vitest.config.ts` aliases so tests pass without installing `@wandb/sdk`, `@opentelemetry/api`, `prom-client`. For production install use `npm install --legacy-peer-deps` if needed.
+
 ## OpenVINO (Intel edge inference)
 
 - **Purpose:** Optimize pose/motor and cry detection on Intel hardware (CPU, GPU, NPU, VPU) — INT8 IR, ~3x speedup, ~50% model size reduction.

@@ -41,6 +41,16 @@ class ApiError(Exception):
         super().__init__(message)
 
 
+class SafetyViolation(Exception):
+    """HAI-DEF: raised when clinical safety guard blocks output (toxicity, contraindication, low-confidence referral)."""
+
+    def __init__(self, violation_type: str, severity: str, mitigation_applied: str):
+        self.violation_type = violation_type
+        self.severity = severity
+        self.mitigation_applied = mitigation_applied
+        super().__init__(f"Safety violation: {violation_type}")
+
+
 # Standard error codes (extend as needed)
 class ErrorCodes:
     INVALID_PAYLOAD = "INVALID_PAYLOAD"
@@ -57,3 +67,4 @@ class ErrorCodes:
     VALIDATION_ERROR = "VALIDATION_ERROR"
     NOT_FOUND = "NOT_FOUND"
     SAFE_ERROR = "SAFE_ERROR"  # Generic fallback for unhandled exceptions
+    SAFETY_VIOLATION = "SAFETY_VIOLATION"  # HAI-DEF: toxicity, contraindication, low-confidence referral

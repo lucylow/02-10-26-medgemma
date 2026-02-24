@@ -33,6 +33,7 @@ const toolsNavItems = [
   { title: 'Technical Writer', path: '/pediscreen/technical-writer', icon: FileText },
   { title: 'End2End Demo', path: '/pediscreen/end2end-demo', icon: FlaskConical },
   { title: 'Interactive Demo', path: '/pediscreen/demo', icon: ClipboardList },
+  { title: 'Pediatric Showcase', path: '/pediscreen/pediatric', icon: Baby },
 ];
 
 const infoNavItems = [
@@ -70,6 +71,7 @@ const getBreadcrumbs = (pathname: string) => {
   if (pathname === '/pediscreen/privacy') crumbs.push({ label: 'Privacy', path: '/pediscreen/privacy' });
   if (pathname === '/pediscreen/help') crumbs.push({ label: 'Help', path: '/pediscreen/help' });
   if (pathname.includes('/report/') && pathname.includes('/collab')) crumbs.push({ label: 'Collaborative review', path: pathname });
+  if (pathname.includes('/pediatric')) crumbs.push({ label: 'Pediatric Showcase', path: '/pediscreen/pediatric' });
   return crumbs;
 };
 

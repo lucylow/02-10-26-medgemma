@@ -6,6 +6,7 @@ from app.calibration.calibrator import (
     CONFIDENCE_CEILING,
     LOW_CONFIDENCE_THRESHOLD,
 )
+from app.calibration.platt import ClinicalCalibrator
 
 __all__ = [
     "bound_confidence",
@@ -14,4 +15,5 @@ __all__ = [
     "CONFIDENCE_FLOOR",
     "CONFIDENCE_CEILING",
     "LOW_CONFIDENCE_THRESHOLD",
+    "ClinicalCalibrator",
 ]

@@ -56,6 +56,16 @@ export const OntrackCard: Story = {
   },
 };
 
+export const WithImageAndSubtitle: Story = {
+  args: {
+    risk: "referral",
+    title: "ROP Zone 1 Stage 3+",
+    subtitle: "96% sensitivity in validation cohort",
+    image: "/images/medical/rop/zone1/stage3.png",
+    children: "Immediate ophthalmology referral. High risk of progression without treatment.",
+  },
+};
+
 export const CardComposition: Story = {
   render: () => (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 16 }}>

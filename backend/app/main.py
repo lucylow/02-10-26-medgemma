@@ -19,6 +19,7 @@ from app.api import (
     infer,
     screenings,
     screening_v1,
+    screening_v2,
     health,
     technical_writing,
     radiology,
@@ -75,10 +76,18 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 async def global_exception_handler(request: Request, exc: Exception):
     """Catch-all: convert to standardized ErrorResponse."""
     from fastapi import HTTPException
-    from app.errors import ApiError
+    from app.errors import ApiError, SafetyViolation
 
     if isinstance(exc, ApiError):
         return api_error(exc.code, exc.message, exc.status_code, exc.details)
+    if isinstance(exc, SafetyViolation):
+        return api_error(
+            ErrorCodes.SAFETY_VIOLATION,
+            f"Safety violation: {exc.violation_type}",
+            status_code=422,
+            details={"severity": exc.severity, "mitigation_applied": exc.mitigation_applied},
+            request_id=get_request_id(request),
+        )
     if isinstance(exc, HTTPException):
         detail = exc.detail
         if isinstance(detail, dict) and "code" in detail:
@@ -138,6 +147,7 @@ app.include_router(stream_analyze.router)
 app.include_router(infer.router)
 app.include_router(screenings.router)
 app.include_router(screening_v1.router)
+app.include_router(screening_v2.router)
 app.include_router(health.router)
 app.include_router(technical_writing.router)
 app.include_router(radiology.router)

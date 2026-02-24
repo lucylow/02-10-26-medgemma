@@ -6,6 +6,8 @@ import { DemoSection } from "@/components/landing/DemoSection";
 import { TechnologySection } from "@/components/landing/TechnologySection";
 import { ImpactSection } from "@/components/landing/ImpactSection";
 import { CHWWorkflowSection } from "@/components/landing/CHWWorkflowSection";
+import { ROPGallery } from "@/components/ROPGallery";
+import { ASQTimeline } from "@/components/ASQTimeline";
 import { TeamSection } from "@/components/landing/TeamSection";
 import { Footer } from "@/components/landing/Footer";
 
@@ -20,6 +22,12 @@ const Index = () => {
         <DemoSection />
         <TechnologySection />
         <ImpactSection />
+        <section className="py-16 md:py-24 bg-muted/30">
+          <ROPGallery />
+        </section>
+        <section className="py-16 md:py-24">
+          <ASQTimeline />
+        </section>
         <CHWWorkflowSection />
         <TeamSection />
       </main>

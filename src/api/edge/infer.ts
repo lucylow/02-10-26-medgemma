@@ -1,13 +1,18 @@
 /**
- * Edge infer — HAI-DEF MedGemma pipeline (Pages 2–3).
+ * Edge infer — HAI-DEF MedGemma pipeline (Pages 2–3, 6).
  * Uses Chain-of-Thought + JSON prompt, adapter registry, and schema validation.
+ * Observability: W&B tracing, OpenTelemetry spans, Prometheus metrics.
  * Portable: Request/Response for Node serverless or Deno (Lovable Edge).
  *
  * Expects env: MEDGEMMA_MODEL (or HF model id), HF_API_KEY when calling HF Inference API.
+ * Optional: WANDB_API_KEY (W&B), PEDISCREEN_METRICS (Prometheus).
  */
 
 import { buildInferPrompt, extractJsonFromModelOutput, parseAndValidateReport } from '@/lib/prompts/pediscreen';
 import { getAdapter } from '@/lib/adapters';
+import { initWandBTrace, logInferenceTrace, finishWandBTrace, hashPrompt } from '@/lib/tracing/wandb';
+import { traceInference } from '@/lib/tracing/opentelemetry';
+import { recordInference } from '@/lib/metrics/prometheus';
 
 const MEDGEMMA_MODEL = typeof process !== 'undefined' && process.env?.MEDGEMMA_MODEL
   ? process.env.MEDGEMMA_MODEL
@@ -108,40 +113,58 @@ export async function inferEdgeHandler(request: Request): Promise<Response> {
     );
   }
 
+  const startTime = performance.now();
+  const domainVal = domain ?? 'general';
+
   try {
     const adapter = await getAdapter(adapter_id || 'pediscreen_v1');
     const prompt = buildInferPrompt({
       age_months: Number(age_months),
-      domain: domain ?? 'general',
+      domain: domainVal,
       observations,
       embedding_analysis,
+    });
+
+    const prompt_hash = hashPrompt(prompt);
+    const trace = await initWandBTrace('pediscreen-prod', {
+      adapter_id: adapter.id,
+      model_version: adapter.hf_model,
+      domain: domainVal,
+      prompt_hash,
+      child_age_months: age_months,
     });
 
     const apiKey = typeof process !== 'undefined' && process.env?.HF_API_KEY;
     let generated_text: string;
 
-    if (apiKey) {
-      const out = await callHfTextGeneration(prompt, adapter.hf_model, apiKey);
-      generated_text = out.generated_text;
-    } else {
-      // No API key: return deterministic mock JSON for dev/Lovable compatibility
-      generated_text = JSON.stringify({
-        riskLevel: 'monitor',
-        confidence: 0.72,
-        summary: 'Developmental observations suggest follow-up screening in 30 days.',
-        parentSummary: 'We suggest a follow-up check in about a month to see how things are going.',
-        reasoningChain: [
-          'Step 1: Age-expected communication milestones reviewed for ' + age_months + ' months.',
-          'Step 2: Observations compared to ASQ-3 norms; no immediate referral criteria met.',
-        ],
-        evidence: [],
-        recommendations: ['FOLLOWUP: Repeat ASQ-3 in 30 days'],
-        calibrationMetadata: { platt_scale: 0.92, dataset: 'asq3_n=5000' },
-      });
-    }
+    const result = await traceInference(
+      'medgemma.inference',
+      async () => {
+        if (apiKey) {
+          const out = await callHfTextGeneration(prompt, adapter.hf_model, apiKey);
+          return out.generated_text;
+        }
+        return JSON.stringify({
+          riskLevel: 'monitor',
+          confidence: 0.72,
+          summary: 'Developmental observations suggest follow-up screening in 30 days.',
+          parentSummary: 'We suggest a follow-up check in about a month to see how things are going.',
+          reasoningChain: [
+            'Step 1: Age-expected communication milestones reviewed for ' + age_months + ' months.',
+            'Step 2: Observations compared to ASQ-3 norms; no immediate referral criteria met.',
+          ],
+          evidence: [],
+          recommendations: ['FOLLOWUP: Repeat ASQ-3 in 30 days'],
+          calibrationMetadata: { platt_scale: 0.92, dataset: 'asq3_n=5000' },
+        });
+      },
+      { adapter_id: adapter.id, domain: domainVal }
+    );
+    generated_text = result;
 
     const jsonStr = extractJsonFromModelOutput(generated_text);
     if (!jsonStr) {
+      await finishWandBTrace(trace);
       return new Response(
         JSON.stringify({ success: false, error: 'No valid JSON in model output' }),
         { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -151,11 +174,28 @@ export async function inferEdgeHandler(request: Request): Promise<Response> {
     const parsed = JSON.parse(jsonStr) as unknown;
     const report = parseAndValidateReport(parsed);
     if (!report) {
+      await finishWandBTrace(trace);
       return new Response(
         JSON.stringify({ success: false, error: 'Invalid MedGemma JSON schema' }),
         { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    const latencyMs = performance.now() - startTime;
+    const input_tokens = Math.ceil(prompt.length / 4);
+    const output_tokens = Math.ceil(generated_text.length / 4);
+
+    await logInferenceTrace(trace, {
+      latency_ms: latencyMs,
+      input_tokens,
+      output_tokens,
+      risk_level: report.riskLevel,
+      confidence: report.confidence,
+      safety_score: 1,
+    });
+    await finishWandBTrace(trace);
+
+    recordInference(adapter.id, report.riskLevel, domainVal, latencyMs);
 
     const body: EdgeInferResponse = { success: true, report, adapter };
     return new Response(JSON.stringify(body), {

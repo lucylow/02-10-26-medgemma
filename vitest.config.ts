@@ -11,6 +11,11 @@ export default defineConfig({
     include: ["src/**/*.{test,spec}.{ts,tsx}"],
   },
   resolve: {
-    alias: { "@": path.resolve(__dirname, "./src") },
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+      "prom-client": path.resolve(__dirname, "./src/test/stubs/prom-client.ts"),
+      "@opentelemetry/api": path.resolve(__dirname, "./src/test/stubs/opentelemetry-api.ts"),
+      "@wandb/sdk": path.resolve(__dirname, "./src/test/stubs/wandb-sdk.ts"),
+    },
   },
 });
