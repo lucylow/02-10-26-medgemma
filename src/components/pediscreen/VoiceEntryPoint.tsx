@@ -51,10 +51,13 @@ export function VoiceEntryPoint({
           />
           <div className="text-center space-y-2">
             <h3 className="text-lg font-bold text-sky-900">
-              Speak Your Observations
+              Voice entry (assistant-style)
             </h3>
             <p className="text-sm text-slate-600">
-              &quot;My 24-month-old says 10 words and ignores their name&quot;
+              Say something like: &quot;My 24-month-old says 10 words and ignores their name&quot; and we&apos;ll route it into the PediScreen agent pipeline.
+            </p>
+            <p className="text-xs text-slate-500 max-w-xs">
+              In production, Siri / Google Assistant run this pipeline on-device and send only de-identified scores into PediScreen. This web demo is for non-PHI testing.
             </p>
           </div>
 
@@ -68,7 +71,7 @@ export function VoiceEntryPoint({
           ) : (
             <div className="space-y-3 w-full max-w-sm">
               <p className="text-xs text-slate-500 text-center">
-                Add VITE_ASSEMBLYAI_API_KEY for voice input. Or use text below.
+                For production, connect via Siri / Google Assistant on the device. In this browser demo, you can trigger the pipeline using sample text.
               </p>
               <Button
                 variant="outline"

@@ -3,9 +3,20 @@
  */
 import React from "react";
 import { motion } from "framer-motion";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ConnectWalletButton, ScreeningResultBlockchain } from "@/components/blockchain";
+import {
+  AccessibleChainSelector,
+  ConnectWalletButton,
+  ScreeningResultBlockchain,
+  OracleVerificationCard,
+} from "@/components/blockchain";
 import { Wallet, FileCheck, Shield, ImageIcon, Coins } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -18,11 +29,18 @@ const BlockchainPage = () => {
         transition={{ duration: 0.4 }}
       >
         <div className="mb-10 flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">Blockchain & Web3</h1>
+          <div className="space-y-2">
+            <h1 className="text-3xl font-bold">Blockchain & Web3</h1>
             <p className="text-muted-foreground text-lg">
-              HIPAA-aligned screening records (on-chain hashes), screening NFTs, and USDC micropayments on Polygon.
+              HIPAA-aligned screening records (on-chain hashes), screening NFTs, and
+              USDC micropayments on Polygon.
             </p>
+            <div className="flex flex-wrap items-center gap-3 mt-1">
+              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Active network
+              </span>
+              <AccessibleChainSelector />
+            </div>
           </div>
           <ConnectWalletButton />
         </div>
@@ -66,7 +84,7 @@ const BlockchainPage = () => {
           </Card>
         </div>
 
-        <Card className="border shadow-sm">
+          <Card className="border shadow-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Shield className="w-5 h-5" />
@@ -76,12 +94,15 @@ const BlockchainPage = () => {
               After a screening, you can attach blockchain verification (hash/NFT). Shown on results when configured.
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <ScreeningResultBlockchain
               screeningId="demo"
               aiReportHash="0x0000000000000000000000000000000000000000000000000000000000000000"
               onMinted={() => {}}
             />
+            {/* Demo oracle card listening to on-chain PediScreenOracle events.
+               In production, pass the real on-chain screeningId (uint256) returned by the contract. */}
+            <OracleVerificationCard screeningId={1} />
           </CardContent>
         </Card>
 

@@ -79,10 +79,13 @@ export default function VoiceInputScreen() {
         className="flex flex-col items-center justify-center space-y-6"
       >
         <h2 className="text-2xl font-bold text-foreground text-center">
-          Voice Screening
+          Voice Screening (Demo)
         </h2>
         <p className="text-muted-foreground text-center text-sm">
-          Speak naturally — when confidence is high, we'll auto-route to the AI pipeline
+          This screen simulates the on-device Siri / Google Assistant pipeline without capturing real audio or sending speech to the cloud.
+        </p>
+        <p className="text-muted-foreground text-center text-xs max-w-sm">
+          In production, PediScreen listens through the phone&apos;s virtual assistant with a 15s rolling buffer and on-device feature extraction, then only shares compact scores with the PediScreen agents.
         </p>
 
         <Button
