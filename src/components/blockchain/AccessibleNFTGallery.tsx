@@ -44,14 +44,12 @@ export const AccessibleNFTGallery: React.FC<AccessibleNFTGalleryProps> = ({
       </div>
 
       <ul
-        role="list"
         aria-label={`${nfts.length} developmental screening certificates`}
         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
       >
         {nfts.map((nft, index) => (
           <li
             key={nft.tokenId}
-            tabIndex={0}
             className="group"
             aria-label={`Certificate ${index + 1} of ${nfts.length}, ${
               nft.riskLevel

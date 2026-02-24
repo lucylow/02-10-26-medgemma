@@ -9,8 +9,9 @@ import { PEDISCREEN_ORACLE_ADDRESS } from "@/config/blockchain";
 // Support both ethers v5 (Web3Provider) and v6 (BrowserProvider) for Lovable/ESM builds.
 // Use computed key to avoid Rollup requiring BrowserProvider from ethers ESM bundle.
 const BROWSER_PROVIDER_KEY = "Browser" + "Provider";
+type EthersModule = typeof ethers & Record<string, unknown> & { providers?: { Web3Provider?: new (p: unknown) => ethers.Provider } };
 const getBrowserProvider = (): new (p: unknown) => ethers.Provider =>
-  (ethers as any)[BROWSER_PROVIDER_KEY] ?? (ethers as any).providers?.["Web3Provider"];
+  (ethers as EthersModule)[BROWSER_PROVIDER_KEY] ?? (ethers as EthersModule).providers?.Web3Provider;
 
 const ORACLE_ABI = [
   // Screening record storage

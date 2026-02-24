@@ -174,9 +174,7 @@ export function useAgentOrchestrator(initialInput = '', initialAge = 24) {
         if (firstAgent) {
           agentState.setAgentError(firstAgent, message);
         }
-        toast.error('Screening failed', {
-          description: message || 'Something went wrong. Please try again.',
-        });
+        // AgentContext (startPipeline) shows toast when orchestrate throws
         throw { message, code, source: 'pipeline' as const } satisfies OrchestrateError;
       }
     },

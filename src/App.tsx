@@ -65,6 +65,7 @@ import ClinicianReviewWithCollab from "./pages/ClinicianReviewWithCollab";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { ThemeProvider } from "./theme";
 import { AccessiblePediScreenProvider } from "./components/a11y/AccessiblePediScreenProvider";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 const queryClient = new QueryClient();
 
@@ -122,7 +123,10 @@ const appRoutes = createRoutesFromElements(
   </>
 );
 
+// Use BASE_URL (from Vite base) so client-side routing works when deployed under a subpath (e.g. Lovable)
+const routerBasename = (import.meta.env.BASE_URL || "/").replace(/\/$/, "") || "/";
 const defaultRouter = createBrowserRouter(appRoutes, {
+  basename: routerBasename,
   future: { v7_startTransition: true },
 });
 
@@ -168,23 +172,25 @@ const App = ({ router: customRouter }: AppProps = {}) => {
   }, []);
 
   return (
-    <ThemeProvider>
-      <QueryClientProvider client={queryClient}>
-        <SupabaseAuthProvider>
-          <TooltipProvider>
-            <AgentProvider>
-              <ScreeningProvider>
-                <AccessiblePediScreenProvider>
-                  <Toaster />
-                  <Sonner />
-                  <RouterProvider router={router} />
-                </AccessiblePediScreenProvider>
-              </ScreeningProvider>
-            </AgentProvider>
-          </TooltipProvider>
-        </SupabaseAuthProvider>
-      </QueryClientProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <QueryClientProvider client={queryClient}>
+          <SupabaseAuthProvider>
+            <TooltipProvider>
+              <AgentProvider>
+                <ScreeningProvider>
+                  <AccessiblePediScreenProvider>
+                    <Toaster />
+                    <Sonner />
+                    <RouterProvider router={router} />
+                  </AccessiblePediScreenProvider>
+                </ScreeningProvider>
+              </AgentProvider>
+            </TooltipProvider>
+          </SupabaseAuthProvider>
+        </QueryClientProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 };
 

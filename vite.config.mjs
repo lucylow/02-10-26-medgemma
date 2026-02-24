@@ -19,6 +19,8 @@ function getLovableTagger(mode) {
 
 export default defineConfig(({ mode }) => ({
   root: ".",
+  // Lovable deploys from repo root; base is "/" unless host uses a subpath
+  base: process.env.VITE_BASE_URL || "/",
   server: {
     host: "::",
     port: 8080,
@@ -31,5 +33,7 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     outDir: "dist",
+    chunkSizeWarningLimit: 1500,
+    sourcemap: false,
   },
 }));

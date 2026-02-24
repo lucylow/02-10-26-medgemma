@@ -13,7 +13,7 @@ type BlockchainHints = {
 
 type Props = {
   screeningId: string;
-  report: any;
+  report: Record<string, unknown>;
   blockchainHints?: BlockchainHints;
   className?: string;
 };
@@ -48,8 +48,8 @@ export const BlockchainAnchorCard: React.FC<Props> = ({
     try {
       setError(null);
       await connect();
-    } catch (e: any) {
-      const msg = e?.message || "Failed to connect wallet";
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Failed to connect wallet";
       setError(msg);
       toast.error("Wallet connection failed", { description: msg });
     }
@@ -57,7 +57,9 @@ export const BlockchainAnchorCard: React.FC<Props> = ({
 
   const handleAnchor = async () => {
     if (!screeningIdHash || !reportHash) {
-      setError("Missing blockchain hashes from backend.");
+      const msg = "Missing blockchain hashes from backend.";
+      setError(msg);
+      toast.error("Cannot anchor", { description: msg });
       return;
     }
     try {
@@ -67,17 +69,18 @@ export const BlockchainAnchorCard: React.FC<Props> = ({
       const receipt = await recordScreening(screeningIdHash, reportHash);
       setTxHash(String(receipt?.hash || receipt?.transactionHash || ""));
       setStatus("success");
-    } catch (e: any) {
-      // eslint-disable-next-line no-console
+    } catch (e: unknown) {
       console.error(e);
-      setError(e?.message || "Failed to record screening on-chain.");
+      setError(e instanceof Error ? e.message : "Failed to record screening on-chain.");
       setStatus("error");
     }
   };
 
   const handleVerify = async () => {
     if (!screeningIdHash || !reportHash) {
-      setError("Missing hashes to verify.");
+      const msg = "Missing hashes to verify.";
+      setError(msg);
+      toast.error("Cannot verify", { description: msg });
       return;
     }
     try {
@@ -90,8 +93,8 @@ export const BlockchainAnchorCard: React.FC<Props> = ({
       const match =
         onChain.reportHash.toLowerCase() === reportHash.toLowerCase();
       setVerified(match);
-    } catch (e: any) {
-      const msg = e?.message || "Verification failed.";
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Verification failed.";
       setError(msg);
       setVerified(null);
       toast.error("Verification failed", { description: msg });

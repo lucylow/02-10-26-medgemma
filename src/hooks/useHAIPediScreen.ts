@@ -18,8 +18,9 @@ import type {
   ReportResult,
 } from "@/types/hai";
 
-const HAI_INFER_URL = typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_HAI_INFER_URL != null
-  ? (import.meta as any).env.VITE_HAI_INFER_URL
+type ImportMetaEnv = { env?: { VITE_HAI_INFER_URL?: string } };
+const HAI_INFER_URL = typeof import.meta !== "undefined" && (import.meta as ImportMetaEnv).env?.VITE_HAI_INFER_URL != null
+  ? (import.meta as ImportMetaEnv).env!.VITE_HAI_INFER_URL
   : "";
 
 async function runHAIModel<T>(task: string, payload: unknown): Promise<T> {

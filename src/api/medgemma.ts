@@ -309,6 +309,30 @@ export async function getReport(
 }
 
 /**
+ * Patch a report draft (clinician edits). Uses Bearer token or x-api-key.
+ */
+export async function patchReport(
+  reportId: string,
+  patch: { clinical_summary?: string; technical_summary?: string; recommendations?: string[] },
+  authToken?: string,
+  apiKey?: string
+): Promise<{ draft_json?: ReportDraft; status: string }> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (authToken) headers["Authorization"] = `Bearer ${authToken}`;
+  if (apiKey) headers["x-api-key"] = apiKey;
+  const res = await fetch(`${API_BASE}/reports/${reportId}/patch`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(patch),
+  });
+  if (!res.ok) {
+    const { message, code } = await parseErrorResponse(res);
+    throw new MedGemmaApiError(message, code, res.status);
+  }
+  return res.json();
+}
+
+/**
  * Generate a draft report from a screening.
  */
 export async function generateReportFromScreening(

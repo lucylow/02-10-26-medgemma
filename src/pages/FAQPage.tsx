@@ -36,7 +36,7 @@ const faqItems = [
     a: "When possible, screenings can be saved locally and synced when you're back online. The interactive demo can run with a smart mock when the backend is unavailable.",
   },
   {
-    q: "How do I interpret "risk" or "monitor"?",
+    q: "How do I interpret \"risk\" or \"monitor\"?",
     a: "Risk levels (e.g. on track, monitor, discuss/refer) are screening signals, not diagnoses. They help prioritize which children may benefit from further evaluation or follow-up. A clinician should confirm any concerns.",
   },
 ];
