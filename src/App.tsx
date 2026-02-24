@@ -77,8 +77,6 @@ import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { ThemeProvider } from "./theme";
 import { ThemeProvider as ClinicalTokensProvider } from "./providers/ThemeProvider";
 import { AccessiblePediScreenProvider } from "./components/a11y/AccessiblePediScreenProvider";
-import { WalletHeader } from "./components/blockchain";
-import PatientContextBar from "./components/layout/patient-context-bar";
 import GlobalSearch from "./components/layout/global-search";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import IoTDashboardPage from "./pages/IoTDashboard";
@@ -267,14 +265,6 @@ const App = ({ router: customRouter }: AppProps = {}) => {
     return () => window.removeEventListener("online", handleOnline);
   }, []);
 
-  const currentPatient = {
-    id: "emma-001",
-    name: "Emma Rodriguez",
-    ageMonths: 24,
-    status: "active" as const,
-    riskLevel: "MEDIUM" as const,
-    lastScreeningAt: new Date().toISOString(),
-  };
 
   return (
     <ErrorBoundary>
@@ -287,8 +277,6 @@ const App = ({ router: customRouter }: AppProps = {}) => {
                   <ScreeningProvider>
                     <AccessiblePediScreenProvider>
                       <IoTProvider>
-                        <WalletHeader />
-                        <PatientContextBar patient={currentPatient} />
                         <Toaster />
                         <Sonner />
                         <RouterProvider router={router} />
