@@ -13,6 +13,7 @@ import ResultsScreen from "./pages/ResultsScreen";
 import ScreeningHistory from "./pages/ScreeningHistory";
 import LearnMore from "./pages/LearnMore";
 import Profiles from "./pages/Profiles";
+import ChildProfileDetail from "./pages/pediscreen/ChildProfileDetail";
 import Settings from "./pages/Settings";
 import Education from "./pages/Education";
 import TechnicalWriter from "./pages/TechnicalWriter";
@@ -35,6 +36,7 @@ const App = () => (
               <Route path="results" element={<ResultsScreen />} />
               <Route path="history" element={<ScreeningHistory />} />
               <Route path="profiles" element={<Profiles />} />
+              <Route path="profiles/:childId" element={<ChildProfileDetail />} />
               <Route path="settings" element={<Settings />} />
               <Route path="education" element={<Education />} />
               <Route path="learn-more" element={<LearnMore />} />

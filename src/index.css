@@ -1,118 +1,113 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Poppins:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Design system: colors HSL, typography, shadows. */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 30 25% 99%;
+    --foreground: 220 20% 14%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 220 20% 14%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 220 20% 14%;
 
-    --primary: 211 70% 28%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 212 65% 32%;
+    --primary-foreground: 210 30% 98%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 210 30% 96%;
+    --secondary-foreground: 220 20% 18%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 214 25% 95%;
+    --muted-foreground: 218 12% 42%;
 
-    --accent: 199 89% 48%;
+    --accent: 188 78% 44%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
 
-    --success: 142 71% 45%;
+    --success: 152 58% 42%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 43 96% 50%;
-    --warning-foreground: 222.2 84% 4.9%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 220 20% 12%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 211 70% 38%;
+    --border: 214 22% 90%;
+    --input: 214 22% 90%;
+    --ring: 212 65% 42%;
 
-    --radius: 0.5rem;
+    --radius: 0.625rem;
 
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
+    --sidebar-background: 30 20% 98%;
+    --sidebar-foreground: 220 12% 28%;
+    --sidebar-primary: 220 18% 12%;
     --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 214 20% 94%;
+    --sidebar-accent-foreground: 220 18% 14%;
+    --sidebar-border: 214 18% 90%;
+    --sidebar-ring: 212 65% 42%;
 
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
-
-    /* Lovable landing: gradients & shadows */
-    --gradient-hero: linear-gradient(135deg, hsl(210 100% 97%) 0%, hsl(199 95% 93%) 100%);
-    --shadow-card: 0 5px 20px rgba(0, 0, 0, 0.08);
-    --shadow-card-hover: 0 15px 30px rgba(0, 0, 0, 0.12);
-    --shadow-button: 0 5px 15px rgba(26, 115, 232, 0.3);
+    --gradient-hero: linear-gradient(145deg, hsl(210 50% 97%) 0%, hsl(200 55% 94%) 50%, hsl(188 45% 95%) 100%);
+    --gradient-hero-accent: linear-gradient(135deg, hsl(var(--primary) / 0.06) 0%, hsl(var(--accent) / 0.08) 100%);
+    --shadow-card: 0 4px 24px -4px rgba(0, 0, 0, 0.06), 0 2px 8px -2px rgba(0, 0, 0, 0.04);
+    --shadow-card-hover: 0 20px 40px -8px rgba(0, 0, 0, 0.1), 0 8px 16px -4px rgba(0, 0, 0, 0.06);
+    --shadow-button: 0 4px 14px -2px hsl(212 65% 32% / 0.35);
+    --shadow-header: 0 1px 0 0 hsl(var(--border)), 0 2px 8px -2px rgba(0, 0, 0, 0.04);
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 222 28% 8%;
+    --foreground: 210 25% 96%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 222 26% 11%;
+    --card-foreground: 210 25% 96%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 222 26% 11%;
+    --popover-foreground: 210 25% 96%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 211 70% 28%;
+    --primary: 210 35% 94%;
+    --primary-foreground: 212 65% 28%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 218 22% 18%;
+    --secondary-foreground: 210 25% 96%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 218 22% 18%;
+    --muted-foreground: 215 18% 58%;
 
-    --accent: 199 89% 48%;
+    --accent: 188 60% 45%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 55% 38%;
+    --destructive-foreground: 0 0% 98%;
 
-    --success: 142 71% 35%;
+    --success: 152 45% 35%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 43 96% 40%;
+    --warning: 38 80% 45%;
     --warning-foreground: 0 0% 100%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 199 89% 55%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --border: 218 22% 20%;
+    --input: 218 22% 20%;
+    --ring: 188 60% 50%;
+    --sidebar-background: 222 28% 8%;
+    --sidebar-foreground: 210 20% 92%;
+    --sidebar-primary: 212 65% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 218 22% 16%;
+    --sidebar-accent-foreground: 210 20% 92%;
+    --sidebar-border: 218 20% 18%;
+    --sidebar-ring: 188 60% 50%;
 
-    --gradient-hero: linear-gradient(135deg, hsl(210 11% 8%) 0%, hsl(217 32% 15%) 100%);
+    --gradient-hero: linear-gradient(145deg, hsl(222 28% 8%) 0%, hsl(218 30% 14%) 100%);
+    --shadow-card: 0 4px 24px -4px rgba(0, 0, 0, 0.25);
+    --shadow-card-hover: 0 20px 40px -8px rgba(0, 0, 0, 0.35);
+    --shadow-header: 0 1px 0 0 hsl(var(--border));
   }
 }
 
@@ -121,7 +116,6 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
-  /* Accessible focus ring for keyboard users */
   :focus-visible {
     outline: 2px solid hsl(var(--ring));
     outline-offset: 2px;
@@ -133,10 +127,10 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'DM Sans', system-ui, sans-serif;
   }
 
-  /* Smooth link focus without overriding component focus-visible */
   a:focus-visible {
     outline: 2px solid hsl(var(--ring));
     outline-offset: 2px;
@@ -174,7 +168,6 @@ All colors MUST be HSL.
     box-shadow: var(--shadow-button);
   }
 
-  /* Skeleton pulse for loading states */
   .skeleton-pulse {
     @apply animate-pulse bg-muted rounded;
   }

@@ -1,36 +1,139 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, User, Calendar, History, ArrowRight, Baby, Edit2, Trash2, Heart } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
+
+type ChildProfile = {
+  id: string;
+  name: string;
+  age: string;
+  birthDate: string;
+  lastScreening: string;
+  status: string;
+  progress: number;
+  initials: string;
+  color: string;
+};
+
+const BADGE_COLORS = ['bg-blue-100 text-blue-600', 'bg-amber-100 text-amber-600', 'bg-emerald-100 text-emerald-600', 'bg-violet-100 text-violet-600', 'bg-rose-100 text-rose-600'] as const;
+
+function getInitials(name: string): string {
+  return name
+    .trim()
+    .split(/\s+/)
+    .map((s) => s[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+}
+
+function formatAgeFromBirthDate(birthDateStr: string): string {
+  const birth = new Date(birthDateStr);
+  const now = new Date();
+  const months = (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
+  if (months < 12) return `${months} months`;
+  const years = Math.floor(months / 12);
+  const remainder = months % 12;
+  return remainder === 0 ? `${years} ${years === 1 ? 'year' : 'years'}` : `${years}y ${remainder}mo`;
+}
+
+function formatDisplayDate(dateStr: string): string {
+  const d = new Date(dateStr);
+  return isNaN(d.getTime()) ? dateStr : d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+}
+
+const DEFAULT_CHILDREN: ChildProfile[] = [
+  {
+    id: '1',
+    name: 'Maya Johnson',
+    age: '18 months',
+    birthDate: 'August 12, 2024',
+    lastScreening: 'Jan 15, 2026',
+    status: 'On track',
+    progress: 85,
+    initials: 'MJ',
+    color: 'bg-blue-100 text-blue-600',
+  },
+  {
+    id: '2',
+    name: 'Leo Smith',
+    age: '36 months',
+    birthDate: 'Feb 5, 2023',
+    lastScreening: 'Dec 10, 2025',
+    status: 'Needs follow-up',
+    progress: 60,
+    initials: 'LS',
+    color: 'bg-amber-100 text-amber-600',
+  },
+];
 
 const Profiles = () => {
-  const children = [
-    {
-      id: '1',
-      name: 'Maya Johnson',
-      age: '18 months',
-      birthDate: 'August 12, 2024',
-      lastScreening: 'Jan 15, 2026',
-      status: 'On track',
-      progress: 85,
-      initials: 'MJ',
-      color: 'bg-blue-100 text-blue-600',
-    },
-    {
-      id: '2',
-      name: 'Leo Smith',
-      age: '36 months',
-      birthDate: 'Feb 5, 2023',
-      lastScreening: 'Dec 10, 2025',
-      status: 'Needs follow-up',
-      progress: 60,
-      initials: 'LS',
-      color: 'bg-amber-100 text-amber-600',
+  const navigate = useNavigate();
+  const [children, setChildren] = React.useState<ChildProfile[]>(DEFAULT_CHILDREN);
+  const [addOpen, setAddOpen] = React.useState(false);
+  const [newName, setNewName] = React.useState('');
+  const [newBirthDate, setNewBirthDate] = React.useState('');
+
+  const handleOpenAdd = () => {
+    setNewName('');
+    setNewBirthDate('');
+    setAddOpen(true);
+  };
+
+  const handleAddProfile = (e: React.FormEvent) => {
+    e.preventDefault();
+    const name = newName.trim();
+    if (!name) {
+      toast.error('Please enter the child\'s name.');
+      return;
     }
-  ];
+    const birthDate = newBirthDate.trim();
+    if (!birthDate) {
+      toast.error('Please enter the birth date.');
+      return;
+    }
+    const date = new Date(birthDate);
+    if (isNaN(date.getTime())) {
+      toast.error('Please enter a valid birth date.');
+      return;
+    }
+    const id = String(Date.now());
+    const colorIndex = children.length % BADGE_COLORS.length;
+    const profile: ChildProfile = {
+      id,
+      name,
+      age: formatAgeFromBirthDate(birthDate),
+      birthDate: formatDisplayDate(birthDate),
+      lastScreening: 'No screening yet',
+      status: 'On track',
+      progress: 0,
+      initials: getInitials(name),
+      color: BADGE_COLORS[colorIndex],
+    };
+    setChildren((prev) => [...prev, profile]);
+    setAddOpen(false);
+    toast.success(`Profile for ${name} added.`);
+  };
+
+  const handleDelete = (id: string, name: string) => {
+    setChildren((prev) => prev.filter((c) => c.id !== id));
+    toast.success(`Profile for ${name} removed.`);
+  };
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
@@ -44,7 +147,7 @@ const Profiles = () => {
             <h1 className="text-3xl font-bold">Child Profiles</h1>
             <p className="text-muted-foreground">Manage and monitor developmental progress for each child.</p>
           </div>
-          <Button className="rounded-xl gap-2 shadow-lg">
+          <Button className="rounded-xl gap-2 shadow-lg" onClick={handleOpenAdd}>
             <Plus className="w-4 h-4" /> Add New Profile
           </Button>
         </div>
@@ -56,6 +159,8 @@ const Profiles = () => {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: index * 0.1 }}
+              className="cursor-pointer"
+              onClick={() => navigate(`/pediscreen/profiles/${child.id}`, { state: { child } })}
             >
               <Card className="overflow-hidden hover:shadow-xl transition-shadow border-none shadow-md">
                 <CardHeader className="pb-4">
@@ -86,16 +191,27 @@ const Profiles = () => {
                     <span>Last screening: {child.lastScreening}</span>
                   </div>
                 </CardContent>
-                <CardFooter className="bg-muted/10 border-t p-3 flex justify-between">
+                <CardFooter className="bg-muted/10 border-t p-3 flex justify-between" onClick={(e) => e.stopPropagation()}>
                   <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground"
+                      onClick={() => navigate(`/pediscreen/profiles/${child.id}`, { state: { child } })}
+                      aria-label="Edit profile"
+                    >
                       <Edit2 className="w-4 h-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/70">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/70" onClick={() => handleDelete(child.id, child.name)}>
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
-                  <Button variant="outline" size="sm" className="gap-2 rounded-lg">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 rounded-lg"
+                    onClick={() => navigate(`/pediscreen/profiles/${child.id}`, { state: { child } })}
+                  >
                     View Dashboard <ArrowRight className="w-3 h-3" />
                   </Button>
                 </CardFooter>
@@ -109,7 +225,10 @@ const Profiles = () => {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: children.length * 0.1 }}
           >
-            <Card className="border-dashed border-2 bg-muted/5 flex flex-col items-center justify-center p-8 h-full min-h-[300px] cursor-pointer hover:bg-muted/10 transition-colors">
+            <Card
+              className="border-dashed border-2 bg-muted/5 flex flex-col items-center justify-center p-8 h-full min-h-[300px] cursor-pointer hover:bg-muted/10 transition-colors"
+              onClick={handleOpenAdd}
+            >
               <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
                 <Plus className="w-8 h-8 text-muted-foreground" />
               </div>
@@ -136,6 +255,46 @@ const Profiles = () => {
             </CardContent>
           </Card>
         </div>
+
+        <Dialog open={addOpen} onOpenChange={setAddOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Add new profile</DialogTitle>
+              <DialogDescription>
+                Add a child to track their developmental milestones. You can run screenings from their profile later.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleAddProfile} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="profile-name">Child's name</Label>
+                <Input
+                  id="profile-name"
+                  placeholder="e.g. Maya Johnson"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  autoFocus
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="profile-birthdate">Birth date</Label>
+                <Input
+                  id="profile-birthdate"
+                  type="date"
+                  value={newBirthDate}
+                  onChange={(e) => setNewBirthDate(e.target.value)}
+                />
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" className="gap-2">
+                  <Plus className="w-4 h-4" /> Add profile
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </motion.div>
     </div>
   );

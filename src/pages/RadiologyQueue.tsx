@@ -48,6 +48,7 @@ export default function RadiologyQueue() {
   const [items, setItems] = useState<RadiologyStudy[]>([]);
   const [benchmark, setBenchmark] = useState<RadiologyBenchmark | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [reviewing, setReviewing] = useState<string | null>(null);
   const [expandedExplain, setExpandedExplain] = useState<string | null>(null);
@@ -55,6 +56,7 @@ export default function RadiologyQueue() {
 
   const load = async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const [queueRes, benchRes] = await Promise.all([
         fetchRadiologyQueue(),
@@ -63,8 +65,11 @@ export default function RadiologyQueue() {
       setItems(queueRes.items || []);
       setBenchmark(benchRes);
     } catch (e) {
-      toast({ title: "Failed to load queue", description: String(e), variant: "destructive" });
+      const message = e instanceof Error ? e.message : String(e);
+      setLoadError(message);
       setItems([]);
+      setBenchmark(null);
+      toast({ title: "Failed to load queue", description: message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -192,6 +197,22 @@ export default function RadiologyQueue() {
       )}
 
       <div className="rounded-lg border bg-card overflow-hidden">
+        {loadError && (
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 py-3 bg-destructive/10 border-b text-sm">
+            <div>
+              <p className="font-medium text-destructive">Queue unavailable</p>
+              <p className="text-muted-foreground mt-0.5">
+                {loadError.includes("Backend unreachable") || loadError.includes("fetch")
+                  ? "The radiology backend may not be running or not configured for this deployment. Set VITE_PEDISCREEN_BACKEND_URL to your backend URL, or retry when the backend is available."
+                  : loadError}
+              </p>
+            </div>
+            <Button variant="outline" size="sm" onClick={load} disabled={loading}>
+              <RefreshCw className={cn("w-4 h-4 mr-2", loading && "animate-spin")} />
+              Retry
+            </Button>
+          </div>
+        )}
         <div className="flex items-center gap-2 px-4 py-2 bg-muted/50 border-b">
           <AlertCircle className="w-4 h-4 text-muted-foreground" />
           <span className="text-xs text-muted-foreground">
@@ -220,7 +241,7 @@ export default function RadiologyQueue() {
             ) : items.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                  No pending studies
+                  {loadError ? "Queue could not be loaded. Use Retry above or check backend configuration." : "No pending studies"}
                 </TableCell>
               </TableRow>
             ) : (

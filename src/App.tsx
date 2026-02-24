@@ -46,6 +46,7 @@ import AgentPipelineScreen from "./pages/AgentPipelineScreen";
 import AgentDashboard from "./pages/AgentDashboard";
 import VoiceInputScreen from "./pages/VoiceInputScreen";
 import PediScreenCaseDetail from "./pages/pediscreen/PediScreenCaseDetail";
+import ChildProfileDetail from "./pages/pediscreen/ChildProfileDetail";
 import Telemetry from "./pages/Telemetry";
 import SmartLaunch from "./pages/SmartLaunch";
 import SmartCallback from "./pages/SmartCallback";
@@ -81,6 +82,7 @@ const appRoutes = createRoutesFromElements(
       <Route path="results" element={<ResultsScreen />} />
       <Route path="history" element={<ScreeningHistory />} />
       <Route path="profiles" element={<Profiles />} />
+      <Route path="profiles/:childId" element={<ChildProfileDetail />} />
       <Route path="settings" element={<Settings />} />
       <Route path="education" element={<Education />} />
       <Route path="learn-more" element={<LearnMore />} />

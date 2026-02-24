@@ -19,6 +19,7 @@ const config: Config = {
     },
     extend: {
       fontFamily: {
+        sans: ["DM Sans", "system-ui", "sans-serif"],
         heading: ["Poppins", "sans-serif"],
       },
       colors: {

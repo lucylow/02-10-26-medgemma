@@ -55,15 +55,15 @@ export function ProblemSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="bg-card rounded-xl p-6 md:p-8 card-shadow hover:card-shadow-hover transition-all duration-300 hover:-translate-y-2"
+              className="bg-card rounded-2xl p-6 md:p-8 card-shadow hover:card-shadow-hover transition-all duration-300 hover:-translate-y-1 border border-border/60"
             >
-              <div className="w-14 h-14 rounded-xl bg-destructive/10 flex items-center justify-center mb-5">
+              <div className="w-14 h-14 rounded-2xl bg-destructive/10 flex items-center justify-center mb-5">
                 <problem.icon className="h-7 w-7 text-destructive" />
               </div>
               <h3 className="font-heading text-xl font-semibold mb-3">
                 {problem.title}
               </h3>
-              <p className="text-muted-foreground">{problem.description}</p>
+              <p className="text-muted-foreground leading-relaxed">{problem.description}</p>
             </motion.div>
           ))}
         </div>
@@ -73,7 +73,7 @@ export function ProblemSection() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5, delay: 0.3 }}
-          className="bg-muted rounded-2xl p-8 md:p-10"
+          className="bg-muted/80 rounded-2xl p-8 md:p-10 border border-border/50"
         >
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {stats.map((stat) => (

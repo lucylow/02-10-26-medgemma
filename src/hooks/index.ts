@@ -15,3 +15,6 @@ export {
 } from './useOfflineAgents';
 export { useAgentCache, type CachedCaseData } from './useAgentCache';
 export { useAgentOrchestrator } from './useAgentOrchestrator';
+export { usePediScreenWallet } from './usePediScreenWallet';
+export { useHealthChain } from './useHealthChain';
+export { useFedLearning } from './useFedLearning';

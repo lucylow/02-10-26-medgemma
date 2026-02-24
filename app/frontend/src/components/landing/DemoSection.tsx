@@ -13,10 +13,11 @@ import {
   AlertTriangle,
   Camera,
   Eye,
-  Brain,
   Heart,
   Info,
-  Sparkles,
+  ChevronRight,
+  Layers,
+  WifiOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -38,6 +39,13 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { toast } from "sonner";
+import {
+  DEMO_PRESETS,
+  type DemoPresetId,
+  MOCK_VISUAL_SAMPLES,
+  CHW_WORKFLOW_STEPS,
+} from "@/data/demoMockData";
+import type { ScreeningResult } from "@/services/screeningApi";
 
 const modelSteps = [
   { icon: Keyboard, label: "Text Input" },
@@ -72,18 +80,57 @@ const supportMessages = {
     title: "Your child is doing great! 🌟",
     message: "Development appears healthy. Keep doing what you're doing — your engagement matters!",
   },
+  on_track: {
+    title: "Your child is doing great! 🌟",
+    message: "Development appears healthy. Keep doing what you're doing — your engagement matters!",
+  },
+  monitor: {
+    title: "We're here to support you 💙",
+    message: "Some areas may benefit from a little extra attention. Early awareness means you can help more effectively.",
+  },
+  refer: {
+    title: "Support is available 💙",
+    message: "Professional evaluation can clarify next steps. Early intervention makes a difference.",
+  },
 };
+
+const domainOptions = [
+  { value: 'communication', label: 'Language & Communication' },
+  { value: 'gross_motor', label: 'Gross Motor Skills' },
+  { value: 'fine_motor', label: 'Fine Motor Skills' },
+  { value: 'social', label: 'Social & Emotional' },
+  { value: 'cognitive', label: 'Cognitive / Problem Solving' },
+];
 
 export function DemoSection() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [activeStep, setActiveStep] = useState(-1);
   const [age, setAge] = useState("24");
-  const [riskLevel, setRiskLevel] = useState<"low" | "medium">("medium");
+  const [domain, setDomain] = useState("communication");
+  const [riskLevel, setRiskLevel] = useState<"low" | "medium" | "on_track" | "monitor" | "refer">("monitor");
   const [confidence, setConfidence] = useState(0.78);
   const [observation, setObservation] = useState(
     "My 2-year-old says only about 10 words and doesn't seem to combine them. He points to things he wants but doesn't use words. He understands simple instructions like \"come here\" or \"give me the ball.\""
   );
+  const [selectedPresetId, setSelectedPresetId] = useState<DemoPresetId | "">("");
+  const [reportFromPreset, setReportFromPreset] = useState<ScreeningResult["report"] | null>(null);
+  const [chwStepIndex, setChwStepIndex] = useState(0);
+  const [visualSampleId, setVisualSampleId] = useState<string | null>(null);
+
+  const handlePresetChange = (value: string) => {
+    setSelectedPresetId(value as DemoPresetId | "");
+    setReportFromPreset(null);
+    setShowResults(false);
+    if (value && value !== "custom") {
+      const preset = DEMO_PRESETS.find((p) => p.id === value);
+      if (preset) {
+        setAge(preset.age);
+        setDomain(preset.domain);
+        setObservation(preset.observations);
+      }
+    }
+  };
 
   const handleUploadClick = () => {
     toast.info("In the full application, this would open your device camera or gallery to capture visual evidence. For this demo, visual analysis is simulated.", {
@@ -94,9 +141,9 @@ export function DemoSection() {
   const handleAnalyze = () => {
     setIsAnalyzing(true);
     setShowResults(false);
+    setReportFromPreset(null);
     setActiveStep(0);
 
-    // Animate through steps
     const stepInterval = setInterval(() => {
       setActiveStep((prev) => {
         if (prev >= modelSteps.length - 1) {
@@ -107,19 +154,28 @@ export function DemoSection() {
       });
     }, 350);
 
-    // Determine risk level and confidence based on input
-    const hasDelayIndicators = observation.toLowerCase().includes("only about 10 words") || 
-                               observation.toLowerCase().includes("doesn't combine");
-    const newRiskLevel = age === "24" && hasDelayIndicators ? "medium" : "low";
-    const newConfidence = hasDelayIndicators ? 0.82 : 0.91;
-    
+    const preset = selectedPresetId ? DEMO_PRESETS.find((p) => p.id === selectedPresetId) : null;
+    const delay = preset ? 1800 : 2000;
+
     setTimeout(() => {
       setIsAnalyzing(false);
       setShowResults(true);
-      setRiskLevel(newRiskLevel);
-      setConfidence(newConfidence);
       setActiveStep(-1);
-    }, 2000);
+
+      if (preset?.result?.report) {
+        setReportFromPreset(preset.result.report);
+        const r = preset.result.report;
+        setRiskLevel((r.riskLevel as "on_track" | "monitor" | "refer") || "monitor");
+        setConfidence(preset.result.confidence ?? 0.78);
+      } else {
+        const hasDelayIndicators = observation.toLowerCase().includes("only about 10 words") ||
+          observation.toLowerCase().includes("doesn't combine");
+        const newRiskLevel = age === "24" && hasDelayIndicators ? "medium" : "low";
+        const newConfidence = hasDelayIndicators ? 0.82 : 0.91;
+        setRiskLevel(newRiskLevel as "low" | "medium");
+        setConfidence(newConfidence);
+      }
+    }, delay);
   };
 
   // Confidence level indicator config
@@ -170,6 +226,23 @@ export function DemoSection() {
                   </h3>
 
                   <div className="space-y-2">
+                    <Label>Try a preset scenario</Label>
+                    <Select value={selectedPresetId || "custom"} onValueChange={handlePresetChange}>
+                      <SelectTrigger className="bg-background">
+                        <SelectValue placeholder="Write your own..." />
+                      </SelectTrigger>
+                      <SelectContent className="bg-card border border-border z-50">
+                        <SelectItem value="custom">Write your own...</SelectItem>
+                        {DEMO_PRESETS.map((p) => (
+                          <SelectItem key={p.id} value={p.id}>
+                            {p.label} — {p.description}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
                     <Label>Child's Age</Label>
                     <Select value={age} onValueChange={setAge}>
                       <SelectTrigger className="bg-background">
@@ -186,15 +259,16 @@ export function DemoSection() {
 
                   <div className="space-y-2">
                     <Label>Developmental Domain</Label>
-                    <Select defaultValue="language">
+                    <Select value={domain} onValueChange={setDomain}>
                       <SelectTrigger className="bg-background">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-card border border-border z-50">
-                        <SelectItem value="language">Language & Communication</SelectItem>
-                        <SelectItem value="motor">Motor Skills</SelectItem>
-                        <SelectItem value="social">Social & Emotional</SelectItem>
-                        <SelectItem value="cognitive">Cognitive Skills</SelectItem>
+                        {domainOptions.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -308,20 +382,26 @@ export function DemoSection() {
                     >
                       {/* Risk Indicator with Confidence */}
                       <div className={`rounded-xl p-4 ${
-                        riskLevel === "medium" ? "bg-warning/10" : "bg-success/10"
+                        (riskLevel === "medium" || riskLevel === "monitor") ? "bg-warning/10" : riskLevel === "refer" ? "bg-destructive/10" : "bg-success/10"
                       }`}>
                         <div className="flex items-start gap-3">
-                          {riskLevel === "medium" ? (
+                          {(riskLevel === "medium" || riskLevel === "monitor") ? (
                             <AlertTriangle className="h-6 w-6 text-warning shrink-0 mt-0.5" />
+                          ) : riskLevel === "refer" ? (
+                            <AlertTriangle className="h-6 w-6 text-destructive shrink-0 mt-0.5" />
                           ) : (
                             <CheckCircle className="h-6 w-6 text-success shrink-0 mt-0.5" />
                           )}
                           <div className="flex-1">
                             <h4 className="font-semibold text-foreground">
-                              {riskLevel === "medium" ? "Monitor - Some Concerns" : "On Track - Developing Well"}
+                              {riskLevel === "refer"
+                                ? "Refer - Professional evaluation recommended"
+                                : (riskLevel === "medium" || riskLevel === "monitor")
+                                  ? "Monitor - Some Concerns"
+                                  : "On Track - Developing Well"}
                             </h4>
                             <p className="text-sm text-muted-foreground mb-3">
-                              Based on analysis of developmental markers for {age}-month-old child
+                              {reportFromPreset?.riskRationale || `Based on analysis of developmental markers for ${age}-month-old child`}
                             </p>
                             
                             {/* Confidence Indicator */}
@@ -365,21 +445,23 @@ export function DemoSection() {
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: 0.2 }}
                         className={`rounded-xl p-4 border-2 ${
-                          riskLevel === "medium" 
-                            ? "bg-gradient-to-br from-amber-50 to-orange-50 border-amber-100" 
-                            : "bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-100"
+                          (riskLevel === "medium" || riskLevel === "monitor")
+                            ? "bg-gradient-to-br from-amber-50 to-orange-50 border-amber-100"
+                            : riskLevel === "refer"
+                              ? "bg-gradient-to-br from-rose-50 to-red-50 border-rose-100"
+                              : "bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-100"
                         }`}
                       >
                         <div className="flex items-start gap-3">
                           <Heart className={`h-5 w-5 shrink-0 mt-0.5 ${
-                            riskLevel === "medium" ? "text-amber-500" : "text-emerald-500"
+                            (riskLevel === "medium" || riskLevel === "monitor") ? "text-amber-500" : riskLevel === "refer" ? "text-rose-500" : "text-emerald-500"
                           }`} />
                           <div>
                             <h4 className="font-semibold text-foreground text-sm">
-                              {supportMessages[riskLevel].title}
+                              {(supportMessages as Record<string, { title: string; message: string }>)[riskLevel]?.title ?? supportMessages.medium.title}
                             </h4>
                             <p className="text-xs text-muted-foreground mt-1">
-                              {supportMessages[riskLevel].message}
+                              {(supportMessages as Record<string, { title: string; message: string }>)[riskLevel]?.message ?? supportMessages.medium.message}
                             </p>
                           </div>
                         </div>
@@ -397,10 +479,7 @@ export function DemoSection() {
                           </Badge>
                         </div>
                         <p className="text-sm text-muted-foreground">
-                          The reported language development for a 24-month-old shows potential 
-                          delays. While receptive language (understanding) appears within expected 
-                          range, expressive vocabulary is below the typical 50+ words expected at 
-                          this age.
+                          {reportFromPreset?.summary ?? `The reported language development for a 24-month-old shows potential delays. While receptive language (understanding) appears within expected range, expressive vocabulary is below the typical 50+ words expected at this age.`}
                         </p>
                       </div>
 
@@ -410,22 +489,20 @@ export function DemoSection() {
                           Key Developmental Markers Checked
                         </h4>
                         <ul className="space-y-2 text-sm text-muted-foreground">
-                          <li className="flex items-start gap-2">
-                            <CheckCircle className={`h-4 w-4 shrink-0 mt-0.5 ${riskLevel === "medium" ? "text-warning" : "text-success"}`} />
-                            Vocabulary size (~10 words, expected: 50+ at {age} months)
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <CheckCircle className={`h-4 w-4 shrink-0 mt-0.5 ${riskLevel === "medium" ? "text-warning" : "text-success"}`} />
-                            Word combinations ({riskLevel === "medium" ? "none" : "emerging"}, expected: emerging at 18-24 months)
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <CheckCircle className="h-4 w-4 text-success shrink-0 mt-0.5" />
-                            Following simple instructions (yes, expected: yes)
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <CheckCircle className="h-4 w-4 text-success shrink-0 mt-0.5" />
-                            Pointing to communicate (yes, expected: established)
-                          </li>
+                          {(reportFromPreset?.keyFindings && reportFromPreset.keyFindings.length > 0
+                            ? reportFromPreset.keyFindings
+                            : [
+                                `Vocabulary size (~10 words, expected: 50+ at ${age} months)`,
+                                `Word combinations (${(riskLevel === "medium" || riskLevel === "monitor") ? "none" : "emerging"}, expected: emerging at 18-24 months)`,
+                                "Following simple instructions (yes, expected: yes)",
+                                "Pointing to communicate (yes, expected: established)",
+                              ]
+                          ).map((item, idx) => (
+                            <li key={idx} className="flex items-start gap-2">
+                              <CheckCircle className={`h-4 w-4 shrink-0 mt-0.5 ${(riskLevel === "medium" || riskLevel === "monitor" || riskLevel === "refer") ? "text-warning" : "text-success"}`} />
+                              {item}
+                            </li>
+                          ))}
                         </ul>
                       </div>
 
@@ -435,16 +512,18 @@ export function DemoSection() {
                           Recommended Next Steps
                         </h4>
                         <ul className="space-y-2 text-sm text-muted-foreground">
-                          {recommendationsData[riskLevel].map((rec, idx) => (
-                            <motion.li 
-                              key={idx}
-                              initial={{ opacity: 0, x: -10 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ delay: idx * 0.1 }}
-                            >
-                              <strong>{rec.strong}</strong> {rec.text}
-                            </motion.li>
-                          ))}
+                          {reportFromPreset?.recommendations && reportFromPreset.recommendations.length > 0
+                            ? reportFromPreset.recommendations.map((item, idx) => (
+                                <motion.li key={idx} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.05 }}>
+                                  {item}
+                                </motion.li>
+                              ))
+                            : recommendationsData[(riskLevel === "medium" || riskLevel === "monitor") ? "medium" : "low"].map((rec, idx) => (
+                                <motion.li key={idx} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.1 }}>
+                                  <strong>{rec.strong}</strong> {rec.text}
+                                </motion.li>
+                              ))
+                          }
                         </ul>
                       </div>
 
@@ -460,25 +539,141 @@ export function DemoSection() {
           </TabsContent>
 
           <TabsContent value="visual">
-            <div className="bg-card rounded-2xl p-10 card-shadow text-center">
-              <h3 className="font-heading text-xl font-semibold mb-4">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-card rounded-2xl p-6 md:p-10 card-shadow"
+            >
+              <h3 className="font-heading text-xl font-semibold mb-2">
                 MedGemma Visual Analysis Demo
               </h3>
-              <p className="text-muted-foreground">
-                See how MedGemma's multimodal capabilities analyze visual developmental evidence.
+              <p className="text-muted-foreground mb-6">
+                Select a sample image type to see how MedGemma analyzes visual developmental evidence (block towers, drawings, play activities).
               </p>
-            </div>
+              <div className="grid gap-4 sm:grid-cols-3 mb-8">
+                {MOCK_VISUAL_SAMPLES.map((sample) => (
+                  <button
+                    key={sample.id}
+                    type="button"
+                    onClick={() => setVisualSampleId(visualSampleId === sample.id ? null : sample.id)}
+                    className={`rounded-xl border-2 p-4 text-left transition-all hover:border-primary/50 ${
+                      visualSampleId === sample.id ? "border-primary bg-primary/5" : "border-border bg-muted/30"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <Layers className="h-5 w-5 text-primary" />
+                      <span className="font-medium">{sample.label}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{sample.description}</p>
+                  </button>
+                ))}
+              </div>
+              <AnimatePresence mode="wait">
+                {visualSampleId ? (
+                  <motion.div
+                    key={visualSampleId}
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="rounded-xl bg-muted/50 p-6 space-y-4"
+                  >
+                    {(() => {
+                      const sample = MOCK_VISUAL_SAMPLES.find((s) => s.id === visualSampleId);
+                      if (!sample) return null;
+                      return (
+                        <>
+                          <h4 className="font-heading font-semibold flex items-center gap-2">
+                            <Image className="h-5 w-5" />
+                            MedGemma analysis
+                          </h4>
+                          <ul className="space-y-1 text-sm text-muted-foreground">
+                            {sample.findings.map((f, i) => (
+                              <li key={i} className="flex items-start gap-2">
+                                <CheckCircle className="h-4 w-4 text-success shrink-0 mt-0.5" />
+                                {f}
+                              </li>
+                            ))}
+                          </ul>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Badge variant={sample.riskLevel === "on_track" ? "default" : "secondary"}>
+                              {sample.riskLevel === "on_track" ? "On track" : sample.riskLevel}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              Confidence: {Math.round(sample.confidence * 100)}%
+                            </span>
+                          </div>
+                          <p className="text-sm">
+                            <strong>Recommendation:</strong> {sample.recommendation}
+                          </p>
+                        </>
+                      );
+                    })()}
+                  </motion.div>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    Click a sample above to see mock MedGemma visual analysis results.
+                  </p>
+                )}
+              </AnimatePresence>
+            </motion.div>
           </TabsContent>
 
           <TabsContent value="workflow">
-            <div className="bg-card rounded-2xl p-10 card-shadow text-center">
-              <h3 className="font-heading text-xl font-semibold mb-4">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-card rounded-2xl p-6 md:p-10 card-shadow"
+            >
+              <h3 className="font-heading text-xl font-semibold mb-2">
                 Community Health Worker Workflow
               </h3>
-              <p className="text-muted-foreground">
-                Explore how CHWs use PediScreen AI in field settings with limited connectivity.
+              <p className="text-muted-foreground mb-6">
+                Step through how CHWs use PediScreen AI in the field with limited connectivity. Click &quot;Next step&quot; to advance.
               </p>
-            </div>
+              <div className="space-y-4 max-w-2xl">
+                {CHW_WORKFLOW_STEPS.map((step, index) => (
+                  <motion.div
+                    key={step.id}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className={`flex gap-4 rounded-xl border-2 p-4 transition-colors ${
+                      index <= chwStepIndex ? "border-primary/30 bg-primary/5" : "border-border bg-muted/20"
+                    }`}
+                  >
+                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-bold ${
+                      index < chwStepIndex ? "bg-primary text-primary-foreground" : index === chwStepIndex ? "bg-primary/80 text-primary-foreground" : "bg-muted text-muted-foreground"
+                    }`}>
+                      {index < chwStepIndex ? <CheckCircle className="h-5 w-5" /> : step.id}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold">{step.title}</h4>
+                      <p className="text-sm text-muted-foreground mt-1">{step.description}</p>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+              <div className="mt-6 flex items-center gap-2">
+                <Button
+                  onClick={() => setChwStepIndex((i) => Math.min(i + 1, CHW_WORKFLOW_STEPS.length - 1))}
+                  disabled={chwStepIndex >= CHW_WORKFLOW_STEPS.length - 1}
+                  className="gap-2"
+                >
+                  Next step
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" onClick={() => setChwStepIndex(0)}>
+                  Reset
+                </Button>
+                <span className="text-sm text-muted-foreground ml-2">
+                  Step {chwStepIndex + 1} of {CHW_WORKFLOW_STEPS.length}
+                </span>
+              </div>
+              <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground p-3 bg-muted/30 rounded-lg">
+                <WifiOff className="h-4 w-4" />
+                <span>Offline-first: screenings are stored locally and sync when the device is back online.</span>
+              </div>
+            </motion.div>
           </TabsContent>
         </Tabs>
       </div>

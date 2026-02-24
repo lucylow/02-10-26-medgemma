@@ -99,7 +99,7 @@ const PediScreenLayout = () => {
   const breadcrumbs = getBreadcrumbs(location.pathname);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/5 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-background via-primary/[0.03] to-accent/[0.04] flex flex-col">
       {/* Header */}
       <header className="bg-gradient-to-r from-primary to-primary/90 text-primary-foreground py-3 px-4 shadow-lg sticky top-0 z-50">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
@@ -111,7 +111,7 @@ const PediScreenLayout = () => {
                     <Menu className="w-5 h-5" />
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="left" className="w-72 p-0 border-r-0">
+                <SheetContent side="left" className="w-72 p-0 border-r-0 rounded-r-2xl">
                   <div className="flex items-center gap-3 p-5 bg-gradient-to-r from-primary to-primary/90 text-primary-foreground">
                     <div className="w-10 h-10 rounded-xl bg-primary-foreground/20 flex items-center justify-center">
                       <Baby className="w-6 h-6" />
@@ -135,7 +135,7 @@ const PediScreenLayout = () => {
                 </SheetContent>
               </Sheet>
             )}
-            <Link to="/pediscreen" className="flex items-center gap-3">
+            <Link to="/pediscreen" className="flex items-center gap-3 rounded-xl p-1 -ml-1 hover:bg-primary-foreground/10 transition-colors">
               <div className="w-9 h-9 rounded-xl bg-primary-foreground/20 flex items-center justify-center">
                 <Baby className="w-5 h-5" />
               </div>
@@ -155,7 +155,7 @@ const PediScreenLayout = () => {
       </header>
 
       {/* Breadcrumb Bar */}
-      <div className="bg-card/50 border-b px-4 py-2">
+      <div className="bg-card/60 backdrop-blur-sm border-b border-border/80 px-4 py-2.5">
         <div className="max-w-7xl mx-auto flex items-center gap-1 text-sm">
           {breadcrumbs.map((crumb, i) => (
             <React.Fragment key={crumb.path}>
@@ -179,10 +179,10 @@ const PediScreenLayout = () => {
       <div className="flex flex-1">
         {/* Desktop Sidebar */}
         {!isMobile && (
-          <aside className="w-60 border-r bg-card/80 backdrop-blur-sm hidden lg:flex flex-col">
+          <aside className="w-60 border-r border-border/80 bg-card/70 backdrop-blur-sm hidden lg:flex flex-col">
             <NavContent />
-            <div className="mt-auto p-4 border-t">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-primary/10 to-accent/10 text-center">
+            <div className="mt-auto p-4 border-t border-border/80">
+              <div className="p-3 rounded-xl bg-gradient-to-br from-primary/10 to-accent/10 text-center border border-primary/10">
                 <Sparkles className="w-5 h-5 text-primary mx-auto mb-1" />
                 <p className="text-xs text-muted-foreground">AI-powered screening</p>
               </div>
@@ -205,7 +205,7 @@ const PediScreenLayout = () => {
             </motion.div>
           </AnimatePresence>
           {/* FDA-aligned footer — regulatory-aware UI language */}
-          <footer className="text-xs text-muted-foreground mt-8 py-4 px-4 border-t bg-muted/20 text-center">
+          <footer className="text-xs text-muted-foreground mt-8 py-5 px-4 border-t border-border/60 bg-muted/20 text-center">
             {PARENT_ONE_LINER}
           </footer>
         </main>

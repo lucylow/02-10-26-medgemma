@@ -16,11 +16,11 @@ export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/80 shadow-[var(--shadow-header)]">
       <div className="container">
         <nav className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+          <Link to="/" className="flex items-center gap-2.5 rounded-xl py-2 px-2 -ml-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-colors hover:bg-muted/50">
             <Baby className="h-8 w-8 text-primary" />
             <span className="font-heading text-xl font-bold text-foreground">
               PediScreen AI
@@ -40,7 +40,7 @@ export function Header() {
                       target.scrollIntoView({ behavior: "smooth", block: "start" });
                     }
                   }}
-                  className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors cursor-pointer rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors cursor-pointer rounded-lg px-3 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
                   {link.label}
                 </a>
