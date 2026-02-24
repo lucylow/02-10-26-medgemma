@@ -1,4 +1,5 @@
 import { DEMO_MODE, MOCK_SERVER_URL, MOCK_FALLBACK } from '@/config';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 const API_BASE_URL = import.meta.env.VITE_MEDGEMMA_API_URL ||
   (import.meta.env.DEV ? 'http://localhost:8000/api' : 'https://api.pediscreen.ai/v1');
@@ -6,8 +7,8 @@ const API_BASE_URL = import.meta.env.VITE_MEDGEMMA_API_URL ||
 /** Supabase Edge Functions base URL (e.g. https://xxx.supabase.co/functions/v1). When set, uses FormData + multipart. */
 const SUPABASE_FUNCTION_URL = import.meta.env.VITE_SUPABASE_FUNCTION_URL;
 
-/** PediScreen FastAPI backend (e.g. http://localhost:8000). When set, uses FormData + x-api-key for /api/analyze. */
-const PEDISCREEN_BACKEND_URL = import.meta.env.VITE_PEDISCREEN_BACKEND_URL ?? (import.meta.env.DEV ? 'http://localhost:8000' : undefined);
+/** PediScreen FastAPI backend (e.g. http://localhost:8000). Only used when explicitly set via env var. */
+const PEDISCREEN_BACKEND_URL = import.meta.env.VITE_PEDISCREEN_BACKEND_URL || undefined;
 const API_KEY = import.meta.env.VITE_API_KEY || 'dev-example-key';
 
 /** Default request timeout for screening API calls (ms) */
@@ -157,6 +158,67 @@ export const submitScreening = async (request: ScreeningRequest): Promise<Screen
         confidence: mockInference.confidence,
         localProcessing: false,
       };
+    }
+
+    // Lovable Cloud: use Supabase Edge Function (medgemma-analyze) as primary path
+    if (isSupabaseConfigured && !PEDISCREEN_BACKEND_URL && !SUPABASE_FUNCTION_URL) {
+      try {
+        const { data, error } = await supabase.functions.invoke('medgemma-analyze', {
+          body: {
+            childAge: request.childAge,
+            age_months: parseInt(request.childAge),
+            domain: request.domain || '',
+            observations: request.observations,
+            consent_id: request.consent_id ?? undefined,
+          },
+        });
+
+        if (error) {
+          const msg = error.message || 'Analysis failed';
+          if (msg.includes('429') || msg.includes('RATE_LIMITED')) {
+            throw new Error('AI rate limit exceeded. Please wait a moment and try again.');
+          }
+          if (msg.includes('402') || msg.includes('PAYMENT_REQUIRED')) {
+            throw new Error('AI credits exhausted. Please add credits to continue.');
+          }
+          throw new Error(msg);
+        }
+
+        if (!data?.success) throw new Error(data?.message || 'Analysis returned unsuccessful result');
+
+        const r = data.report || {};
+        return {
+          success: true,
+          screeningId: data.screening_id,
+          modelUsed: data.model_used ?? true,
+          modelParseOk: true,
+          report: {
+            riskLevel: mapRiskLevel(r.riskLevel || 'unknown'),
+            summary: r.summary || '',
+            parentFriendlyExplanation: r.parentFriendlyExplanation || '',
+            keyFindings: r.keyFindings || [],
+            recommendations: r.recommendations || [],
+            parentFriendlyTips: r.parentFriendlyTips || [],
+            referralGuidance: r.referralGuidance || { needed: false },
+            followUp: r.followUp || { rescreenIntervalDays: 90, redFlagsToWatch: [], monitoringFocus: [] },
+            supportingEvidence: {
+              fromParentReport: (r.evidence || []).filter((e: { type: string }) => e.type === 'text').map((e: { content: string }) => e.content),
+              fromAssessmentScores: [],
+              fromVisualAnalysis: [],
+            },
+            modelEvidence: r.evidence || [],
+          },
+          timestamp: data.timestamp || new Date().toISOString(),
+          confidence: r.confidence ?? data.confidence,
+        };
+      } catch (edgeErr) {
+        console.warn('[screeningApi] Edge function failed, trying fallback paths:', edgeErr);
+        // If it was an explicit AI error (rate limit, payment), re-throw
+        if (edgeErr instanceof Error && (edgeErr.message.includes('rate limit') || edgeErr.message.includes('credits'))) {
+          throw edgeErr;
+        }
+        // Otherwise fall through to other backends
+      }
     }
 
     // PediScreen FastAPI backend: use FormData + x-api-key (matches backend/app/api/analyze)
