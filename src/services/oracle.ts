@@ -3,15 +3,11 @@
  * Frontend focuses on read/subscribe; backend + Chainlink Functions handle writes.
  */
 
-import * as ethers from "ethers";
+import { BrowserProvider, Contract, type Provider } from "ethers";
 import { PEDISCREEN_ORACLE_ADDRESS } from "@/config/blockchain";
 
-// Support both ethers v5 (Web3Provider) and v6 (BrowserProvider) for Lovable/ESM builds.
-// Use computed key to avoid Rollup requiring BrowserProvider from ethers ESM bundle.
-const BROWSER_PROVIDER_KEY = "Browser" + "Provider";
-type EthersModule = typeof ethers & Record<string, unknown> & { providers?: { Web3Provider?: new (p: unknown) => ethers.Provider } };
-const getBrowserProvider = (): new (p: unknown) => ethers.Provider =>
-  (ethers as EthersModule)[BROWSER_PROVIDER_KEY] ?? (ethers as EthersModule).providers?.Web3Provider;
+const getBrowserProviderClass = (): new (p: unknown) => Provider =>
+  BrowserProvider;
 
 const ORACLE_ABI = [
   // Screening record storage
@@ -41,15 +37,15 @@ function ensureOracleConfigured() {
   }
 }
 
-async function getReadOnlyContract(): Promise<ethers.Contract> {
+async function getReadOnlyContract(): Promise<Contract> {
   ensureOracleConfigured();
   if (typeof window === "undefined" || !window.ethereum) {
     throw new Error("Web3 wallet not available in this environment.");
   }
 
-  const ProviderClass = getBrowserProvider();
+  const ProviderClass = getBrowserProviderClass();
   const provider = new ProviderClass(window.ethereum);
-  return new ethers.Contract(PEDISCREEN_ORACLE_ADDRESS, ORACLE_ABI, provider);
+  return new Contract(PEDISCREEN_ORACLE_ADDRESS, ORACLE_ABI, provider);
 }
 
 function normalizeRecord(

@@ -4,13 +4,9 @@
  * UX: irreversible action warnings, mobile-first, transaction status, NFT gallery, gasless (ERC-4337) flow.
  */
 import React, { useCallback, useEffect, useState } from "react";
-import * as ethers from "ethers";
-// Support both ethers v5 (Web3Provider) and v6 (BrowserProvider) for Lovable/ESM builds.
-// Use computed key to avoid Rollup requiring BrowserProvider from ethers ESM bundle.
-const BROWSER_PROVIDER_KEY = "Browser" + "Provider";
-type EthersModule = typeof ethers & Record<string, unknown> & { providers?: { Web3Provider?: new (p: unknown) => ethers.Provider } };
-const getBrowserProvider = (): new (p: unknown) => ethers.Provider =>
-  (ethers as EthersModule)[BROWSER_PROVIDER_KEY] ?? (ethers as EthersModule).providers?.Web3Provider;
+import { BrowserProvider, Contract, type Provider } from "ethers";
+const getBrowserProviderClass = (): new (p: unknown) => Provider =>
+  BrowserProvider;
 
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -96,7 +92,7 @@ function getChainName(chainId: number): string {
 const IPFS_GATEWAY = "https://gateway.pinata.cloud/ipfs/";
 
 async function loadNftMetadata(
-  contract: ethers.Contract,
+  contract: Contract,
   owner: string,
   index: number,
   registryAddress: string,
@@ -127,7 +123,7 @@ async function loadNftMetadata(
 
 /** Load NFT metadata by token ID (used when enumeration is not available). */
 async function loadNftMetadataByTokenId(
-  contract: ethers.Contract,
+  contract: Contract,
   tokenId: bigint | string,
   _registryAddress: string,
 ): Promise<PediScreenNft | null> {
@@ -158,7 +154,7 @@ async function loadNftMetadataByTokenId(
 async function signScreeningMessage(data: ScreeningData): Promise<string> {
   const w = typeof window !== "undefined" ? (window as unknown as { ethereum?: unknown }).ethereum : undefined;
   if (!w) throw new Error("Wallet not available for signing");
-  const ProviderClass = getBrowserProvider();
+  const ProviderClass = getBrowserProviderClass();
   const provider = new ProviderClass(w);
   const signer = await provider.getSigner();
   const message = `PediScreen Screening Certificate:\n${JSON.stringify(data)}`;
@@ -444,9 +440,9 @@ export function PediScreenBlockchainUI() {
     setLoadingGallery(true);
     setNftBalanceCount(null);
     try {
-      const ProviderClass = getBrowserProvider();
+      const ProviderClass = getBrowserProviderClass();
       const provider = new ProviderClass(w);
-      const contract = new ethers.Contract(registryAddress, ERC721_REGISTRY_ABI, provider);
+      const contract = new Contract(registryAddress, ERC721_REGISTRY_ABI, provider);
       const balance = (await contract.balanceOf(address)) as bigint;
       const count = Number(balance);
       const nfts: PediScreenNft[] = [];

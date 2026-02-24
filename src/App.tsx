@@ -9,6 +9,7 @@ import {
   RouterProvider,
   createRoutesFromElements,
   Route,
+  Navigate,
 } from "react-router-dom";
 import { ScreeningProvider } from "./contexts/ScreeningContext";
 import { AgentProvider } from "./contexts/AgentContext";
@@ -46,6 +47,7 @@ import InteractiveScreeningDemo from "./pages/InteractiveScreeningDemo";
 import AgentPipelineScreen from "./pages/AgentPipelineScreen";
 import AgentDashboard from "./pages/AgentDashboard";
 import VoiceInputScreen from "./pages/VoiceInputScreen";
+import PatientScreening from "./pages/PatientScreening";
 import PediScreenCaseDetail from "./pages/pediscreen/PediScreenCaseDetail";
 import ChildProfileDetail from "./pages/pediscreen/ChildProfileDetail";
 import Telemetry from "./pages/Telemetry";
@@ -63,6 +65,8 @@ import PrivacyPage from "./pages/PrivacyPage";
 import HelpPage from "./pages/HelpPage";
 import ClinicianReviewWithCollab from "./pages/ClinicianReviewWithCollab";
 import PediatricShowcasePage from "./pages/PediatricShowcasePage";
+import HumanCenteredPatientsPage from "./pages/HumanCenteredPatientsPage";
+import UltraDashboard from "./pages/UltraDashboard";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { ThemeProvider } from "./theme";
 import { ThemeProvider as ClinicalTokensProvider } from "./providers/ThemeProvider";
@@ -89,6 +93,7 @@ const appRoutes = createRoutesFromElements(
     <Route path="/smart/callback" element={<SmartCallback />} />
     <Route path="/clinician" element={<ClinicianDashboard />} />
     <Route path="/clinician/review" element={<RealtimeHitlDashboard />} />
+    <Route path="/patients" element={<Navigate to="/pediscreen/patients" replace />} />
     <Route path="/pediscreen" element={<PediScreenLayout />}>
       <Route index element={<PediScreenHome />} />
       <Route path="dashboard" element={<AgentDashboard />} />
@@ -108,6 +113,7 @@ const appRoutes = createRoutesFromElements(
       <Route path="end2end-demo" element={<EndToEndDemo />} />
       <Route path="demo" element={<InteractiveScreeningDemo />} />
       <Route path="pediatric" element={<PediatricShowcasePage />} />
+      <Route path="ultra" element={<UltraDashboard />} />
       <Route path="federated" element={<FederatedLearningPage />} />
       <Route path="blockchain" element={<BlockchainPage />} />
       <Route path="blockchain-dashboard" element={<BlockchainPage />} />
@@ -121,6 +127,8 @@ const appRoutes = createRoutesFromElements(
       <Route path="report/:reportId" element={<DetailedReportEditor />} />
       <Route path="report/:reportId/collab" element={<ClinicianReviewWithCollab />} />
       <Route path="case/:id" element={<PediScreenCaseDetail />} />
+      <Route path="patients" element={<HumanCenteredPatientsPage />} />
+      <Route path="patient/:id" element={<PatientScreening />} />
     </Route>
     <Route path="*" element={<NotFound />} />
   </>

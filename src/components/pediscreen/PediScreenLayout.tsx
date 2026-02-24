@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import { PARENT_ONE_LINER } from '@/constants/disclaimers';
-import { Baby, Home, Plus, History, ArrowLeft, Menu, Sparkles, ChevronRight, UserCircle, Settings, BookOpen, Scan, Layers, FileText, FlaskConical, Mic, Lock, Wallet, Link2, Puzzle, BookMarked, ClipboardList, Info, HelpCircle, Shield, MessageCircle } from 'lucide-react';
+import { Baby, Home, Plus, History, ArrowLeft, Menu, Sparkles, ChevronRight, UserCircle, Settings, BookOpen, Scan, Layers, FileText, FlaskConical, Mic, Lock, Wallet, Link2, Puzzle, BookMarked, ClipboardList, Info, HelpCircle, Shield, MessageCircle, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
@@ -14,6 +14,7 @@ const mainNavItems = [
   { title: 'Home', path: '/pediscreen', icon: Home },
   { title: 'New Screening', path: '/pediscreen/screening', icon: Plus },
   { title: 'Dashboard', path: '/pediscreen/dashboard', icon: Sparkles },
+  { title: 'Patients', path: '/pediscreen/patients', icon: Users },
   { title: 'History', path: '/pediscreen/history', icon: History },
   { title: 'Profiles', path: '/pediscreen/profiles', icon: UserCircle },
 ];
@@ -49,6 +50,7 @@ const getBreadcrumbs = (pathname: string) => {
   if (pathname.includes('/voice')) crumbs.push({ label: 'Voice', path: '/pediscreen/voice' });
   if (pathname.includes('/agent-pipeline')) crumbs.push({ label: 'AI Agent Pipeline', path: '/pediscreen/agent-pipeline' });
   if (pathname.includes('/profiles')) crumbs.push({ label: 'Profiles', path: '/pediscreen/profiles' });
+  if (pathname.includes('/patients')) crumbs.push({ label: 'Patients', path: '/pediscreen/patients' });
   if (pathname.includes('/screening')) crumbs.push({ label: 'New Screening', path: '/pediscreen/screening' });
   if (pathname.includes('/history')) crumbs.push({ label: 'History', path: '/pediscreen/history' });
   if (pathname.includes('/education')) crumbs.push({ label: 'Education', path: '/pediscreen/education' });
