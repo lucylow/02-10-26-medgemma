@@ -10,35 +10,54 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ConnectWalletButton } from '@/components/blockchain';
 import { QueueStatus } from '@/components/pediscreen/QueueStatus';
 
-const mainNavItems = [
+// ── Core screening workflow ──
+const coreNavItems = [
   { title: 'Home', path: '/pediscreen', icon: Home },
   { title: 'New Screening', path: '/pediscreen/screening', icon: Plus },
-  { title: 'Dashboard', path: '/pediscreen/dashboard', icon: Sparkles },
-  { title: 'Patients', path: '/pediscreen/patients', icon: Users },
   { title: 'History', path: '/pediscreen/history', icon: History },
+  { title: 'Dashboard', path: '/pediscreen/dashboard', icon: Sparkles },
+];
+
+// ── Patients & profiles ──
+const patientNavItems = [
+  { title: 'Patients', path: '/pediscreen/patients', icon: Users },
   { title: 'Profiles', path: '/pediscreen/profiles', icon: UserCircle },
 ];
 
-const toolsNavItems = [
-  { title: 'Voice', path: '/pediscreen/voice', icon: Mic },
-  { title: 'Agent Pipeline', path: '/pediscreen/agent-pipeline', icon: Sparkles },
-  { title: 'Edge Devices', path: '/pediscreen/edge-devices', icon: Cpu },
-  { title: 'Education', path: '/pediscreen/education', icon: BookOpen },
-  { title: 'Guidelines', path: '/pediscreen/guidelines', icon: BookMarked },
-  { title: 'Integrations', path: '/pediscreen/integrations', icon: Puzzle },
-  { title: 'Blockchain', path: '/pediscreen/blockchain', icon: Wallet },
-  { title: 'Federated Learning', path: '/pediscreen/federated', icon: Lock },
-  { title: 'HealthChain', path: '/pediscreen/healthchain', icon: Link2 },
-  { title: 'Settings', path: '/pediscreen/settings', icon: Settings },
+// ── Clinical tools ──
+const clinicalNavItems = [
+  { title: 'Voice Screening', path: '/pediscreen/voice', icon: Mic },
   { title: 'Radiology', path: '/pediscreen/radiology', icon: Scan },
   { title: 'CT 3D Edge', path: '/pediscreen/ct-3d', icon: Layers },
-  { title: 'Technical Writer', path: '/pediscreen/technical-writer', icon: FileText },
+  { title: 'Guidelines', path: '/pediscreen/guidelines', icon: BookMarked },
+  { title: 'Education', path: '/pediscreen/education', icon: BookOpen },
+];
+
+// ── AI & infrastructure ──
+const infraNavItems = [
+  { title: 'Agent Pipeline', path: '/pediscreen/agent-pipeline', icon: Sparkles },
+  { title: 'Edge Devices', path: '/pediscreen/edge-devices', icon: Cpu },
+  { title: 'Integrations', path: '/pediscreen/integrations', icon: Puzzle },
+];
+
+// ── Blockchain & privacy ──
+const blockchainNavItems = [
+  { title: 'Blockchain', path: '/pediscreen/blockchain', icon: Wallet },
+  { title: 'HealthChain', path: '/pediscreen/healthchain', icon: Link2 },
+  { title: 'Federated Learning', path: '/pediscreen/federated', icon: Lock },
+];
+
+// ── Demos & showcases ──
+const demoNavItems = [
   { title: 'End2End Demo', path: '/pediscreen/end2end-demo', icon: FlaskConical },
   { title: 'Interactive Demo', path: '/pediscreen/demo', icon: ClipboardList },
   { title: 'Pediatric Showcase', path: '/pediscreen/pediatric', icon: Baby },
+  { title: 'Technical Writer', path: '/pediscreen/technical-writer', icon: FileText },
 ];
 
+// ── Info & settings (bottom) ──
 const infoNavItems = [
+  { title: 'Settings', path: '/pediscreen/settings', icon: Settings },
   { title: 'About', path: '/pediscreen/about', icon: Info },
   { title: 'FAQ', path: '/pediscreen/faq', icon: HelpCircle },
   { title: 'Privacy', path: '/pediscreen/privacy', icon: Shield },
@@ -82,7 +101,7 @@ const getBreadcrumbs = (pathname: string) => {
 const NavContent = ({ onNavigate }: { onNavigate?: () => void }) => {
   const location = useLocation();
 
-  const renderNavLink = (item: (typeof mainNavItems)[0]) => {
+  const renderNavLink = (item: (typeof coreNavItems)[0]) => {
     const isActive = location.pathname === item.path;
     return (
       <Link
@@ -110,25 +129,39 @@ const NavContent = ({ onNavigate }: { onNavigate?: () => void }) => {
   };
 
   return (
-    <nav className="flex flex-col gap-1.5 p-4">
+    <nav className="flex flex-col gap-1.5 p-4 overflow-y-auto">
       <div className="space-y-1">
-        {mainNavItems.map(renderNavLink)}
+        {coreNavItems.map(renderNavLink)}
       </div>
+
       <div className="pt-3 mt-2 border-t border-border">
-        <p className="px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Tools
-        </p>
-        <div className="space-y-1">
-          {toolsNavItems.map(renderNavLink)}
-        </div>
+        <p className="px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Patients</p>
+        <div className="space-y-1">{patientNavItems.map(renderNavLink)}</div>
       </div>
+
       <div className="pt-3 mt-2 border-t border-border">
-        <p className="px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Info
-        </p>
-        <div className="space-y-1">
-          {infoNavItems.map(renderNavLink)}
-        </div>
+        <p className="px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Clinical Tools</p>
+        <div className="space-y-1">{clinicalNavItems.map(renderNavLink)}</div>
+      </div>
+
+      <div className="pt-3 mt-2 border-t border-border">
+        <p className="px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">AI & Infrastructure</p>
+        <div className="space-y-1">{infraNavItems.map(renderNavLink)}</div>
+      </div>
+
+      <div className="pt-3 mt-2 border-t border-border">
+        <p className="px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Blockchain & Privacy</p>
+        <div className="space-y-1">{blockchainNavItems.map(renderNavLink)}</div>
+      </div>
+
+      <div className="pt-3 mt-2 border-t border-border">
+        <p className="px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Demos</p>
+        <div className="space-y-1">{demoNavItems.map(renderNavLink)}</div>
+      </div>
+
+      <div className="pt-3 mt-2 border-t border-border">
+        <p className="px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Settings & Info</p>
+        <div className="space-y-1">{infoNavItems.map(renderNavLink)}</div>
       </div>
     </nav>
   );
