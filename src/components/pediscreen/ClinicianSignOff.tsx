@@ -3,6 +3,7 @@
  * Requires clinician note (auditable) before finalizing.
  */
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 
 const API_BASE =
   import.meta.env.VITE_MEDGEMMA_API_URL ||
@@ -47,10 +48,15 @@ export default function ClinicianSignOff({
       });
       if (res.ok) {
         onSigned();
+        toast.success("Sign-off recorded");
       } else {
         const err = await res.json().catch(() => ({}));
-        alert(err.detail || 'Sign-off failed');
+        const msg = err.detail || 'Sign-off failed';
+        toast.error("Sign-off failed", { description: msg });
       }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Network error. Please try again.";
+      toast.error("Sign-off failed", { description: msg });
     } finally {
       setLoading(false);
     }

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { toast } from "sonner";
 import { usePediScreenRegistry } from "@/blockchain/usePediScreenRegistry";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -48,7 +49,9 @@ export const BlockchainAnchorCard: React.FC<Props> = ({
       setError(null);
       await connect();
     } catch (e: any) {
-      setError(e?.message || "Failed to connect wallet");
+      const msg = e?.message || "Failed to connect wallet";
+      setError(msg);
+      toast.error("Wallet connection failed", { description: msg });
     }
   };
 
@@ -88,8 +91,10 @@ export const BlockchainAnchorCard: React.FC<Props> = ({
         onChain.reportHash.toLowerCase() === reportHash.toLowerCase();
       setVerified(match);
     } catch (e: any) {
-      setError(e?.message || "Verification failed.");
+      const msg = e?.message || "Verification failed.";
+      setError(msg);
       setVerified(null);
+      toast.error("Verification failed", { description: msg });
     }
   };
 

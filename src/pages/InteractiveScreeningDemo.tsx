@@ -3,7 +3,8 @@
  * Two-tab page matching the static demo: enter observations as CHW, see MedGemma report,
  * and preview clinician review queue with simulated cases.
  */
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
-import { Heart, Sparkles, Loader2, Eye, Stethoscope, UserCircle, ImageIcon, AlertTriangle } from "lucide-react";
+import { Heart, Sparkles, Loader2, Eye, Stethoscope, UserCircle, ImageIcon, AlertTriangle, ArrowLeft, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { submitScreening } from "@/services/screeningApi";
 import { mapScreeningResultToMedGemmaReport } from "@/api/medgemmaAdapter";
@@ -233,8 +234,22 @@ const DOMAIN_OPTIONS = [
 ];
 
 export default function InteractiveScreeningDemo() {
-  const [activeTab, setActiveTab] = useState("chw");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const initialTab = tabParam === "clinician" ? "clinician" : "chw";
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [ageMonths, setAgeMonths] = useState(24);
+
+  // Sync tab with URL for deep linking and browser back/forward
+  useEffect(() => {
+    const t = searchParams.get("tab");
+    if (t === "clinician" || t === "chw") setActiveTab(t);
+  }, [searchParams]);
+
+  const setTab = (value: string) => {
+    setActiveTab(value);
+    setSearchParams(value === "chw" ? {} : { tab: value }, { replace: true });
+  };
   const [domain, setDomain] = useState<string>("");
   const [observations, setObservations] = useState("");
   const [useBackend, setUseBackend] = useState(true);
@@ -368,31 +383,42 @@ export default function InteractiveScreeningDemo() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-      {/* Header */}
+      {/* Header with back link */}
       <header className="bg-gradient-to-r from-primary to-primary/90 text-primary-foreground rounded-2xl mx-4 mt-4 p-5 shadow-lg">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <span className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-white/20">
-                <Stethoscope className="w-5 h-5" />
-              </span>
-              PediScreen AI
-            </h1>
-            <p className="text-sm opacity-95 mt-1 max-w-xl">
-              MedGemma-powered pediatric developmental screening. Designed for community health workers and
-              clinicians, as a clinical decision support tool—not a diagnostic device.
-            </p>
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <Link
+              to="/pediscreen"
+              className="inline-flex items-center gap-2 text-primary-foreground/90 hover:text-white text-sm font-medium transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to PediScreen
+            </Link>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="secondary" className="bg-white/15 border-white/30">
+                Google MedGemma
+              </Badge>
+              <Badge variant="secondary" className="bg-white/15 border-white/30">
+                Edge-friendly UI
+              </Badge>
+              <Badge variant="secondary" className="bg-white/15 border-white/30">
+                CDS, not diagnosis
+              </Badge>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Badge variant="secondary" className="bg-white/15 border-white/30">
-              Google MedGemma
-            </Badge>
-            <Badge variant="secondary" className="bg-white/15 border-white/30">
-              Edge-friendly UI
-            </Badge>
-            <Badge variant="secondary" className="bg-white/15 border-white/30">
-              CDS, not diagnosis
-            </Badge>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h1 className="text-2xl font-bold flex items-center gap-2">
+                <span className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-white/20">
+                  <Stethoscope className="w-5 h-5" />
+                </span>
+                PediScreen AI
+              </h1>
+              <p className="text-sm opacity-95 mt-1 max-w-xl">
+                MedGemma-powered pediatric developmental screening. Designed for community health workers and
+                clinicians, as a clinical decision support tool—not a diagnostic device.
+              </p>
+            </div>
           </div>
         </div>
       </header>
@@ -410,7 +436,7 @@ export default function InteractiveScreeningDemo() {
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-2">
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <Tabs value={activeTab} onValueChange={setTab}>
               <TabsList className="grid w-full max-w-md grid-cols-2 rounded-xl bg-muted/50 p-1">
                 <TabsTrigger value="chw" className="gap-2 rounded-lg">
                   <UserCircle className="w-4 h-4" />
@@ -514,8 +540,8 @@ export default function InteractiveScreeningDemo() {
                       </div>
                     </div>
                     <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-                      <label className="flex items-center gap-2 cursor-pointer text-sm">
-                        <Checkbox checked={useBackend} onCheckedChange={(c) => setUseBackend(!!c)} />
+                      <label htmlFor="demo-use-backend" className="flex items-center gap-2 cursor-pointer text-sm">
+                        <Checkbox id="demo-use-backend" checked={useBackend} onCheckedChange={(c) => setUseBackend(!!c)} />
                         Use backend API if available (fallback to smart mock).
                       </label>
                       <Button onClick={handleAnalyze} disabled={analyzing || !observations.trim()} className="gap-2">
@@ -715,6 +741,38 @@ export default function InteractiveScreeningDemo() {
             </Tabs>
           </CardContent>
         </Card>
+
+        {/* Integration links: full app flows */}
+        <div className="mt-8 p-4 rounded-xl bg-muted/40 border border-border/60">
+          <p className="text-sm font-medium text-foreground mb-3">Continue in the full app</p>
+          <div className="flex flex-wrap gap-3">
+            <Button asChild variant="outline" size="sm" className="gap-2 rounded-lg">
+              <Link to="/pediscreen/screening">
+                <Sparkles className="w-4 h-4" />
+                Start full screening
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="sm" className="gap-2 rounded-lg">
+              <Link to="/pediscreen/dashboard">
+                <Stethoscope className="w-4 h-4" />
+                AI Orchestrator Dashboard
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="sm" className="gap-2 rounded-lg">
+              <Link to="/clinician/review">
+                <Eye className="w-4 h-4" />
+                Clinician review queue
+                <ExternalLink className="w-3 h-3" />
+              </Link>
+            </Button>
+            <Button asChild variant="ghost" size="sm" className="gap-2 rounded-lg text-muted-foreground">
+              <Link to="/pediscreen">
+                <ArrowLeft className="w-4 h-4" />
+                PediScreen Home
+              </Link>
+            </Button>
+          </div>
+        </div>
       </main>
     </div>
   );

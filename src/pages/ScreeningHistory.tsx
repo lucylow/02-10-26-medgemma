@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, FileText, Sparkles, ClipboardList, ArrowRight, Loader2 } from 'lucide-react';
@@ -30,7 +31,12 @@ const ScreeningHistory = () => {
   useEffect(() => {
     listScreenings({ limit: 50, page: 0 })
       .then(({ items }) => setScreenings(items))
-      .catch(() => setScreenings([]))
+      .catch(() => {
+        setScreenings([]);
+        toast.error("Couldn't load screening history", {
+          description: "Check your connection and try again.",
+        });
+      })
       .finally(() => setLoading(false));
   }, []);
 

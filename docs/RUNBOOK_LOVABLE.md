@@ -59,6 +59,15 @@ supabase secrets set SUPABASE_SERVICE_ROLE_KEY="your-service-role-key"
 
 To require JWT for protected endpoints, set `verify_jwt = true` in `supabase/config.toml` and pass `Authorization: Bearer <token>` from the frontend.
 
+## Local scripts (Lovable frontend)
+
+| Command | Purpose |
+|---------|---------|
+| `npm run build` | Production build → `dist/` (used by Lovable Cloud) |
+| `npm run dev` | Local Vite dev server (port 8080) |
+| `npm run start` | Serve redirect page to Lovable app (port 8080) |
+| `npm run start:demo` | Static demo (CHW + Clinician UI) |
+
 ## Deploy Commands
 
 ```bash

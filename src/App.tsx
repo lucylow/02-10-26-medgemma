@@ -57,6 +57,11 @@ import HealthChainPage from "./pages/HealthChainPage";
 import IntegrationsPage from "./pages/IntegrationsPage";
 import CT3DEdge from "./pages/CT3DEdge";
 import GuidelinesPage from "./pages/GuidelinesPage";
+import AboutPage from "./pages/AboutPage";
+import FAQPage from "./pages/FAQPage";
+import PrivacyPage from "./pages/PrivacyPage";
+import HelpPage from "./pages/HelpPage";
+import ClinicianReviewWithCollab from "./pages/ClinicianReviewWithCollab";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { ThemeProvider } from "./theme";
 import { AccessiblePediScreenProvider } from "./components/a11y/AccessiblePediScreenProvider";
@@ -105,7 +110,12 @@ const appRoutes = createRoutesFromElements(
       <Route path="healthchain" element={<HealthChainPage />} />
       <Route path="integrations" element={<IntegrationsPage />} />
       <Route path="guidelines" element={<GuidelinesPage />} />
+      <Route path="about" element={<AboutPage />} />
+      <Route path="faq" element={<FAQPage />} />
+      <Route path="privacy" element={<PrivacyPage />} />
+      <Route path="help" element={<HelpPage />} />
       <Route path="report/:reportId" element={<DetailedReportEditor />} />
+      <Route path="report/:reportId/collab" element={<ClinicianReviewWithCollab />} />
       <Route path="case/:id" element={<PediScreenCaseDetail />} />
     </Route>
     <Route path="*" element={<NotFound />} />

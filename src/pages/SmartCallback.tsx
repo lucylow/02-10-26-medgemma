@@ -4,6 +4,7 @@
  */
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
 
 const BACKEND =
   import.meta.env.VITE_PEDISCREEN_BACKEND_URL ||
@@ -46,11 +47,15 @@ export default function SmartCallback() {
     const iss = searchParams.get("iss") || "";
 
     if (!code) {
-      setError("Missing authorization code");
+      const msg = "Missing authorization code";
+      setError(msg);
+      toast.error("Sign-in failed", { description: msg });
       return;
     }
     if (!BACKEND) {
-      setError("Backend URL not configured");
+      const msg = "Backend URL not configured";
+      setError(msg);
+      toast.error("Configuration error", { description: msg });
       return;
     }
 
@@ -62,7 +67,9 @@ export default function SmartCallback() {
       .then(async (res) => {
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-          setError(data.detail || data.error || "Token exchange failed");
+          const msg = data.detail || data.error || "Token exchange failed";
+          setError(msg);
+          toast.error("Sign-in failed", { description: msg });
           return;
         }
         const token = data.access_token;
@@ -74,7 +81,11 @@ export default function SmartCallback() {
         }
         navigate("/pediscreen", { replace: true });
       })
-      .catch(() => setError("Network error"));
+      .catch(() => {
+        const msg = "Network error. Check your connection and try again.";
+        setError(msg);
+        toast.error("Sign-in failed", { description: msg });
+      });
   }, [searchParams, navigate]);
 
   if (error) {

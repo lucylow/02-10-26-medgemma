@@ -118,6 +118,14 @@ const PediScreenHome = () => {
             </Link>
           </motion.div>
           <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+            <Link to="/pediscreen/demo">
+              <Button size="lg" variant="secondary" className="gap-2 w-full sm:w-auto rounded-xl">
+                <ClipboardList className="w-5 h-5" />
+                Try Interactive Demo
+              </Button>
+            </Link>
+          </motion.div>
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
             <Link to="/pediscreen/dashboard">
               <Button size="lg" variant="secondary" className="gap-2 w-full sm:w-auto rounded-xl">
                 <Brain className="w-5 h-5" />

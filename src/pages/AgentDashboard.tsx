@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { toast } from 'sonner';
 import { Activity, Shield, Brain, TrendingUp } from 'lucide-react';
 import { useAgents } from '@/contexts/AgentContext';
 import { useAgentOrchestratorContext } from '@/contexts/AgentOrchestratorContext';
@@ -42,7 +43,12 @@ function RecentCasesGrid() {
     setLoading(true);
     listScreenings({ limit: 5, page: 0 })
       .then(({ items: list }) => setItems(list))
-      .catch(() => setItems([]))
+      .catch(() => {
+        setItems([]);
+        toast.error("Couldn't load recent cases", {
+          description: "Check your connection and try again.",
+        });
+      })
       .finally(() => setLoading(false));
   }, []);
 

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { toast } from "sonner";
 import {
   generateDraftEnd2End,
   patchReportEnd2End,
@@ -29,9 +30,10 @@ export default function EndToEndDemo() {
 
       const res = await generateDraftEnd2End(fd);
       setDraft(res);
-      alert("Draft generated: " + res.report_id);
+      toast.success("Draft generated", { description: res.report_id });
     } catch (err: unknown) {
-      alert("Failed: " + (err instanceof Error ? err.message : String(err)));
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error("Generation failed", { description: msg });
     } finally {
       setLoading(false);
     }
@@ -46,9 +48,10 @@ export default function EndToEndDemo() {
       };
       const res = await patchReportEnd2End(draft.report_id, patch);
       setDraft(res.updated_draft);
-      alert("Saved edits.");
+      toast.success("Edits saved");
     } catch (err: unknown) {
-      alert("Patch failed: " + (err instanceof Error ? err.message : String(err)));
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error("Patch failed", { description: msg });
     }
   }
 
@@ -63,12 +66,13 @@ export default function EndToEndDemo() {
         document.body.appendChild(link);
         link.click();
         link.remove();
-        alert("Finalized & PDF downloaded.");
+        toast.success("Report finalized", { description: "PDF downloaded." });
       } else {
-        alert("Finalize failed.");
+        toast.error("Finalize failed", { description: "Server did not return a PDF." });
       }
     } catch (err: unknown) {
-      alert("Finalize failed: " + (err instanceof Error ? err.message : String(err)));
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error("Finalize failed", { description: msg });
     }
   }
 

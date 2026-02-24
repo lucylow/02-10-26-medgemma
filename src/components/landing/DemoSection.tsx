@@ -21,7 +21,9 @@ import {
   Sparkles,
   Brain,
   TrendingUp,
+  ArrowRight,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -149,6 +151,15 @@ export function DemoSection() {
             Experience how PediScreen AI works in practice. This simulation shows how 
             MedGemma processes multimodal inputs to provide developmental insights.
           </p>
+          <div className="mt-6">
+            <Button asChild variant="outline" size="lg" className="gap-2 rounded-xl">
+              <Link to="/pediscreen/demo">
+                <Sparkles className="h-4 w-4" />
+                Open full CHW + Clinician demo in app
+                <ArrowRight className="h-4 w-4 ml-1" />
+              </Link>
+            </Button>
+          </div>
         </motion.div>
 
         <Tabs defaultValue="screening" className="max-w-5xl mx-auto">

@@ -5,6 +5,7 @@
  */
 
 import { useCallback } from 'react';
+import { toast } from 'sonner';
 import { useAgentState } from './useAgentState';
 import { useSmartRouting } from './useSmartRouting';
 import { useAgentStream } from './useAgentStream';
@@ -137,6 +138,9 @@ export function useAgentOrchestrator(initialInput = '', initialAge = 24) {
               }
             } catch (err) {
               console.warn('Backend infer/orchestrate failed, using simulation', err);
+              toast.info('Backend unavailable — using local analysis', {
+                description: 'Results are from on-device simulation. Connect to the server for full AI analysis.',
+              });
             }
             return undefined;
           };
@@ -170,6 +174,9 @@ export function useAgentOrchestrator(initialInput = '', initialAge = 24) {
         if (firstAgent) {
           agentState.setAgentError(firstAgent, message);
         }
+        toast.error('Screening failed', {
+          description: message || 'Something went wrong. Please try again.',
+        });
         throw { message, code, source: 'pipeline' as const } satisfies OrchestrateError;
       }
     },

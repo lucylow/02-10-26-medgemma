@@ -13,7 +13,7 @@ The app deployed to [Lovable](https://medgemma13213123.lovable.app/) is built fr
 | Frontend app   | `src/`              | React app; `@/` alias points here           |
 | Vite config    | `vite.config.mjs`   | Uses root `src/`, lovable-tagger in dev     |
 | Package & deps | `package.json`      | `npm run build` → `vite build`              |
-| Tailwind       | `tailwind.config.ts`| Content: `./src/**`, `./index.html`          |
+| Tailwind       | `tailwind.config.ts`, `tailwind.config.js` | `.ts` for IDE; `.js` for PostCSS/Lovable build (content: `./src/**`, `./index.html`) |
 | TS config      | `tsconfig.json`, `tsconfig.app.json` | `@/*` → `./src/*`, include: `src` |
 | Static assets  | `public/`           | Served at `/`                               |
 | Build output   | `dist/`             | Produced by `npm run build` (gitignored)     |

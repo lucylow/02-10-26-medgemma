@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Baby, Video, Github, FileText, Trophy } from "lucide-react";
 
 const submissionLinks = [
@@ -24,7 +25,7 @@ export function Footer() {
   return (
     <footer className="bg-foreground/95 text-background py-20">
       <div className="container">
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-12 mb-14">
+        <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-12 mb-14">
           {/* Brand */}
           <div>
             <div className="flex items-center gap-2.5 mb-5">
@@ -89,6 +90,25 @@ export function Footer() {
                   </a>
                 </li>
               ))}
+            </ul>
+          </div>
+
+          {/* App pages */}
+          <div>
+            <h4 className="font-heading font-semibold mb-5 text-background">App</h4>
+            <ul className="space-y-3.5">
+              <li>
+                <Link to="/pediscreen/about" className="text-background/70 hover:text-background transition-colors text-sm rounded-lg py-1 block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-background/50 focus-visible:ring-offset-2 focus-visible:ring-offset-foreground">About</Link>
+              </li>
+              <li>
+                <Link to="/pediscreen/faq" className="text-background/70 hover:text-background transition-colors text-sm rounded-lg py-1 block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-background/50 focus-visible:ring-offset-2 focus-visible:ring-offset-foreground">FAQ</Link>
+              </li>
+              <li>
+                <Link to="/pediscreen/privacy" className="text-background/70 hover:text-background transition-colors text-sm rounded-lg py-1 block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-background/50 focus-visible:ring-offset-2 focus-visible:ring-offset-foreground">Privacy</Link>
+              </li>
+              <li>
+                <Link to="/pediscreen/help" className="text-background/70 hover:text-background transition-colors text-sm rounded-lg py-1 block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-background/50 focus-visible:ring-offset-2 focus-visible:ring-offset-foreground">Help</Link>
+              </li>
             </ul>
           </div>
         </div>

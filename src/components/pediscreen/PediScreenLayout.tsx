@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import { PARENT_ONE_LINER } from '@/constants/disclaimers';
-import { Baby, Home, Plus, History, ArrowLeft, Menu, Sparkles, ChevronRight, UserCircle, Settings, BookOpen, Scan, Layers, FileText, FlaskConical, Mic, Lock, Wallet, Link2, Puzzle, BookMarked, ClipboardList } from 'lucide-react';
+import { Baby, Home, Plus, History, ArrowLeft, Menu, Sparkles, ChevronRight, UserCircle, Settings, BookOpen, Scan, Layers, FileText, FlaskConical, Mic, Lock, Wallet, Link2, Puzzle, BookMarked, ClipboardList, Info, HelpCircle, Shield, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
@@ -35,6 +35,13 @@ const toolsNavItems = [
   { title: 'Interactive Demo', path: '/pediscreen/demo', icon: ClipboardList },
 ];
 
+const infoNavItems = [
+  { title: 'About', path: '/pediscreen/about', icon: Info },
+  { title: 'FAQ', path: '/pediscreen/faq', icon: HelpCircle },
+  { title: 'Privacy', path: '/pediscreen/privacy', icon: Shield },
+  { title: 'Help', path: '/pediscreen/help', icon: MessageCircle },
+];
+
 const getBreadcrumbs = (pathname: string) => {
   const crumbs = [{ label: 'PediScreen', path: '/pediscreen' }];
   if (pathname.includes('/dashboard')) crumbs.push({ label: 'Dashboard', path: '/pediscreen/dashboard' });
@@ -58,6 +65,11 @@ const getBreadcrumbs = (pathname: string) => {
   if (pathname.includes('/case/')) crumbs.push({ label: 'Case Detail', path: pathname });
   if (pathname.includes('/learn-more')) crumbs.push({ label: 'Architecture', path: '/pediscreen/learn-more' });
   if (pathname === '/pediscreen/demo') crumbs.push({ label: 'Interactive Demo', path: '/pediscreen/demo' });
+  if (pathname === '/pediscreen/about') crumbs.push({ label: 'About', path: '/pediscreen/about' });
+  if (pathname === '/pediscreen/faq') crumbs.push({ label: 'FAQ', path: '/pediscreen/faq' });
+  if (pathname === '/pediscreen/privacy') crumbs.push({ label: 'Privacy', path: '/pediscreen/privacy' });
+  if (pathname === '/pediscreen/help') crumbs.push({ label: 'Help', path: '/pediscreen/help' });
+  if (pathname.includes('/report/') && pathname.includes('/collab')) crumbs.push({ label: 'Collaborative review', path: pathname });
   return crumbs;
 };
 
@@ -102,6 +114,14 @@ const NavContent = ({ onNavigate }: { onNavigate?: () => void }) => {
         </p>
         <div className="space-y-1">
           {toolsNavItems.map(renderNavLink)}
+        </div>
+      </div>
+      <div className="pt-3 mt-2 border-t border-border">
+        <p className="px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Info
+        </p>
+        <div className="space-y-1">
+          {infoNavItems.map(renderNavLink)}
         </div>
       </div>
     </nav>
