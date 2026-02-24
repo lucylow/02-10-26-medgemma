@@ -18,7 +18,7 @@ import AccessibilityBar from '@/components/pediscreen/AccessibilityBar';
 import ClinicianReview from '@/components/pediscreen/ClinicianReview';
 import DisclaimerBanner from '@/components/pediscreen/DisclaimerBanner';
 import { FeedbackCard } from '@/components/pediscreen/FeedbackCard';
-import { BlockchainAnchorCard } from '@/components/blockchain';
+import { BlockchainAnchorCard, OracleVerificationCard } from '@/components/blockchain';
 
 type RiskLevel = 'on_track' | 'low' | 'monitor' | 'medium' | 'refer' | 'high';
 
@@ -839,11 +839,24 @@ const ResultsScreen = () => {
         animate={{ opacity: 1 }}
         transition={{ delay: 0.6 }}
       >
-        <BlockchainAnchorCard
-          screeningId={screeningId}
-          report={report}
-          blockchainHints={blockchain}
-        />
+        <div className="space-y-3">
+          <BlockchainAnchorCard
+            screeningId={screeningId}
+            report={report}
+            blockchainHints={blockchain}
+          />
+          {/* Chainlink oracle card (read-only) — shows verified risk/confidence when
+             PediScreenOracle has processed this screening. If your on-chain screeningId
+             mirrors this app's screeningId numeric suffix, this gives you a zero-config
+             demo; otherwise adapt the mapping when you persist the on-chain ID. */}
+          <OracleVerificationCard
+            screeningId={
+              typeof screeningId === 'number'
+                ? screeningId
+                : Number.parseInt(String(screeningId ?? '').replace(/\D/g, ''), 10) || undefined
+            }
+          />
+        </div>
       </motion.div>
 
       {/* Disclaimer */}

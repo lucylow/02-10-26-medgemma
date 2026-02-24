@@ -97,6 +97,7 @@ const appRoutes = createRoutesFromElements(
       <Route path="end2end-demo" element={<EndToEndDemo />} />
       <Route path="federated" element={<FederatedLearningPage />} />
       <Route path="blockchain" element={<BlockchainPage />} />
+      <Route path="blockchain-dashboard" element={<BlockchainPage />} />
       <Route path="healthchain" element={<HealthChainPage />} />
       <Route path="integrations" element={<IntegrationsPage />} />
       <Route path="guidelines" element={<GuidelinesPage />} />

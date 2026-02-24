@@ -4,7 +4,17 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MOCK_SCREENING_HISTORY } from "@/data/demoMockData";
-import { ClipboardList, CheckCircle2, XCircle, AlertTriangle, User, Calendar } from "lucide-react";
+import {
+  ClipboardList,
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+  User,
+  Calendar,
+  Video,
+  Activity,
+  Waves,
+} from "lucide-react";
 
 const riskColors: Record<string, string> = {
   "on track":
@@ -79,7 +89,7 @@ const ClinicianReview: React.FC = () => {
           <CardHeader className="pb-1">
             <CardTitle className="text-sm font-semibold">Median turnaround</CardTitle>
             <CardDescription className="text-xs">
-              For this demo, review times are simulated.
+              For this demo, review times and alerts are simulated.
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-1">
@@ -87,6 +97,74 @@ const ClinicianReview: React.FC = () => {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="border-dashed">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-semibold flex items-center gap-2">
+            <Video className="w-4 h-4 text-sky-600" />
+            Passive home surveillance context
+          </CardTitle>
+          <CardDescription className="text-xs">
+            Edge AI from nursery cams, doorbells, and thermostats can surface patterns that complement
+            active clinic and wearable screenings.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3 text-xs sm:text-sm">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="rounded-xl border px-3 py-2 bg-sky-50/70 flex flex-col gap-1">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-semibold text-sky-900 text-xs">Video (Nest cam)</span>
+                <Badge variant="outline" className="text-[10px]">
+                  Motor P12
+                </Badge>
+              </div>
+              <p className="text-[11px] text-sky-900/80">
+                Tummy time 14 min/wk, sitting attempts 3/10. No independent cruising yet.
+              </p>
+            </div>
+            <div className="rounded-xl border px-3 py-2 bg-violet-50/70 flex flex-col gap-1">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-semibold text-violet-900 text-xs">Audio (Ecobee)</span>
+                <Badge variant="outline" className="text-[10px]">
+                  Speech P8
+                </Badge>
+              </div>
+              <p className="text-[11px] text-violet-900/80">
+                Babbling CV ratio 0.23 with mostly vowel sounds for age; occasional distress cries
+                overnight.
+              </p>
+            </div>
+            <div className="rounded-xl border px-3 py-2 bg-emerald-50/80 flex flex-col gap-1">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-semibold text-emerald-900 text-xs">Environment</span>
+                <Badge variant="outline" className="text-[10px]">
+                  Stable
+                </Badge>
+              </div>
+              <p className="text-[11px] text-emerald-900/80">
+                Nursery 72–76°F, typical occupancy patterns. No major changes in routine detected.
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-3 mt-1">
+            <div className="inline-flex items-center gap-2 text-[11px] text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+              <AlertTriangle className="w-3.5 h-3.5" />
+              <span>
+                Fusion rule (demo): 2+ domains with P&lt;10–20 → highlight for developmental screening.
+              </span>
+            </div>
+            <div className="inline-flex items-center gap-2 text-[11px] text-slate-600 bg-slate-50 border border-slate-100 rounded-lg px-3 py-2">
+              <Activity className="w-3.5 h-3.5" />
+              <span>Passive environmental monitoring provides context; clinical screening still relies on active input.</span>
+            </div>
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            Smart home feeds are treated as{" "}
+            <span className="font-semibold">clinical decision support</span> — PediScreen ingests only
+            edge-generated features and percentile scores, not raw video or audio.
+          </p>
+        </CardContent>
+      </Card>
 
       <ScrollArea className="h-[420px] rounded-xl border bg-card">
         <div className="p-4 space-y-3">

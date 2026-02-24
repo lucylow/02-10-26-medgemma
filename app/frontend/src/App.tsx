@@ -27,6 +27,7 @@ import AdminPanel from "./pages/AdminPanel";
 import Agents from "./pages/Agents";
 import CT3DEdge from "./pages/CT3DEdge";
 import VirtualAssistants from "./pages/VirtualAssistants";
+import ZPediscreenPWA from "./pages/ZPediscreenPWA";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +49,7 @@ const App = () => (
               <Route path="profiles" element={<Profiles />} />
               <Route path="profiles/:childId" element={<ChildProfileDetail />} />
               <Route path="parent-portal" element={<ParentPortal />} />
+              <Route path="zpediscreen" element={<ZPediscreenPWA />} />
               <Route path="clinician-review" element={<ClinicianReview />} />
               <Route path="monitoring" element={<Monitoring />} />
               <Route path="wearables" element={<Wearables />} />

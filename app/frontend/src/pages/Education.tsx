@@ -1,20 +1,26 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { 
-  BookOpen, 
-  HelpCircle, 
-  Video, 
-  FileText, 
-  ExternalLink, 
-  CheckCircle2, 
+import React from "react";
+import { motion } from "framer-motion";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {
+  BookOpen,
+  HelpCircle,
+  Video,
+  FileText,
+  ExternalLink,
+  CheckCircle2,
   ArrowRight,
   Baby,
   Brain,
-  MessageCircle
-} from 'lucide-react';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+  MessageCircle,
+  Waves,
+} from "lucide-react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 const Education = () => {
   const categories = [
@@ -90,6 +96,43 @@ const Education = () => {
                   </CardContent>
                 </Card>
               </div>
+            </section>
+
+            <section className="mt-8">
+              <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+                <Waves className="w-6 h-6 text-primary" />
+                Smart home &amp; edge AI (optional)
+              </h2>
+              <Card>
+                <CardContent className="pt-6 space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Some families choose to connect devices they already own — like a nursery camera,
+                    video doorbell, or smart thermostat — so PediScreen can gently watch for motor and
+                    communication patterns between visits.
+                  </p>
+                  <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
+                    <li>
+                      <strong>Edge-only analysis</strong>: Raw video and audio stay on the device.
+                      Lightweight TensorFlow Lite models extract posture and sound features locally.
+                    </li>
+                    <li>
+                      <strong>Summaries, not footage</strong>: PediScreen receives only short summaries
+                      like tummy time minutes, babbling patterns, or sleep-related distress flags.
+                    </li>
+                    <li>
+                      <strong>Clinical decision support</strong>: These signals provide developmental
+                      context alongside parent reports and clinician exams, but do not replace them.
+                    </li>
+                  </ul>
+                  <p className="text-xs text-muted-foreground">
+                    This aligns with FDA clinical decision support guidance:{" "}
+                    <span className="font-semibold">
+                      passive environmental monitoring provides context; clinical screening still
+                      requires active input and clinician judgement.
+                    </span>
+                  </p>
+                </CardContent>
+              </Card>
             </section>
 
             <section>

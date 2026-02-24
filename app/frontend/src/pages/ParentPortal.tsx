@@ -105,95 +105,131 @@ const ParentPortal: React.FC = () => {
         </div>
 
         {selected && (
-          <Card className="lg:col-span-2 border-none shadow-lg">
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <CardTitle className="text-xl flex items-center gap-2">
-                    <Baby className="w-5 h-5 text-emerald-600" />
-                    {selected.childName}
-                  </CardTitle>
-                  <CardDescription className="flex items-center gap-2 mt-1">
-                    <Calendar className="w-4 h-4" />
-                    {selected.date} • {selected.domainLabel}
-                  </CardDescription>
-                </div>
-                <Badge
-                  variant="outline"
-                  className={`px-3 py-1 text-xs font-semibold border ${risk.color}`}
-                >
-                  {risk.label}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-100 flex gap-3">
-                <Smile className="w-5 h-5 text-emerald-700 mt-0.5 shrink-0" />
-                <div>
-                  <p className="text-sm font-medium text-emerald-900">What this means</p>
-                  <p className="text-sm text-emerald-800 mt-1">{risk.message}</p>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold">What we&apos;re seeing</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {selected.summary}
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <Card className="bg-muted/40">
-                  <CardContent className="p-4 flex gap-3">
-                    <Activity className="w-5 h-5 text-sky-600 mt-0.5 shrink-0" />
-                    <div>
-                      <p className="text-xs font-semibold uppercase text-muted-foreground mb-1">
-                        Try this at home
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        Spend 10 minutes a day on a simple game that matches this area, like naming
-                        things you see, stacking blocks, or pretend play.
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card className="bg-muted/40">
-                  <CardContent className="p-4 flex gap-3">
-                    <MessageCircle className="w-5 h-5 text-violet-600 mt-0.5 shrink-0" />
-                    <div>
-                      <p className="text-xs font-semibold uppercase text-muted-foreground mb-1">
-                        Talk with your clinician
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        Bring this summary to your next visit. It&apos;s designed to help you and
-                        your clinician decide together on next steps.
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {child && (
-                <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold ${child.color}`}
-                    >
-                      {child.initials}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      <div>Age: {child.age}</div>
-                      <div>Last check-in: {child.lastScreening}</div>
-                    </div>
+          <div className="lg:col-span-2 space-y-4">
+            <Card className="border-none shadow-lg">
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <CardTitle className="text-xl flex items-center gap-2">
+                      <Baby className="w-5 h-5 text-emerald-600" />
+                      {selected.childName}
+                    </CardTitle>
+                    <CardDescription className="flex items-center gap-2 mt-1">
+                      <Calendar className="w-4 h-4" />
+                      {selected.date} • {selected.domainLabel}
+                    </CardDescription>
                   </div>
-                  <Button size="sm" variant="outline" className="gap-2 rounded-xl">
-                    Share summary
-                    <ArrowRight className="w-3 h-3" />
-                  </Button>
+                  <Badge
+                    variant="outline"
+                    className={`px-3 py-1 text-xs font-semibold border ${risk.color}`}
+                  >
+                    {risk.label}
+                  </Badge>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-100 flex gap-3">
+                  <Smile className="w-5 h-5 text-emerald-700 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-emerald-900">What this means</p>
+                    <p className="text-sm text-emerald-800 mt-1">{risk.message}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold">What we&apos;re seeing</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {selected.summary}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Card className="bg-muted/40">
+                    <CardContent className="p-4 flex gap-3">
+                      <Activity className="w-5 h-5 text-sky-600 mt-0.5 shrink-0" />
+                      <div>
+                        <p className="text-xs font-semibold uppercase text-muted-foreground mb-1">
+                          Try this at home
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Spend 10 minutes a day on a simple game that matches this area, like naming
+                          things you see, stacking blocks, or pretend play.
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card className="bg-muted/40">
+                    <CardContent className="p-4 flex gap-3">
+                      <MessageCircle className="w-5 h-5 text-violet-600 mt-0.5 shrink-0" />
+                      <div>
+                        <p className="text-xs font-semibold uppercase text-muted-foreground mb-1">
+                          Talk with your clinician
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Bring this summary to your next visit. It&apos;s designed to help you and
+                          your clinician decide together on next steps.
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {child && (
+                  <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold ${child.color}`}
+                      >
+                        {child.initials}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        <div>Age: {child.age}</div>
+                        <div>Last check-in: {child.lastScreening}</div>
+                      </div>
+                    </div>
+                    <Button size="sm" variant="outline" className="gap-2 rounded-xl">
+                      Share summary
+                      <ArrowRight className="w-3 h-3" />
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="border-dashed">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-semibold">
+                  Optional home device check-ins (example)
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  If you connect a nursery camera or thermostat in the PediScreen app, you may see a
+                  simple weekly summary here.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3 text-xs text-muted-foreground">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-medium text-foreground">Video</span>
+                  <span>Tummy time about 14 minutes this week. Sitting attempts on 3 days.</span>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-medium text-foreground">Sounds</span>
+                  <span>
+                    Lots of early sounds and babbling. Occasional upset cries, mostly at bedtime.
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-medium text-foreground">Environment</span>
+                  <span>The nursery stayed in a comfortable temperature range.</span>
+                </div>
+                <p className="text-[11px] leading-relaxed">
+                  These home summaries are{" "}
+                  <span className="font-semibold">extra context</span> only. They do not replace
+                  check-ups or your clinician&apos;s judgement, and you can turn them off at any time.
+                  PediScreen does not store raw video or audio from your home.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
         )}
       </div>
     </div>

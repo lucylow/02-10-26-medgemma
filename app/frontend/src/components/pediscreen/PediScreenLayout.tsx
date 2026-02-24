@@ -21,6 +21,7 @@ import {
   ActivitySquare,
   Scan,
   Mic,
+  Phone,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -36,6 +37,7 @@ const navItems = [
   { title: 'Profiles', path: '/pediscreen/profiles', icon: UserCircle },
   { title: 'New Screening', path: '/pediscreen/screening', icon: Plus },
   { title: 'Parent Portal', path: '/pediscreen/parent-portal', icon: Heart },
+  { title: 'Home PWA (ZPediscreen)', path: '/pediscreen/zpediscreen', icon: Phone },
   { title: 'History & Trends', path: '/pediscreen/history', icon: History },
   { title: 'Monitoring', path: '/pediscreen/monitoring', icon: ActivitySquare },
   { title: 'Wearables', path: '/pediscreen/wearables', icon: Watch },
@@ -55,6 +57,7 @@ const getBreadcrumbs = (pathname: string) => {
   if (pathname.includes('/history')) crumbs.push({ label: 'History', path: '/pediscreen/history' });
   if (pathname.includes('/monitoring')) crumbs.push({ label: 'Monitoring', path: '/pediscreen/monitoring' });
   if (pathname.includes('/parent-portal')) crumbs.push({ label: 'Parent Portal', path: '/pediscreen/parent-portal' });
+  if (pathname.includes('/zpediscreen')) crumbs.push({ label: 'Home PWA', path: '/pediscreen/zpediscreen' });
   if (pathname.includes('/wearables')) crumbs.push({ label: 'Wearables', path: '/pediscreen/wearables' });
   if (pathname.includes('/clinician-review')) crumbs.push({ label: 'Clinician Review', path: '/pediscreen/clinician-review' });
   if (pathname.includes('/ct-3d')) crumbs.push({ label: 'CT 3D Edge', path: '/pediscreen/ct-3d' });

@@ -123,6 +123,14 @@ const PediScreenHome = () => {
               </Button>
             </Link>
           </motion.div>
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+            <Link to="/pediscreen/virtual-assistants">
+              <Button size="lg" variant="outline" className="gap-2 w-full sm:w-auto rounded-xl">
+                <Sparkles className="w-4 h-4" />
+                On‑Device Voice Assistants
+              </Button>
+            </Link>
+          </motion.div>
         </div>
       </motion.div>
 

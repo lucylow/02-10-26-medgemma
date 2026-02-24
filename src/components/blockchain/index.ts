@@ -9,3 +9,8 @@ export {
   AccessibleNFTGallery,
   type ScreeningNFT,
 } from "./AccessibleNFTGallery";
+export {
+  PediScreenBlockchainUI,
+  type ScreeningData,
+  type PediScreenNft,
+} from "./PediScreenBlockchainUI";

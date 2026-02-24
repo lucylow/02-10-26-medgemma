@@ -16,11 +16,19 @@ import {
   ConnectWalletButton,
   ScreeningResultBlockchain,
   OracleVerificationCard,
+  PediScreenBlockchainUI,
 } from "@/components/blockchain";
-import { Wallet, FileCheck, Shield, ImageIcon, Coins } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Wallet, FileCheck, Shield, ImageIcon, Coins, LayoutDashboard } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 
 const BlockchainPage = () => {
+  const location = useLocation();
+  const isDashboard = location.pathname.includes("blockchain-dashboard");
+
+  if (isDashboard) {
+    return <PediScreenBlockchainUI />;
+  }
+
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
       <motion.div
@@ -106,7 +114,13 @@ const BlockchainPage = () => {
           </CardContent>
         </Card>
 
-        <div className="mt-8">
+        <div className="mt-8 flex flex-wrap gap-4">
+          <Link to="/pediscreen/blockchain-dashboard">
+            <Button className="gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700">
+              <LayoutDashboard className="w-4 h-4" />
+              NFT Dashboard
+            </Button>
+          </Link>
           <Link to="/pediscreen/healthchain">
             <Button variant="outline" className="gap-2 rounded-xl">
               Patient data exchange (HealthChain POC)
