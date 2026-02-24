@@ -53,10 +53,6 @@ const ResultsScreen = () => {
   } = location.state || {};
   const [activeTab, setActiveTab] = React.useState<'caregiver' | 'clinician'>('caregiver');
 
-  if (!report || !screeningId) {
-    return <Navigate to="/pediscreen" replace />;
-  }
-
   const ipfsScreeningResult: ScreeningResultForIPFS | null = React.useMemo(() => {
     if (!report || !screeningId) return null;
 
@@ -94,6 +90,10 @@ const ResultsScreen = () => {
       ),
     };
   }, [screeningId, childAge, report, confidence]);
+
+  if (!report || !screeningId) {
+    return <Navigate to="/pediscreen" replace />;
+  }
 
   const getRiskConfig = (riskLevel: string) => {
     const level = riskLevel?.toLowerCase() as RiskLevel;

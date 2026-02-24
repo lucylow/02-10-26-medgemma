@@ -226,7 +226,7 @@
   }
 
   .agent-step {
-    @apply relative flex flex-col items-center p-4 rounded-2xl transition-all group;
+  @apply relative flex flex-col items-center p-4 rounded-2xl transition-all;
   }
 
   .agent-step-active {

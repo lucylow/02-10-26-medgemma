@@ -23,5 +23,5 @@ describe("useMockIoTData", () => {
       0,
     );
   });
-}
+});
 

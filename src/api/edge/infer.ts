@@ -135,9 +135,8 @@ export async function inferEdgeHandler(request: Request): Promise<Response> {
     });
 
     const apiKey = typeof process !== 'undefined' && process.env?.HF_API_KEY;
-    let generated_text: string;
 
-    const result = await traceInference(
+    const generated_text = await traceInference(
       'medgemma.inference',
       async () => {
         if (apiKey) {
@@ -160,7 +159,6 @@ export async function inferEdgeHandler(request: Request): Promise<Response> {
       },
       { adapter_id: adapter.id, domain: domainVal }
     );
-    generated_text = result;
 
     const jsonStr = extractJsonFromModelOutput(generated_text);
     if (!jsonStr) {
