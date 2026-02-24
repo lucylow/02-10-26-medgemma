@@ -1,0 +1,6 @@
+metric,split,value,notes
+auroc,validation,0.000,"Placeholder; populate from clinical validation runs (never commit real PHI)"
+auprc,validation,0.000,"Placeholder; see validation notebooks or reports for real values"
+calibration_error,validation,0.000,"E.g. expected calibration error (ECE)"
+fairness_gap_ethnicity,validation,0.000,"Absolute difference in AUROC between groups; goal is as low as practical"
+

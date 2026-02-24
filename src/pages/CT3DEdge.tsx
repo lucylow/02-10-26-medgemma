@@ -24,6 +24,7 @@ import {
   Gauge,
   ArrowRight,
 } from "lucide-react";
+import { CT3DMeshPipeline } from "@/components/ct/CT3DMeshPipeline";
 
 const CT_METRICS = { modelMb: 120, inferenceSec: 2.1, peakRamMb: 450 };
 
@@ -97,6 +98,26 @@ export default function CT3DEdge() {
             {CT_METRICS.peakRamMb} MB peak RAM
           </Badge>
         </div>
+      </motion.section>
+
+      <motion.section
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.08 }}
+        className="space-y-4"
+      >
+        <div className="flex items-center gap-2">
+          <Layers className="w-5 h-5 text-primary" />
+          <h2 className="text-xl font-semibold">
+            DICOM → 3D mesh → MedGemma CT pipeline
+          </h2>
+        </div>
+        <p className="text-xs sm:text-sm text-muted-foreground max-w-2xl">
+          This interactive panel mirrors the Edge AI Prize demo: a CHW loads a portable CT DICOM
+          stack, PediScreen generates a 3D brain or extremity model, MedGemma analyzes for IVH or
+          fractures, and the result is exported as a FHIR Bundle R4 with an optional 3D mesh.
+        </p>
+        <CT3DMeshPipeline />
       </motion.section>
 
       <motion.section

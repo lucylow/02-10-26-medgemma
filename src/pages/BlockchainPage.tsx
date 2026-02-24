@@ -121,6 +121,21 @@ const BlockchainPage = () => {
               NFT Dashboard
             </Button>
           </Link>
+          <Link to="/pediscreen/blockchain-kaggle">
+            <Button variant="outline" className="gap-2 rounded-xl">
+              Kaggle Demo Flow
+            </Button>
+          </Link>
+          <Link to="/pediscreen/oracle-dashboard">
+            <Button variant="outline" className="gap-2 rounded-xl">
+              Chainlink Oracle Dashboard
+            </Button>
+          </Link>
+          <Link to="/pediscreen/dao">
+            <Button variant="outline" className="gap-2 rounded-xl">
+              DAO Governance
+            </Button>
+          </Link>
           <Link to="/pediscreen/healthchain">
             <Button variant="outline" className="gap-2 rounded-xl">
               Patient data exchange (HealthChain POC)

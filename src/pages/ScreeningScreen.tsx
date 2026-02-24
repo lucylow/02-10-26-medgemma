@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Camera, Upload, X, Loader2, Shield, Brain, CheckCircle2, Circle, Eye, Sparkles, Scan, Info, Mic, MicOff, Pencil, ImageIcon, Lock } from 'lucide-react';
+import { Camera, Upload, X, Loader2, Shield, Brain, CheckCircle2, Circle, Eye, Sparkles, Scan, Info, Mic, MicOff, Pencil, ImageIcon, Lock, Wallet, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -33,6 +33,8 @@ import CapturePreviewStep from '@/components/pediscreen/CapturePreviewStep';
 import DisclaimerBanner from '@/components/pediscreen/DisclaimerBanner';
 import { VoiceInput } from '@/components/voice/VoiceInput';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { usePediScreenWallet } from '@/hooks/usePediScreenWallet';
+import { CHAIN_ID } from '@/config/blockchain';
 
 const ASSEMBLYAI_KEY = import.meta.env.VITE_ASSEMBLYAI_KEY ?? '';
 
@@ -45,6 +47,21 @@ const developmentalDomains = [
 ];
 
 type InputMode = 'voice' | 'text' | 'image';
+
+function getChainLabel(chainId: number): string {
+  switch (chainId) {
+    case 137:
+      return 'Polygon Mainnet';
+    case 80002:
+      return 'Polygon Amoy Testnet';
+    case 8453:
+      return 'Base Mainnet';
+    case 84532:
+      return 'Base Sepolia Testnet';
+    default:
+      return `Chain ${chainId}`;
+  }
+}
 
 const ScreeningScreen = () => {
   const navigate = useNavigate();
@@ -66,6 +83,18 @@ const ScreeningScreen = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const imageTabInputRef = useRef<HTMLInputElement>(null);
+
+  const {
+    address,
+    chainId,
+    isConnected,
+    isConnecting,
+    connect,
+    switchChain,
+  } = usePediScreenWallet();
+
+  const targetChainName = getChainLabel(CHAIN_ID);
+  const isOnWrongChain = chainId != null && chainId !== CHAIN_ID;
 
   React.useEffect(() => {
     const SpeechRecognitionAPI = window.SpeechRecognition || (window as unknown as { webkitSpeechRecognition?: typeof SpeechRecognition }).webkitSpeechRecognition;
@@ -182,6 +211,72 @@ const ScreeningScreen = () => {
     if (fileInputRef.current) fileInputRef.current.value = '';
     if (imageTabInputRef.current) imageTabInputRef.current.value = '';
   };
+
+  if (!isConnected) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-primary/20">
+        <div className="max-w-md w-full mx-auto p-8 bg-card/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-border/40">
+          <div className="text-center mb-8">
+            <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-r from-primary to-primary/80 rounded-3xl flex items-center justify-center">
+              <Wallet className="w-10 h-10 text-primary-foreground" />
+            </div>
+            <h1 className="text-3xl font-black text-foreground mb-3">
+              Wallet required
+            </h1>
+            <p className="text-base text-muted-foreground mb-2">
+              Connect a wallet to securely link this MedGemma screening to a tamper-evident certificate.
+            </p>
+          </div>
+          <Button
+            onClick={() => void connect()}
+            disabled={isConnecting}
+            className="w-full bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-semibold py-3 rounded-2xl shadow-lg hover:shadow-xl transition-all"
+          >
+            {isConnecting ? 'Connecting…' : 'Connect wallet'}
+          </Button>
+          <p className="mt-4 text-xs text-muted-foreground text-center flex items-center justify-center gap-1">
+            <Shield className="w-3.5 h-3.5" />
+            No PHI is stored on-chain — only hashes and certificates.
+          </p>
+          {address && (
+            <p className="mt-2 text-[11px] font-mono text-muted-foreground/80 text-center">
+              {address.slice(0, 6)}…{address.slice(-4)}
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (isOnWrongChain) {
+    const currentLabel = chainId != null ? getChainLabel(chainId) : 'Unknown';
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 to-orange-50">
+        <div className="max-w-md w-full mx-auto p-8 bg-card/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-border/40">
+          <div className="text-center mb-8">
+            <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-r from-amber-500 to-orange-500 rounded-3xl flex items-center justify-center">
+              <AlertTriangle className="w-10 h-10 text-white" />
+            </div>
+            <h1 className="text-3xl font-black text-foreground mb-3">
+              Switch network to continue
+            </h1>
+            <p className="text-base text-muted-foreground mb-2">
+              Screening certificates for this demo are issued on <span className="font-semibold">{targetChainName}</span>.
+            </p>
+            <p className="text-xs text-muted-foreground">
+              You are currently connected to <span className="font-semibold">{currentLabel}</span>. Switch networks in your wallet or use the button below.
+            </p>
+          </div>
+          <Button
+            onClick={() => void switchChain(CHAIN_ID)}
+            className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold py-3 rounded-2xl shadow-lg hover:shadow-xl transition-all"
+          >
+            Switch to {targetChainName}
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -20,6 +20,7 @@ import ClinicianReview from '@/components/pediscreen/ClinicianReview';
 import DisclaimerBanner from '@/components/pediscreen/DisclaimerBanner';
 import { FeedbackCard } from '@/components/pediscreen/FeedbackCard';
 import { BlockchainAnchorCard, OracleVerificationCard } from '@/components/blockchain';
+import { IPFSMedicalStorage, type ScreeningResultForIPFS } from '@/components/IPFSMedicalStorage';
 
 type RiskLevel = 'on_track' | 'low' | 'monitor' | 'medium' | 'refer' | 'high';
 
@@ -55,6 +56,44 @@ const ResultsScreen = () => {
   if (!report || !screeningId) {
     return <Navigate to="/pediscreen" replace />;
   }
+
+  const ipfsScreeningResult: ScreeningResultForIPFS | null = React.useMemo(() => {
+    if (!report || !screeningId) return null;
+
+    const numericAge = childAge ? parseInt(String(childAge), 10) : NaN;
+
+    const risk = (report.riskLevel || '').toString().toLowerCase();
+    const mappedRisk: ScreeningResultForIPFS['riskLevel'] =
+      risk === 'high' || risk === 'refer'
+        ? 'HIGH'
+        : risk === 'medium' || risk === 'monitor'
+          ? 'MEDIUM'
+          : 'LOW';
+
+    const transcript =
+      report.supportingEvidence?.fromParentReport?.join('\n') ??
+      '';
+
+    return {
+      screeningId: String(screeningId),
+      ageMonths: Number.isFinite(numericAge) ? numericAge : 0,
+      riskLevel: mappedRisk,
+      confidence: confidence ?? report.confidence ?? 0.8,
+      keyFindings: report.keyFindings ?? [],
+      recommendations: report.recommendations ?? [],
+      transcript,
+      imageEmbeddings: [],
+      rawInference: JSON.stringify(
+        {
+          screeningId,
+          report,
+          evidence: report.supportingEvidence,
+        },
+        null,
+        2,
+      ),
+    };
+  }, [screeningId, childAge, report, confidence]);
 
   const getRiskConfig = (riskLevel: string) => {
     const level = riskLevel?.toLowerCase() as RiskLevel;
@@ -923,6 +962,15 @@ const ResultsScreen = () => {
             }
           />
         </div>
+      </motion.div>
+
+      {/* IPFS medical evidence storage (Pinata) */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.65 }}
+      >
+        <IPFSMedicalStorage screeningResult={ipfsScreeningResult} />
       </motion.div>
 
       {/* Disclaimer */}

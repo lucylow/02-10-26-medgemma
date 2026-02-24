@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ASQ-3 Clinical Validation Snapshot",
+  "description": "High-level metadata and small inline sample for ASQ-3 based developmental screening validation. Full datasets should live in secure, access-controlled storage.",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Internal version identifier for this validation snapshot."
+    },
+    "source": {
+      "type": "string",
+      "description": "Short description of the underlying dataset and curation process."
+    },
+    "notes": {
+      "type": "string",
+      "description": "Free-text notes on inclusion/exclusion criteria, de-identification, and limitations."
+    },
+    "sample": {
+      "type": "array",
+      "description": "Tiny, synthetic example rows for documentation only. Real clinical data must never be committed to the repository.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "case_id": { "type": "string" },
+          "age_months": { "type": "integer" },
+          "domain": { "type": "string" },
+          "asq3_raw_score": { "type": "integer" },
+          "asq3_percentile_band": { "type": "string" },
+          "ground_truth_label": { "type": "string" },
+          "model_risk": { "type": "string" },
+          "clinician_override": { "type": "string" }
+        },
+        "required": [
+          "case_id",
+          "age_months",
+          "domain",
+          "asq3_raw_score",
+          "asq3_percentile_band",
+          "ground_truth_label",
+          "model_risk"
+        ]
+      }
+    }
+  },
+  "required": ["version", "source"],
+  "example": {
+    "version": "asq3-validation-snapshot-2026-02",
+    "source": "Synthetic and de-identified ASQ-3 like records derived from public norms and PediScreen pilot simulations.",
+    "notes": "This file is a documentation stub. Production validation datasets must be stored in secure, access-controlled clinical data environments.",
+    "sample": [
+      {
+        "case_id": "synthetic-asq3-001",
+        "age_months": 24,
+        "domain": "communication",
+        "asq3_raw_score": 30,
+        "asq3_percentile_band": "25-50",
+        "ground_truth_label": "monitor",
+        "model_risk": "monitor",
+        "clinician_override": "none"
+      }
+    ]
+  }
+}
+

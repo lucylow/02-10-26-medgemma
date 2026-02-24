@@ -4,6 +4,7 @@
  */
 import { useCallback, useEffect, useState } from "react";
 import { CHAIN_ID, getChainRpcUrl } from "@/config/blockchain";
+import { MOCK_WALLET_DATA } from "@/data/mockWallet";
 
 declare global {
   interface Window {
@@ -133,3 +134,174 @@ export function usePediScreenWallet(): UsePediScreenWalletResult {
     error,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Kaggle/demo-ready wallet wrapper with mock NFTs + richer status
+// ---------------------------------------------------------------------------
+
+export interface WalletStatus {
+  address: string | null;
+  isConnected: boolean;
+  chainId: number | null;
+  isPolygon: boolean;
+  ensName: string | null;
+  balance: string;
+  status: "idle" | "connecting" | "connected" | "error" | "switching";
+  error: string | null;
+}
+
+export interface ScreeningNFT {
+  tokenId: number;
+  ipfsCID: string;
+  riskLevel: "LOW" | "MEDIUM" | "HIGH";
+  confidence: number;
+  verified: boolean;
+  txHash: string;
+  childAgeMonths?: number;
+  timestamp?: number;
+  keyFindings?: string[];
+}
+
+const POLYGON_CHAIN_ID = 137;
+const MOCK_DELAY = 1200; // Realistic network latency for demos
+
+/**
+ * Higher-level wallet hook used by Kaggle/demo blockchain flows.
+ * Wraps `usePediScreenWallet` (real MetaMask) but can also run in pure mock mode.
+ */
+export function usePediscreenWallet() {
+  const {
+    address,
+    chainId,
+    isConnecting,
+    isConnected,
+    connect,
+    disconnect,
+    switchChain,
+    error,
+  } = usePediScreenWallet();
+
+  const [wallet, setWallet] = useState<WalletStatus>({
+    address: null,
+    isConnected: false,
+    chainId: null,
+    isPolygon: false,
+    ensName: null,
+    balance: "0",
+    status: "idle",
+    error: null,
+  });
+  const [screeningNFTs, setScreeningNFTs] = useState<ScreeningNFT[]>([]);
+
+  // Keep derived wallet state in sync with the base hook when not in mock error state.
+  useEffect(() => {
+    setWallet((prev) => ({
+      ...prev,
+      address,
+      isConnected,
+      chainId,
+      isPolygon: chainId === POLYGON_CHAIN_ID,
+      // Keep any demo balance unless we explicitly override.
+      balance: prev.balance ?? "0",
+      status: error
+        ? "error"
+        : isConnecting
+          ? "connecting"
+          : isConnected
+            ? "connected"
+            : "idle",
+      error,
+    }));
+  }, [address, chainId, isConnected, isConnecting, error]);
+
+  const connectWallet = useCallback(
+    async (useMock: boolean = false) => {
+      setWallet((prev) => ({ ...prev, status: "connecting", error: null }));
+
+      try {
+        const hasEthereum =
+          typeof window !== "undefined" &&
+          typeof (window as Window).ethereum !== "undefined";
+
+        if (useMock || !hasEthereum) {
+          // Mock mode — perfect for Kaggle demos and offline runs.
+          await new Promise((resolve) => setTimeout(resolve, MOCK_DELAY));
+          setWallet({
+            ...MOCK_WALLET_DATA.connected,
+            status: "connected",
+          });
+          setScreeningNFTs(MOCK_WALLET_DATA.nfts);
+          return;
+        }
+
+        await connect();
+        // Real connection: base hook effect will populate address/chainId/status.
+      } catch (e) {
+        const message = e instanceof Error ? e.message : String(e);
+        setWallet((prev) => ({
+          ...prev,
+          status: "error",
+          error: message || "Connection failed",
+        }));
+      }
+    },
+    [connect],
+  );
+
+  const disconnectWallet = useCallback(() => {
+    disconnect();
+    setWallet({
+      address: null,
+      isConnected: false,
+      chainId: null,
+      isPolygon: false,
+      ensName: null,
+      balance: "0",
+      status: "idle",
+      error: null,
+    });
+    setScreeningNFTs([]);
+  }, [disconnect]);
+
+  const switchToPolygon = useCallback(async () => {
+    setWallet((prev) => ({ ...prev, status: "switching", error: null }));
+
+    const hasEthereum =
+      typeof window !== "undefined" &&
+      typeof (window as Window).ethereum !== "undefined";
+    if (!hasEthereum) {
+      setWallet((prev) => ({
+        ...prev,
+        status: "error",
+        error: "No wallet detected",
+      }));
+      return;
+    }
+
+    try {
+      await switchChain(POLYGON_CHAIN_ID);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      setWallet((prev) => ({
+        ...prev,
+        status: "error",
+        error: message || "Failed to switch network",
+      }));
+    }
+  }, [switchChain]);
+
+  return {
+    wallet,
+    screeningNFTs,
+    setScreeningNFTs,
+    connectWallet,
+    disconnectWallet,
+    switchToPolygon,
+    // Simple refetch that rehydrates the mock NFT list — deterministic for demos.
+    refetchNFTs: () => setScreeningNFTs(MOCK_WALLET_DATA.nfts),
+    // Expose base hook flags for callers that need them.
+    isConnected,
+    baseAddress: address,
+  };
+}
+

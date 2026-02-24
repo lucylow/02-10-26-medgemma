@@ -191,6 +191,83 @@
   }
 }
 
+@layer base {
+  :root {
+    /* Multi-agent color tokens */
+    --agent-emerald: 34 197 94;
+    --agent-blue: 59 130 246;
+    --agent-purple: 168 85 247;
+    --agent-orange: 251 146 60;
+    --agent-red: 239 68 68;
+  }
+}
+
+@layer components {
+  /* Agent Status Cards */
+  .agent-active {
+    @apply relative bg-gradient-to-br from-emerald-500/90 to-teal-600/90 text-white shadow-2xl shadow-emerald-500/25 ring-2 ring-emerald-400/50 backdrop-blur-md;
+  }
+
+  .agent-processing {
+    @apply agent-active animate-pulse ring-4 ring-emerald-400/75;
+  }
+
+  .agent-complete {
+    @apply bg-gradient-to-br from-emerald-500/80 to-teal-500/80 ring-4 ring-emerald-500/50 shadow-3xl;
+  }
+
+  .agent-error {
+    @apply bg-gradient-to-br from-red-500/90 to-rose-600/90 ring-4 ring-red-400/50 shadow-2xl shadow-red-500/25;
+  }
+
+  /* Agent Pipeline Flow */
+  .agent-flow {
+    @apply flex items-center gap-4 p-6 bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/50;
+  }
+
+  .agent-step {
+    @apply relative flex flex-col items-center p-4 rounded-2xl transition-all group;
+  }
+
+  .agent-step-active {
+    @apply bg-gradient-to-br from-blue-500 to-purple-500 text-white shadow-2xl scale-105;
+  }
+
+  .agent-step-complete {
+    @apply bg-gradient-to-br from-emerald-500 to-teal-500 text-white shadow-xl;
+  }
+
+  .agent-step-pending {
+    @apply bg-gray-100 text-gray-600 border-2 border-gray-200 hover:bg-gray-50;
+  }
+
+  /* Health Data Visualizations */
+  .health-vitals {
+    @apply grid grid-cols-2 md:grid-cols-4 gap-6 p-8 bg-gradient-to-br from-blue-50 to-emerald-50 rounded-3xl;
+  }
+
+  .vital-card {
+    @apply glass-medical p-6 rounded-2xl text-center border-2 hover:shadow-2xl transition-all;
+  }
+
+  .vital-normal {
+    @apply border-emerald-300 bg-emerald-50/50;
+  }
+
+  .vital-warning {
+    @apply border-amber-300 bg-amber-50/50 ring-2 ring-amber-200/50;
+  }
+
+  .vital-critical {
+    @apply border-red-300 bg-red-50/50 ring-2 ring-red-200/50 shadow-md;
+  }
+
+  /* Glassmorphism medical card */
+  .glass-medical {
+    @apply bg-white/70 backdrop-blur-xl border border-white/60 shadow-xl;
+  }
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;
@@ -244,3 +321,6 @@
   border-radius: 8px;
   overflow: hidden;
 }
+
+/* Blockchain-specific design system */
+@import "./styles/blockchain.css";

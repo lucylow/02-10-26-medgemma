@@ -63,14 +63,20 @@ import AboutPage from "./pages/AboutPage";
 import FAQPage from "./pages/FAQPage";
 import PrivacyPage from "./pages/PrivacyPage";
 import HelpPage from "./pages/HelpPage";
+import BlockchainKaggleDemo from "./pages/BlockchainKaggleDemo";
+import OracleDashboardPage from "./pages/OracleDashboardPage";
+import DAOGovernancePage from "./pages/DAOGovernancePage";
 import ClinicianReviewWithCollab from "./pages/ClinicianReviewWithCollab";
 import PediatricShowcasePage from "./pages/PediatricShowcasePage";
 import HumanCenteredPatientsPage from "./pages/HumanCenteredPatientsPage";
 import UltraDashboard from "./pages/UltraDashboard";
+import { HealthDashboard } from "./components/HealthDashboard";
+import MultiAgentHealthDashboard from "./components/MultiAgentHealthDashboard";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { ThemeProvider } from "./theme";
 import { ThemeProvider as ClinicalTokensProvider } from "./providers/ThemeProvider";
 import { AccessiblePediScreenProvider } from "./components/a11y/AccessiblePediScreenProvider";
+import { WalletHeader } from "./components/blockchain";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 
 const queryClient = new QueryClient();
@@ -78,8 +84,10 @@ const queryClient = new QueryClient();
 const appRoutes = createRoutesFromElements(
   <>
     <Route path="/" element={<Index />} />
+    <Route path="/screen" element={<Navigate to="/pediscreen/screening" replace />} />
     <Route element={<MainLayout />}>
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path="/health-dashboard" element={<ProtectedRoute><HealthDashboard /></ProtectedRoute>} />
       <Route path="/cases" element={<ProtectedRoute><CasesIndex /></ProtectedRoute>} />
       <Route path="/cases/:id" element={<ProtectedRoute><CaseDetail /></ProtectedRoute>} />
       <Route path="/auth/login" element={<Login />} />
@@ -98,6 +106,7 @@ const appRoutes = createRoutesFromElements(
       <Route index element={<PediScreenHome />} />
       <Route path="dashboard" element={<AgentDashboard />} />
       <Route path="agent-pipeline" element={<AgentPipelineScreen />} />
+      <Route path="multi-agent-health" element={<MultiAgentHealthDashboard />} />
       <Route path="voice" element={<VoiceInputScreen />} />
       <Route path="screening" element={<ScreeningScreen />} />
       <Route path="results" element={<ResultsScreen />} />
@@ -117,6 +126,9 @@ const appRoutes = createRoutesFromElements(
       <Route path="federated" element={<FederatedLearningPage />} />
       <Route path="blockchain" element={<BlockchainPage />} />
       <Route path="blockchain-dashboard" element={<BlockchainPage />} />
+      <Route path="blockchain-kaggle" element={<BlockchainKaggleDemo />} />
+      <Route path="oracle-dashboard" element={<OracleDashboardPage />} />
+      <Route path="dao" element={<DAOGovernancePage />} />
       <Route path="healthchain" element={<HealthChainPage />} />
       <Route path="integrations" element={<IntegrationsPage />} />
       <Route path="guidelines" element={<GuidelinesPage />} />
@@ -192,6 +204,7 @@ const App = ({ router: customRouter }: AppProps = {}) => {
               <AgentProvider>
                 <ScreeningProvider>
                   <AccessiblePediScreenProvider>
+                    <WalletHeader />
                     <Toaster />
                     <Sonner />
                     <RouterProvider router={router} />
