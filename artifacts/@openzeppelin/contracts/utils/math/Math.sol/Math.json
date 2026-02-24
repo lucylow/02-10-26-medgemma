@@ -1,0 +1,10 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "Math",
+  "sourceName": "@openzeppelin/contracts/utils/math/Math.sol",
+  "abi": [],
+  "bytecode": "0x6080806040523460175760399081601c823930815050f35b5f80fdfe5f80fdfea26469706673582212202758da456419dae5fe3acb03ed81d9192f524370c7eae737886553495617313264736f6c634300081b0033",
+  "deployedBytecode": "0x5f80fdfea26469706673582212202758da456419dae5fe3acb03ed81d9192f524370c7eae737886553495617313264736f6c634300081b0033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}
