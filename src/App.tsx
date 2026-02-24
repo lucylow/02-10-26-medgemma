@@ -223,7 +223,7 @@ const appRoutes = createRoutesFromElements(
 const routerBasename = (import.meta.env.BASE_URL || "/").replace(/\/$/, "") || "/";
 const defaultRouter = createBrowserRouter(appRoutes, {
   basename: routerBasename,
-  future: { v7_startTransition: true } as RouterFutureConfig,
+  future: { v7_startTransition: true } as any,
 });
 
 interface AppProps {

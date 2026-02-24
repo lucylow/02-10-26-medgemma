@@ -2,6 +2,7 @@ import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import type {
   DeploymentTarget,
   EdgeAIHardware,
+  EdgeDeviceHealthStatus,
   EdgeDeviceMetrics,
   EdgeHardwareTier,
 } from "@/types/edge-ai";
@@ -317,7 +318,7 @@ export class EdgeAIDeviceManager {
             uptime_hours: row.uptime_hours ?? 0,
             last_heartbeat: row.last_heartbeat ? new Date(row.last_heartbeat) : new Date(),
             models_loaded: Array.isArray(row.models_loaded) ? row.models_loaded : [],
-            status: row.status ?? "healthy",
+            status: (row.status ?? "healthy") as EdgeDeviceHealthStatus,
             tags: Array.isArray(row.tags) ? row.tags : undefined,
           } satisfies DeploymentTarget;
         })
