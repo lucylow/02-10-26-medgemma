@@ -32,10 +32,11 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
 // ── Constants ───────────────────────────────────────────────────
 export const MODEL_ID = "google/gemini-3-flash-preview";
 export const MODEL_ID_PRO = "google/gemini-3-pro-preview";
-export const AGENT_VERSION = "pediscreen-edge-v5.0";
+export const MODEL_ID_VISION = "google/gemini-3-flash-preview";
+export const AGENT_VERSION = "pediscreen-edge-v5.1";
 export const COST_PER_1K_TOKENS = 0.00015;
 export const COST_PER_1K_TOKENS_PRO = 0.00125;
-export const EDGE_VERSION = "5.0.0";
+export const EDGE_VERSION = "5.1.0";
 export const AI_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
 // ── Error responses ─────────────────────────────────────────────

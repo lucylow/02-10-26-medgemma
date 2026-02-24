@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.rop-analyze]
 verify_jwt = false
+
+[functions.developmental-chat]
+verify_jwt = false
