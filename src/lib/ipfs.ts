@@ -1,6 +1,3 @@
-// @ts-ignore - axios may not have type declarations installed
-import axios from "axios";
-
 // Shared Pinata configuration used for all IPFS helpers in this app.
 export const PINATA_GATEWAY = "https://gateway.pinata.cloud";
 const PINATA_API = "https://api.pinata.cloud";
@@ -89,31 +86,35 @@ export async function uploadScreeningToIPFS(
   );
   formData.append("pinataMetadata", JSON.stringify(metadata));
 
-  const response = await axios.post(
-    `${PINATA_API}/pinning/pinFileToIPFS`,
-    formData,
-    {
-      headers: {
-        ...(PINATA_JWT ? { Authorization: `Bearer ${PINATA_JWT}` } : {}),
-        ...(PINATA_API_KEY
-          ? {
-              pinata_api_key: PINATA_API_KEY,
-            }
-          : {}),
-        ...(PINATA_SECRET_KEY
-          ? {
-              pinata_secret_api_key: PINATA_SECRET_KEY,
-            }
-          : {}),
-      },
+  const response = await fetch(`${PINATA_API}/pinning/pinFileToIPFS`, {
+    method: "POST",
+    body: formData,
+    headers: {
+      ...(PINATA_JWT ? { Authorization: `Bearer ${PINATA_JWT}` } : {}),
+      ...(PINATA_API_KEY
+        ? {
+            pinata_api_key: PINATA_API_KEY,
+          }
+        : {}),
+      ...(PINATA_SECRET_KEY
+        ? {
+            pinata_secret_api_key: PINATA_SECRET_KEY,
+          }
+        : {}),
     },
-  );
+  });
 
-  if (!response.data?.IpfsHash) {
+  if (!response.ok) {
+    throw new Error(`Pinata upload failed with status ${response.status}`);
+  }
+
+  const data = (await response.json()) as { IpfsHash?: string };
+
+  if (!data.IpfsHash) {
     throw new Error("Pinata response missing IpfsHash");
   }
 
-  return `ipfs://${response.data.IpfsHash as string}`;
+  return `ipfs://${data.IpfsHash}`;
 }
 
 /**
@@ -152,28 +153,35 @@ export async function uploadMedicalEvidence(
   );
   formData.append("pinataMetadata", metadataBlob);
 
-  const response = await axios.post(
-    `${PINATA_API}/pinning/pinFileToIPFS`,
-    formData,
-    {
-      headers: {
-        ...(PINATA_JWT ? { Authorization: `Bearer ${PINATA_JWT}` } : {}),
-        ...(PINATA_API_KEY
-          ? {
-              pinata_api_key: PINATA_API_KEY,
-            }
-          : {}),
-        ...(PINATA_SECRET_KEY
-          ? {
-              pinata_secret_api_key: PINATA_SECRET_KEY,
-            }
-          : {}),
-      },
+  const response = await fetch(`${PINATA_API}/pinning/pinFileToIPFS`, {
+    method: "POST",
+    body: formData,
+    headers: {
+      ...(PINATA_JWT ? { Authorization: `Bearer ${PINATA_JWT}` } : {}),
+      ...(PINATA_API_KEY
+        ? {
+            pinata_api_key: PINATA_API_KEY,
+          }
+        : {}),
+      ...(PINATA_SECRET_KEY
+        ? {
+            pinata_secret_api_key: PINATA_SECRET_KEY,
+          }
+        : {}),
     },
-  );
+  });
 
-  const ipfsHash = response.data?.IpfsHash as string | undefined;
-  const size = (response.data?.PinSize as number | undefined) ?? 0;
+  if (!response.ok) {
+    throw new Error(`Pinata upload failed with status ${response.status}`);
+  }
+
+  const data = (await response.json()) as {
+    IpfsHash?: string;
+    PinSize?: number;
+  };
+
+  const ipfsHash = data.IpfsHash;
+  const size = data.PinSize ?? 0;
 
   if (!ipfsHash) {
     throw new Error("Pinata response missing IpfsHash");
@@ -193,10 +201,17 @@ export async function verifyIPFSContent(ipfsHash: string): Promise<boolean> {
   if (!ipfsHash) return false;
 
   try {
-    const response = await axios.get(`${PINATA_GATEWAY}/ipfs/${ipfsHash}`, {
-      timeout: 5000,
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+    const response = await fetch(`${PINATA_GATEWAY}/ipfs/${ipfsHash}`, {
+      method: "GET",
+      signal: controller.signal,
     });
-    return response.status === 200;
+
+    clearTimeout(timeoutId);
+
+    return response.ok;
   } catch {
     return false;
   }
