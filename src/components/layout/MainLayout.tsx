@@ -2,6 +2,7 @@ import { Outlet } from "react-router-dom";
 import NavBar from "./NavBar";
 import Footer from "./Footer";
 import Sidebar from "./Sidebar";
+import { GlobalSearch } from "./global-search";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function MainLayout() {
@@ -17,6 +18,7 @@ export default function MainLayout() {
           <Footer />
         </main>
       </div>
+      <GlobalSearch />
     </div>
   );
 }
