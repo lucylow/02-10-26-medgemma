@@ -95,7 +95,7 @@ export function Footer() {
 
         <div className="border-t border-background/20 pt-8 text-center">
           <p className="text-background/60 text-sm">
-            © 2026 Cognita Health | The MedGemma Impact Challenge Submission
+            © 2026 Lucy Low | The MedGemma Impact Challenge Submission
           </p>
           <p className="text-background/50 text-xs mt-2">
             Medical Disclaimer: PediScreen AI is a screening aid, not a diagnostic tool. 

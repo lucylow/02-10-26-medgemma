@@ -2,7 +2,7 @@
 
 **Document Version:** 1.0  
 **Last Updated:** 2026-02-14  
-**Controller:** Cognita Health (placeholder)
+**Controller:** Lucy Low (placeholder)
 
 ---
 
@@ -10,7 +10,7 @@
 
 | Role | Entity | Description |
 |------|--------|-------------|
-| **Controller** | Cognita Health | Determines purposes and means of processing; responsible for lawful basis and data subject rights |
+| **Controller** | Lucy Low | Determines purposes and means of processing; responsible for lawful basis and data subject rights |
 | **Processor** | Cloud providers (GCP Vertex AI, Supabase, etc.) | Processes data on behalf of controller under DPA |
 | **Sub-processor** | Google (Vertex AI, MedGemma) | Model inference; data processed per BAA/DPA |
 

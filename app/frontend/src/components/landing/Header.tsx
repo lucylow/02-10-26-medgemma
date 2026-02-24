@@ -8,7 +8,8 @@ const navLinks = [
   { label: "Interactive Demo", href: "#demo" },
   { label: "Technology", href: "#technology" },
   { label: "Impact", href: "#impact" },
-  { label: "Team", href: "#team" },
+  { label: "CHW Workflow", href: "#chw-workflow" },
+  { label: "Creator", href: "#team" },
 ];
 
 export function Header() {

@@ -1,7 +1,7 @@
 from huggingface_hub import HfApi, upload_folder, create_repo
 import os
 
-HF_USERNAME = "your-hf-username-or-org"   # e.g. "CognitaHealth"
+HF_USERNAME = "your-hf-username-or-org"   # e.g. "your-org"
 REPO_NAME = "pediscreen-lora-adapters"    # choose a name
 REPO_ID = f"{HF_USERNAME}/{REPO_NAME}"
 LOCAL_FOLDER = "outputs/pediscreen_lora"  # where model.save_pretrained wrote adapters

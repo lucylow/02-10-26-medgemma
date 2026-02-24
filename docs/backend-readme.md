@@ -1,7 +1,7 @@
 # PediScreen AI: An Accessible Developmental Milestone Screening Assistant
 
-**Project Name:** PediScreen AI
-**Team:** Cognita Health (Alex Chen, Sam Rivera, Jordan Patel, Casey Kim)
+**Project Name:** PediScreen AI  
+**Creator:** Lucy Low
 
 PediScreen AI is a human-centered, privacy-focused application that empowers community health workers and parents to conduct preliminary developmental screenings for children aged 0-5 years.
 

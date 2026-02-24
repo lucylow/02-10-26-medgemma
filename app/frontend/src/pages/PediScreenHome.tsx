@@ -27,13 +27,6 @@ const PediScreenHome = () => {
     },
   ];
 
-  const team = [
-    { name: 'Alex Chen, MD/PhD Cand.', role: 'Clinical Domain Expert' },
-    { name: 'Sam Rivera', role: 'Technical Lead' },
-    { name: 'Jordan Patel', role: 'UI/UX Lead' },
-    { name: 'Casey Kim', role: 'Data Scientist' },
-  ];
-
   const stats = [
     { value: '5', label: 'Developmental Domains', icon: CheckCircle2 },
     { value: '0-72', label: 'Months Coverage', icon: Baby },
@@ -239,7 +232,7 @@ const PediScreenHome = () => {
         </Card>
       </motion.div>
 
-      {/* Team & Mission */}
+      {/* Creator */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -249,19 +242,9 @@ const PediScreenHome = () => {
         <Card className="border-dashed border-2 bg-muted/5">
           <CardHeader>
             <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground text-center">
-              Developed by Cognita Health
+              Created by Lucy Low
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {team.map((member, idx) => (
-                <div key={idx} className="text-center">
-                  <p className="font-medium text-sm">{member.name}</p>
-                  <p className="text-xs text-muted-foreground">{member.role}</p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
         </Card>
       </motion.div>
 

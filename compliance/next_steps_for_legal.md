@@ -6,7 +6,7 @@
 
 ## 1. Controller/Processor Roles
 
-- [ ] Confirm Cognita Health as controller
+- [ ] Confirm Lucy Low as controller
 - [ ] Identify all processors and subprocessors
 - [ ] Execute DPAs/BAAs where required
 
