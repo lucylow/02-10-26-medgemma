@@ -208,8 +208,16 @@ export function DemoSection() {
 
                   <div className="space-y-2">
                     <Label>Visual Evidence (Optional)</Label>
-                    <div 
+                    <div
+                      role="button"
+                      tabIndex={0}
                       onClick={handleUploadClick}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          handleUploadClick();
+                        }
+                      }}
                       className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group"
                     >
                       <div className="relative">

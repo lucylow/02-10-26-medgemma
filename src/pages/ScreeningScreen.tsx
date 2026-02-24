@@ -171,8 +171,8 @@ const ScreeningScreen = () => {
   const retakeImage = () => {
     setImagePendingPreview(null);
     setImagePendingFile(null);
-    fileInputRef.current?.value && (fileInputRef.current.value = '');
-    imageTabInputRef.current?.value && (imageTabInputRef.current.value = '');
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (imageTabInputRef.current) imageTabInputRef.current.value = '';
   };
 
   const removeImage = () => {
@@ -564,7 +564,15 @@ const ScreeningScreen = () => {
                     ) : (
                     <div
                       className="border-2 border-dashed border-primary/20 rounded-2xl p-8 text-center hover:border-primary/40 transition-colors cursor-pointer bg-muted/30"
+                      role="button"
+                      tabIndex={0}
                       onClick={() => openImageInput('image-tab-input')}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          openImageInput('image-tab-input');
+                        }
+                      }}
                     >
                       {currentScreening.imagePreview ? (
                         <div className="relative">

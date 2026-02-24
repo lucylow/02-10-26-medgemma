@@ -256,8 +256,8 @@ export const submitScreening = async (request: ScreeningRequest): Promise<Screen
     }
 
     // MedGemma API: JSON + base64 image
-    let body: any;
-    let headers: Record<string, string> = {
+    let body: Record<string, unknown> | string;
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
 

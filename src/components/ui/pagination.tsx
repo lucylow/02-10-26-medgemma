@@ -42,7 +42,9 @@ const PaginationLink = ({ className, isActive, size = "icon", ...props }: Pagina
       className,
     )}
     {...props}
-  />
+  >
+    {props.children ?? "\u00A0"}
+  </a>
 );
 PaginationLink.displayName = "PaginationLink";
 

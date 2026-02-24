@@ -13,7 +13,7 @@ export default function EndToEndDemo() {
     "He only says about 10 words and points rather than using words."
   );
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [draft, setDraft] = useState<any>(null);
+  const [draft, setDraft] = useState<{ report_id: string; clinical_summary?: string; technical_summary?: string; recommendations?: string[]; updated_draft?: unknown } | null>(null);
   const [loading, setLoading] = useState(false);
   const [clinicianNote, setClinicianNote] = useState("");
 
@@ -30,8 +30,8 @@ export default function EndToEndDemo() {
       const res = await generateDraftEnd2End(fd);
       setDraft(res);
       alert("Draft generated: " + res.report_id);
-    } catch (err: any) {
-      alert("Failed: " + err.message);
+    } catch (err: unknown) {
+      alert("Failed: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setLoading(false);
     }
@@ -47,8 +47,8 @@ export default function EndToEndDemo() {
       const res = await patchReportEnd2End(draft.report_id, patch);
       setDraft(res.updated_draft);
       alert("Saved edits.");
-    } catch (err: any) {
-      alert("Patch failed: " + err.message);
+    } catch (err: unknown) {
+      alert("Patch failed: " + (err instanceof Error ? err.message : String(err)));
     }
   }
 
@@ -67,8 +67,8 @@ export default function EndToEndDemo() {
       } else {
         alert("Finalize failed.");
       }
-    } catch (err: any) {
-      alert("Finalize failed: " + err.message);
+    } catch (err: unknown) {
+      alert("Finalize failed: " + (err instanceof Error ? err.message : String(err)));
     }
   }
 
@@ -77,33 +77,38 @@ export default function EndToEndDemo() {
       <h1 className="text-xl font-semibold">End-to-End MedGemma Demo</h1>
 
       <div className="mt-4 space-y-2">
-        <label>Screening ID</label>
+        <label htmlFor="e2e-screening-id">Screening ID</label>
         <input
+          id="e2e-screening-id"
           value={screeningId}
           onChange={(e) => setScreeningId(e.target.value)}
           className="w-full border p-2 rounded"
         />
-        <label>Age (months)</label>
+        <label htmlFor="e2e-age">Age (months)</label>
         <input
+          id="e2e-age"
           type="number"
           value={age}
           onChange={(e) => setAge(Number(e.target.value))}
           className="w-full border p-2 rounded"
         />
-        <label>Scores JSON</label>
+        <label htmlFor="e2e-scores">Scores JSON</label>
         <textarea
+          id="e2e-scores"
           value={scores}
           onChange={(e) => setScores(e.target.value)}
           className="w-full border p-2 rounded"
         />
-        <label>Observations</label>
+        <label htmlFor="e2e-obs">Observations</label>
         <textarea
+          id="e2e-obs"
           value={obs}
           onChange={(e) => setObs(e.target.value)}
           className="w-full border p-2 rounded"
         />
-        <label>Image (optional)</label>
+        <label htmlFor="e2e-image">Image (optional)</label>
         <input
+          id="e2e-image"
           type="file"
           accept="image/*,.dcm"
           onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
@@ -153,8 +158,9 @@ export default function EndToEndDemo() {
             </ul>
           </div>
 
-          <label className="mt-2">Clinician Note</label>
+          <label htmlFor="e2e-clinician-note" className="mt-2">Clinician Note</label>
           <input
+            id="e2e-clinician-note"
             value={clinicianNote}
             onChange={(e) => setClinicianNote(e.target.value)}
             className="w-full border p-2 rounded"

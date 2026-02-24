@@ -59,12 +59,19 @@ export async function postInfer(payload: InferPayload): Promise<InferResult> {
   if (Date.now() < circuitOpenUntil) return mockInfer(payload);
 
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    const signal =
+      typeof AbortSignal?.timeout === "function"
+        ? AbortSignal.timeout(30000)
+        : controller.signal;
     const res = await fetch(`${API_URL}/infer`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(30000),
+      signal,
     });
+    if (timeoutId) clearTimeout(timeoutId);
     if (!res.ok) {
       let message = `HTTP ${res.status}`;
       try {

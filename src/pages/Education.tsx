@@ -138,21 +138,21 @@ const Education = () => {
                 <CardTitle className="text-lg">External Resources</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <a href="#" className="flex items-center justify-between p-2 hover:bg-muted rounded-lg transition-colors group">
+                <a href="https://www.cdc.gov/ncbddd/actearly/milestones/index.html" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-2 hover:bg-muted rounded-lg transition-colors group">
                   <div className="flex items-center gap-2 text-sm">
                     <CheckCircle2 className="w-4 h-4 text-success" />
                     <span>CDC Milestones Tracker</span>
                   </div>
                   <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </a>
-                <a href="#" className="flex items-center justify-between p-2 hover:bg-muted rounded-lg transition-colors group">
+                <a href="https://www.aap.org/en-us/advocacy-and-policy/aap-health-initiatives/Screening/Pages/default.aspx" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-2 hover:bg-muted rounded-lg transition-colors group">
                   <div className="flex items-center gap-2 text-sm">
                     <CheckCircle2 className="w-4 h-4 text-success" />
                     <span>AAP Screening Guidelines</span>
                   </div>
                   <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </a>
-                <a href="#" className="flex items-center justify-between p-2 hover:bg-muted rounded-lg transition-colors group">
+                <a href="https://www.who.int/tools/child-growth-standards" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-2 hover:bg-muted rounded-lg transition-colors group">
                   <div className="flex items-center gap-2 text-sm">
                     <CheckCircle2 className="w-4 h-4 text-success" />
                     <span>WHO Early Development</span>

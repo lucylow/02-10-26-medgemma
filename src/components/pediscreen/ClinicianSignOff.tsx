@@ -58,8 +58,9 @@ export default function ClinicianSignOff({
 
   return (
     <div className={`p-3 border rounded ${className}`}>
-      <label className="text-xs font-medium">Clinician sign-off note (required)</label>
+      <label htmlFor="clinician-signoff-note" className="text-xs font-medium">Clinician sign-off note (required)</label>
       <input
+        id="clinician-signoff-note"
         value={note}
         onChange={(e) => setNote(e.target.value)}
         className="w-full border p-2 rounded mt-1"

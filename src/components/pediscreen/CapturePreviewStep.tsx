@@ -28,7 +28,7 @@ export default function CapturePreviewStep({
       <div className="relative flex justify-center">
         <img
           src={imagePreview}
-          alt="Captured image preview"
+          alt="Capture preview"
           className="max-h-[320px] rounded-xl object-contain border border-border shadow-md"
         />
       </div>

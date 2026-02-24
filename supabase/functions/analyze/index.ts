@@ -123,7 +123,7 @@ serve(async (req) => {
     let embeddingB64: string | null = null;
     let consentId: string | null = null;
     let caseId: string | null = null;
-    let inputTypes: string[] = ["text"];
+    const inputTypes: string[] = ["text"];
 
     if (contentType.includes("multipart/form-data")) {
       const form = await req.formData();

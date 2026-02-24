@@ -6,7 +6,7 @@ import jsxA11y from "eslint-plugin-jsx-a11y";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["dist", "storybook-static"] },
+  { ignores: ["dist", "storybook-static", "app/frontend", "mobile", "mobile-app", "pediscreen-dao-frontend", "pediscreen-dapp"] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ["**/*.{ts,tsx}"],

@@ -131,8 +131,9 @@ export default function RadiologyQueue() {
         <h2 className="text-sm font-medium mb-3">Upload Study</h2>
         <form onSubmit={handleUpload} className="flex flex-wrap gap-3 items-end">
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs text-muted-foreground">Study ID</label>
+            <label htmlFor="rad-study-id" className="text-xs text-muted-foreground">Study ID</label>
             <input
+              id="rad-study-id"
               name="study_id"
               className="h-9 rounded-md border px-3 text-sm"
               placeholder="STUDY-001"
@@ -140,8 +141,9 @@ export default function RadiologyQueue() {
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs text-muted-foreground">Patient ID</label>
+            <label htmlFor="rad-patient-id" className="text-xs text-muted-foreground">Patient ID</label>
             <input
+              id="rad-patient-id"
               name="patient_id"
               className="h-9 rounded-md border px-3 text-sm"
               placeholder="PID-001"
@@ -149,8 +151,9 @@ export default function RadiologyQueue() {
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs text-muted-foreground">Modality</label>
+            <label htmlFor="rad-modality" className="text-xs text-muted-foreground">Modality</label>
             <select
+              id="rad-modality"
               name="modality"
               className="h-9 rounded-md border px-3 text-sm w-28"
               defaultValue="XR"
@@ -162,8 +165,8 @@ export default function RadiologyQueue() {
             </select>
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs text-muted-foreground">Image</label>
-            <input name="image" type="file" accept="image/*,.dcm" className="text-sm" required />
+            <label htmlFor="rad-image" className="text-xs text-muted-foreground">Image</label>
+            <input id="rad-image" name="image" type="file" accept="image/*,.dcm" className="text-sm" required />
           </div>
           <Button type="submit" disabled={uploading}>
             <Upload className="w-4 h-4 mr-2" />
