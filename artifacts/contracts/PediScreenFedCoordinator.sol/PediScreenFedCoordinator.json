@@ -1,0 +1,304 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "PediScreenFedCoordinator",
+  "sourceName": "contracts/PediScreenFedCoordinator.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_pediToken",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_rewardPerDatapoint",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "client",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "datapoints",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "localModelHash",
+          "type": "bytes32"
+        }
+      ],
+      "name": "ClientContributed",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "client",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "initialModelHash",
+          "type": "bytes32"
+        }
+      ],
+      "name": "ClientRegistered",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "round",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "globalModelHash",
+          "type": "bytes32"
+        }
+      ],
+      "name": "RoundCompleted",
+      "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "REWARD_PER_DATAPOINT",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "_globalModelHash",
+          "type": "bytes32"
+        }
+      ],
+      "name": "completeRound",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "coordinator",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "currentRound",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "federatedClients",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "hospital",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "roundsCompleted",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "dataPoints",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "modelHash",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "clientAddress",
+          "type": "address"
+        }
+      ],
+      "name": "getClient",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "hospital",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "roundsCompleted",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "dataPoints",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "modelHash",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "globalModelHashes",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "pediToken",
+      "outputs": [
+        {
+          "internalType": "contract PEDIRewardToken",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "_initialModelHash",
+          "type": "bytes32"
+        }
+      ],
+      "name": "registerClient",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_coordinator",
+          "type": "address"
+        }
+      ],
+      "name": "setCoordinator",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_reward",
+          "type": "uint256"
+        }
+      ],
+      "name": "setRewardPerDatapoint",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_datapoints",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "_localModelHash",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes",
+          "name": "_signature",
+          "type": "bytes"
+        }
+      ],
+      "name": "submitGradients",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x608034608457601f61073038819003918201601f19168301916001600160401b03831184841017608857808492604094855283398101031260845780516001600160a01b038116919082900360845760200151600480546001600160a01b031990811690931790556003556005805490911633179055604051610693908161009d8239f35b5f80fd5b634e487b7160e01b5f52604160045260245ffdfe6080806040526004361015610012575f80fd5b5f905f3560e01c9081630a009097146105ed575080631400a497146105bf5780633909e3c3146105975780636d68cf54146103c45780638a19c8bc146103a65780638ea9811714610357578063960ec9c81461023657806398de154f1461020c578063a0e32870146101a5578063c30aed751461012b578063eab728581461010d5763ed1e2d7e146100a2575f80fd5b3461010a57602036600319011261010a576004356001600160a01b03811690819003610108578152602081815260409182902080546001820154600283015460039093015485516001600160a01b03909316835293820152928301526060820152608090f35b505b80fd5b503461010a578060031936011261010a576020600354604051908152f35b503461010a57602036600319011261010a577ffcda8d7906d22d8ccd725e0286633a4b309946acb2f464b7850076a38eba8201604060043561017860018060a01b03600554163314610610565b60025484526001602052808285205561019260025461064f565b908160025582519182526020820152a180f35b503461010a57602036600319011261010a576004356001600160a01b03811690819003610108578152602081815260409182902080546001820154600283015460039093015485516001600160a01b03909316835293820152928301526060820152608090f35b503461010a57602036600319011261010a5760406020916004358152600183522054604051908152f35b503461010a57602036600319011261010a5733815260208190526040812054600435906001600160a01b031661031d576040516080810181811067ffffffffffffffff8211176103095760405233815260036020820184815260408301858152606084019185835233875286602052604087209460018060a01b039051166bffffffffffffffffffffffff60a01b865416178555516001850155516002840155519101556040519081527f8d65e431fff4d7214dc93d76abbf8d56624948b7c97f62edd8f16d94901398b860203392a280f35b634e487b7160e01b84526041600452602484fd5b60405162461bcd60e51b8152602060048201526012602482015271105b1c9958591e481c9959da5cdd195c995960721b6044820152606490fd5b503461010a57602036600319011261010a576004356001600160a01b0381169081900361010857600554610395336001600160a01b03831614610610565b6001600160a01b0319161760055580f35b503461010a578060031936011261010a576020600254604051908152f35b50346105355760603660031901126105355760043560243560443567ffffffffffffffff8111610535573660238201121561053557806004013567ffffffffffffffff8111610535573691016024011161053557335f90815260208190526040902080546001600160a01b0316156105615760018101610444815461064f565b90556002810180549184830180931161054d57839260039255015560035480830290838204148315171561054d5780151580610539575b6104b5575b5060405191825260208201527f144a75432fb80145877bd9c5e09fe32d92bced3951af36d3c1c5b858ff3f6b6d60403392a280f35b6004546001600160a01b031690813b15610535575f916044839260405194859384926340c10f1960e01b845233600485015260248401525af1801561052a57156104805790925067ffffffffffffffff8111610516576040525f915f610480565b634e487b7160e01b5f52604160045260245ffd5b6040513d5f823e3d90fd5b5f80fd5b506004546001600160a01b0316151561047b565b634e487b7160e01b5f52601160045260245ffd5b60405162461bcd60e51b815260206004820152600e60248201526d139bdd081c9959da5cdd195c995960921b6044820152606490fd5b34610535575f366003190112610535576004546040516001600160a01b039091168152602090f35b34610535576020366003190112610535576105e560018060a01b03600554163314610610565b600435600355005b34610535575f366003190112610535576005546001600160a01b03168152602090f35b1561061757565b60405162461bcd60e51b815260206004820152601060248201526f27b7363c9031b7b7b93234b730ba37b960811b6044820152606490fd5b5f19811461054d576001019056fea2646970667358221220d807da321ffaf2acf5037ebad8a45fc9886ff72387dfd0fb9d8010e6efbd936e64736f6c634300081b0033",
+  "deployedBytecode": "0x6080806040526004361015610012575f80fd5b5f905f3560e01c9081630a009097146105ed575080631400a497146105bf5780633909e3c3146105975780636d68cf54146103c45780638a19c8bc146103a65780638ea9811714610357578063960ec9c81461023657806398de154f1461020c578063a0e32870146101a5578063c30aed751461012b578063eab728581461010d5763ed1e2d7e146100a2575f80fd5b3461010a57602036600319011261010a576004356001600160a01b03811690819003610108578152602081815260409182902080546001820154600283015460039093015485516001600160a01b03909316835293820152928301526060820152608090f35b505b80fd5b503461010a578060031936011261010a576020600354604051908152f35b503461010a57602036600319011261010a577ffcda8d7906d22d8ccd725e0286633a4b309946acb2f464b7850076a38eba8201604060043561017860018060a01b03600554163314610610565b60025484526001602052808285205561019260025461064f565b908160025582519182526020820152a180f35b503461010a57602036600319011261010a576004356001600160a01b03811690819003610108578152602081815260409182902080546001820154600283015460039093015485516001600160a01b03909316835293820152928301526060820152608090f35b503461010a57602036600319011261010a5760406020916004358152600183522054604051908152f35b503461010a57602036600319011261010a5733815260208190526040812054600435906001600160a01b031661031d576040516080810181811067ffffffffffffffff8211176103095760405233815260036020820184815260408301858152606084019185835233875286602052604087209460018060a01b039051166bffffffffffffffffffffffff60a01b865416178555516001850155516002840155519101556040519081527f8d65e431fff4d7214dc93d76abbf8d56624948b7c97f62edd8f16d94901398b860203392a280f35b634e487b7160e01b84526041600452602484fd5b60405162461bcd60e51b8152602060048201526012602482015271105b1c9958591e481c9959da5cdd195c995960721b6044820152606490fd5b503461010a57602036600319011261010a576004356001600160a01b0381169081900361010857600554610395336001600160a01b03831614610610565b6001600160a01b0319161760055580f35b503461010a578060031936011261010a576020600254604051908152f35b50346105355760603660031901126105355760043560243560443567ffffffffffffffff8111610535573660238201121561053557806004013567ffffffffffffffff8111610535573691016024011161053557335f90815260208190526040902080546001600160a01b0316156105615760018101610444815461064f565b90556002810180549184830180931161054d57839260039255015560035480830290838204148315171561054d5780151580610539575b6104b5575b5060405191825260208201527f144a75432fb80145877bd9c5e09fe32d92bced3951af36d3c1c5b858ff3f6b6d60403392a280f35b6004546001600160a01b031690813b15610535575f916044839260405194859384926340c10f1960e01b845233600485015260248401525af1801561052a57156104805790925067ffffffffffffffff8111610516576040525f915f610480565b634e487b7160e01b5f52604160045260245ffd5b6040513d5f823e3d90fd5b5f80fd5b506004546001600160a01b0316151561047b565b634e487b7160e01b5f52601160045260245ffd5b60405162461bcd60e51b815260206004820152600e60248201526d139bdd081c9959da5cdd195c995960921b6044820152606490fd5b34610535575f366003190112610535576004546040516001600160a01b039091168152602090f35b34610535576020366003190112610535576105e560018060a01b03600554163314610610565b600435600355005b34610535575f366003190112610535576005546001600160a01b03168152602090f35b1561061757565b60405162461bcd60e51b815260206004820152601060248201526f27b7363c9031b7b7b93234b730ba37b960811b6044820152606490fd5b5f19811461054d576001019056fea2646970667358221220d807da321ffaf2acf5037ebad8a45fc9886ff72387dfd0fb9d8010e6efbd936e64736f6c634300081b0033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

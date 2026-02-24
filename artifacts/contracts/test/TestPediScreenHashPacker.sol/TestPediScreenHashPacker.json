@@ -1,0 +1,133 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "TestPediScreenHashPacker",
+  "sourceName": "contracts/test/TestPediScreenHashPacker.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "patientId",
+          "type": "address"
+        },
+        {
+          "internalType": "bytes",
+          "name": "ipfsCid",
+          "type": "bytes"
+        },
+        {
+          "internalType": "uint32",
+          "name": "childAge",
+          "type": "uint32"
+        },
+        {
+          "internalType": "uint8",
+          "name": "riskLevel",
+          "type": "uint8"
+        }
+      ],
+      "name": "hashMedicalRecord",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "dataHash",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint32",
+          "name": "childAge",
+          "type": "uint32"
+        },
+        {
+          "internalType": "uint8",
+          "name": "riskLevel",
+          "type": "uint8"
+        },
+        {
+          "internalType": "uint16",
+          "name": "domainId",
+          "type": "uint16"
+        },
+        {
+          "internalType": "uint40",
+          "name": "timestamp",
+          "type": "uint40"
+        },
+        {
+          "internalType": "uint16",
+          "name": "clinicId",
+          "type": "uint16"
+        }
+      ],
+      "name": "packMedicalHash",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "packedMeta",
+          "type": "uint256"
+        }
+      ],
+      "name": "unpackMedicalHash",
+      "outputs": [
+        {
+          "internalType": "uint32",
+          "name": "childAge",
+          "type": "uint32"
+        },
+        {
+          "internalType": "uint8",
+          "name": "riskLevel",
+          "type": "uint8"
+        },
+        {
+          "internalType": "uint16",
+          "name": "domainId",
+          "type": "uint16"
+        },
+        {
+          "internalType": "uint40",
+          "name": "timestamp",
+          "type": "uint40"
+        },
+        {
+          "internalType": "uint16",
+          "name": "clinicId",
+          "type": "uint16"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x608080604052346015576102e0908161001a8239f35b5f80fdfe6080806040526004361015610012575f80fd5b5f3560e01c90816375be1a3514610255575080638881b45e146101a65763e7268aab1461003d575f80fd5b346101a25760803660031901126101a2576004356001600160a01b03811681036101a2576024359067ffffffffffffffff82116101a257366023830112156101a257816004013567ffffffffffffffff81116101a25736602482850101116101a2576044359263ffffffff841684036101a2576064359360ff851685036101a2576024948360749460405197889560208701987f1a5842ebcaa06d3d7f2d17666b89b38239fd008ffe8c8ac9c588bff147be92aa8a526bffffffffffffffffffffffff199060601b1660408801527f3189e8f4eb7bc6a858420f64aec9028c69a7e9fc754c12c05e72d4202713fa2a6054880152018686013783019163ffffffff60e01b9060e01b168483015260ff60f81b9060f81b1660788201520301601a19810183526024601f1991011682019082821067ffffffffffffffff83111761018e57602092826040525190208152f35b634e487b7160e01b5f52604160045260245ffd5b5f80fd5b346101a25760c03660031901126101a25760243563ffffffff811681036101a2576044359060ff821682036101a2576064359161ffff831683036101a2576084359264ffffffffff841684036101a25760a4359361ffff85168095036101a25760409466ffffffffff000068ffff0000000000000069ff000000000000000000885197600435895263ffffffff60501b9060501b169660481b169460381b169260101b16171717176020820152f35b346101a25760203660031901126101a25760a09061ffff60043563ffffffff8160501c16835260ff8160481c166020840152818160381c16604084015264ffffffffff8160101c166060840152166080820152f3fea264697066735822122062176505937ab60fb52b34c7291c9d036b321fabf67ac1bb364b7d4cffb34c1764736f6c634300081b0033",
+  "deployedBytecode": "0x6080806040526004361015610012575f80fd5b5f3560e01c90816375be1a3514610255575080638881b45e146101a65763e7268aab1461003d575f80fd5b346101a25760803660031901126101a2576004356001600160a01b03811681036101a2576024359067ffffffffffffffff82116101a257366023830112156101a257816004013567ffffffffffffffff81116101a25736602482850101116101a2576044359263ffffffff841684036101a2576064359360ff851685036101a2576024948360749460405197889560208701987f1a5842ebcaa06d3d7f2d17666b89b38239fd008ffe8c8ac9c588bff147be92aa8a526bffffffffffffffffffffffff199060601b1660408801527f3189e8f4eb7bc6a858420f64aec9028c69a7e9fc754c12c05e72d4202713fa2a6054880152018686013783019163ffffffff60e01b9060e01b168483015260ff60f81b9060f81b1660788201520301601a19810183526024601f1991011682019082821067ffffffffffffffff83111761018e57602092826040525190208152f35b634e487b7160e01b5f52604160045260245ffd5b5f80fd5b346101a25760c03660031901126101a25760243563ffffffff811681036101a2576044359060ff821682036101a2576064359161ffff831683036101a2576084359264ffffffffff841684036101a25760a4359361ffff85168095036101a25760409466ffffffffff000068ffff0000000000000069ff000000000000000000885197600435895263ffffffff60501b9060501b169660481b169460381b169260101b16171717176020820152f35b346101a25760203660031901126101a25760a09061ffff60043563ffffffff8160501c16835260ff8160481c166020840152818160381c16604084015264ffffffffff8160101c166060840152166080820152f3fea264697066735822122062176505937ab60fb52b34c7291c9d036b321fabf67ac1bb364b7d4cffb34c1764736f6c634300081b0033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

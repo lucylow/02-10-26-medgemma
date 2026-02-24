@@ -1,0 +1,9 @@
+# medgemma_client: optional deps for local + vertex
+# Minimal for mock: none. For local: transformers, torch, peft, accelerate
+# For Vertex: google-cloud-aiplatform
+transformers>=4.36.0
+torch>=2.0.0
+peft>=0.7.0
+accelerate>=0.25.0
+numpy>=1.24.0
+# google-cloud-aiplatform  # uncomment for Vertex

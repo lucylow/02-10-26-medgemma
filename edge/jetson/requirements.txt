@@ -1,0 +1,2 @@
+# Embedding service for Jetson (MedSigLIP or lightweight encoder)
+# Install JetPack, then: docker build -t medgemma-server . && docker run -p 8000:8000 medgemma-server
