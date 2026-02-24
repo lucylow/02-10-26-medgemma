@@ -94,7 +94,9 @@ const appRoutes = createRoutesFromElements(
   </>
 );
 
-const defaultRouter = createBrowserRouter(appRoutes);
+const defaultRouter = createBrowserRouter(appRoutes, {
+  future: { v7_startTransition: true },
+});
 
 interface AppProps {
   router?: ReturnType<typeof createMemoryRouter>;

@@ -12,6 +12,7 @@ import { LivePipelineStatus } from '@/components/pediscreen/LivePipelineStatus';
 import { VoiceEntryPoint } from '@/components/pediscreen/VoiceEntryPoint';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowRight } from 'lucide-react';
 import { useEffect } from 'react';
 
@@ -34,13 +35,41 @@ const formatRiskLabel = (riskLevel?: string) => {
 
 function RecentCasesGrid() {
   const [items, setItems] = useState<ScreeningListItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
+    setLoading(true);
     listScreenings({ limit: 5, page: 0 })
       .then(({ items: list }) => setItems(list))
-      .catch(() => setItems([]));
+      .catch(() => setItems([]))
+      .finally(() => setLoading(false));
   }, []);
+
+  if (loading) {
+    return (
+      <Card className="border-none shadow-md">
+        <CardHeader>
+          <Skeleton className="h-6 w-32" />
+          <Skeleton className="h-4 w-48 mt-2" />
+        </CardHeader>
+        <CardContent>
+          <ul className="space-y-2">
+            {[1, 2, 3].map((i) => (
+              <li key={i} className="flex items-center justify-between p-3 rounded-xl">
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
+                <Skeleton className="h-4 w-4 rounded" />
+              </li>
+            ))}
+          </ul>
+          <Skeleton className="h-9 w-full mt-3 rounded-xl" />
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (items.length === 0) {
     return (
@@ -124,14 +153,14 @@ export default function AgentDashboard() {
         {/* HERO HEADER */}
         <div className="text-center space-y-4">
           <div className="flex flex-wrap items-center justify-center gap-3">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1E3A8A]">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-primary">
               PediScreen AI
             </h1>
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500 text-white">
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-success text-success-foreground">
               Multi-Agent Orchestration
             </span>
           </div>
-          <p className="text-slate-600 text-center max-w-xl mx-auto">
+          <p className="text-muted-foreground text-center max-w-xl mx-auto">
             Voice → Smart Routing → Agent Pipeline → CDS Results
           </p>
           <ConnectionStatus isConnected={!!isConnected} />
@@ -143,25 +172,25 @@ export default function AgentDashboard() {
             icon={Activity}
             label="Total Cases"
             value={stats.total}
-            color="#1E3A8A"
+            variant="primary"
           />
           <AgentStatCard
             icon={Shield}
             label="Low Risk"
             value={stats.lowRisk}
-            color="#10B981"
+            variant="success"
           />
           <AgentStatCard
             icon={Brain}
             label="AI Enhanced"
             value={stats.aiEnhanced}
-            color="#3B82F6"
+            variant="accent"
           />
           <AgentStatCard
             icon={TrendingUp}
             label="Avg Confidence"
             value={stats.avgConfidence}
-            color="#F59E0B"
+            variant="warning"
           />
         </div>
 
@@ -179,13 +208,13 @@ export default function AgentDashboard() {
 
         {/* Offline insight when orchestrator provides it */}
         {orchestrator?.offlineResponse && orchestrator.mode !== 'online' && (
-          <Card className="border-amber-200 bg-amber-50/50">
+          <Card className="border-warning/40 bg-warning/10">
             <CardContent className="p-4">
-              <p className="text-xs font-medium text-amber-800 mb-1">Offline Rule Applied</p>
-              <p className="text-sm text-slate-700">
+              <p className="text-xs font-medium text-warning-foreground mb-1">Offline Rule Applied</p>
+              <p className="text-sm text-muted-foreground">
                 {orchestrator.offlineResponse.summary?.join(' ')}
               </p>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Confidence: {Math.round((orchestrator.offlineResponse.confidence ?? 0) * 100)}%
               </p>
             </CardContent>

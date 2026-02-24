@@ -6,7 +6,7 @@
 const API_URL =
   import.meta.env.VITE_PEDISCREEN_BACKEND_URL ||
   import.meta.env.VITE_MEDGEMMA_API_URL ||
-  (import.meta.env.DEV ? "http://localhost:5000/api" : "https://api.pediscreen.ai/v1");
+  (import.meta.env.DEV ? "http://localhost:8000/api" : "https://api.pediscreen.ai/v1");
 
 const FAILURE_THRESHOLD = 3;
 const COOLDOWN_MS = 5 * 60 * 1000;

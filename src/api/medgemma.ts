@@ -140,7 +140,12 @@ export async function inferWithEmbedding(params: {
       const { message, code } = await parseErrorResponse(res);
       throw new MedGemmaApiError(message, code, res.status);
     }
-    return res.json();
+    const raw = await res.json();
+    // Normalize: backend returns result.summary as string[]; InferResult expects result.summary as string
+    if (raw?.result?.summary != null && Array.isArray(raw.result.summary)) {
+      raw.result.summary = (raw.result.summary as string[]).join(' ');
+    }
+    return raw;
   } catch (err) {
     if (err instanceof MedGemmaApiError) throw err;
     const msg = err instanceof Error ? err.message : String(err);

@@ -5,6 +5,7 @@
 
 import { apiClient } from "./apiClient";
 import type { ScreeningListItem } from "./screeningApi";
+import { listScreenings } from "./screeningApi";
 
 export interface CaseSummary {
   cases_pending: number;
@@ -40,6 +41,5 @@ export async function listCases(params?: {
   priority?: string;
   domain?: string;
 }): Promise<{ items: ScreeningListItem[] }> {
-  const { listScreenings } = await import("./screeningApi");
   return listScreenings({ limit: params?.limit, page: params?.page });
 }

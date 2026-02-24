@@ -1,13 +1,13 @@
 import { DEMO_MODE, MOCK_SERVER_URL } from '@/config';
 
 const API_BASE_URL = import.meta.env.VITE_MEDGEMMA_API_URL ||
-  (import.meta.env.DEV ? 'http://localhost:5000/api' : 'https://api.pediscreen.ai/v1');
+  (import.meta.env.DEV ? 'http://localhost:8000/api' : 'https://api.pediscreen.ai/v1');
 
 /** Supabase Edge Functions base URL (e.g. https://xxx.supabase.co/functions/v1). When set, uses FormData + multipart. */
 const SUPABASE_FUNCTION_URL = import.meta.env.VITE_SUPABASE_FUNCTION_URL;
 
 /** PediScreen FastAPI backend (e.g. http://localhost:8000). When set, uses FormData + x-api-key for /api/analyze. */
-const PEDISCREEN_BACKEND_URL = import.meta.env.VITE_PEDISCREEN_BACKEND_URL;
+const PEDISCREEN_BACKEND_URL = import.meta.env.VITE_PEDISCREEN_BACKEND_URL ?? (import.meta.env.DEV ? 'http://localhost:8000' : undefined);
 const API_KEY = import.meta.env.VITE_API_KEY || 'dev-example-key';
 
 /** Default request timeout for screening API calls (ms) */

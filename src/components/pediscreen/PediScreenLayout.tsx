@@ -8,14 +8,17 @@ import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const navItems = [
+const mainNavItems = [
   { title: 'Home', path: '/pediscreen', icon: Home },
-  { title: 'Dashboard', path: '/pediscreen/dashboard', icon: Sparkles },
-  { title: 'Voice', path: '/pediscreen/voice', icon: Mic },
-  { title: 'Profiles', path: '/pediscreen/profiles', icon: UserCircle },
   { title: 'New Screening', path: '/pediscreen/screening', icon: Plus },
-  { title: 'Agent Pipeline', path: '/pediscreen/agent-pipeline', icon: Sparkles },
+  { title: 'Dashboard', path: '/pediscreen/dashboard', icon: Sparkles },
   { title: 'History', path: '/pediscreen/history', icon: History },
+  { title: 'Profiles', path: '/pediscreen/profiles', icon: UserCircle },
+];
+
+const toolsNavItems = [
+  { title: 'Voice', path: '/pediscreen/voice', icon: Mic },
+  { title: 'Agent Pipeline', path: '/pediscreen/agent-pipeline', icon: Sparkles },
   { title: 'Education', path: '/pediscreen/education', icon: BookOpen },
   { title: 'Settings', path: '/pediscreen/settings', icon: Settings },
   { title: 'Radiology', path: '/pediscreen/radiology', icon: Scan },
@@ -45,34 +48,46 @@ const getBreadcrumbs = (pathname: string) => {
 const NavContent = ({ onNavigate }: { onNavigate?: () => void }) => {
   const location = useLocation();
 
+  const renderNavLink = (item: (typeof mainNavItems)[0]) => {
+    const isActive = location.pathname === item.path;
+    return (
+      <Link
+        key={item.path}
+        to={item.path}
+        onClick={onNavigate}
+        className={cn(
+          'flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 relative',
+          isActive
+            ? 'bg-primary text-primary-foreground shadow-md'
+            : 'text-muted-foreground hover:bg-primary/10 hover:text-primary'
+        )}
+      >
+        <item.icon className="w-5 h-5 shrink-0" />
+        <span>{item.title}</span>
+        {isActive && (
+          <motion.div
+            layoutId="nav-indicator"
+            className="absolute left-0 w-1 h-8 bg-primary-foreground rounded-r-full"
+            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+          />
+        )}
+      </Link>
+    );
+  };
+
   return (
     <nav className="flex flex-col gap-1.5 p-4">
-      {navItems.map((item) => {
-        const isActive = location.pathname === item.path;
-        return (
-          <Link
-            key={item.path}
-            to={item.path}
-            onClick={onNavigate}
-            className={cn(
-              'flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 relative',
-              isActive
-                ? 'bg-primary text-primary-foreground shadow-md'
-                : 'text-muted-foreground hover:bg-primary/10 hover:text-primary'
-            )}
-          >
-            <item.icon className="w-5 h-5" />
-            <span>{item.title}</span>
-            {isActive && (
-              <motion.div
-                layoutId="nav-indicator"
-                className="absolute left-0 w-1 h-8 bg-primary-foreground rounded-r-full"
-                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-              />
-            )}
-          </Link>
-        );
-      })}
+      <div className="space-y-1">
+        {mainNavItems.map(renderNavLink)}
+      </div>
+      <div className="pt-3 mt-2 border-t border-border">
+        <p className="px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Tools
+        </p>
+        <div className="space-y-1">
+          {toolsNavItems.map(renderNavLink)}
+        </div>
+      </div>
     </nav>
   );
 };

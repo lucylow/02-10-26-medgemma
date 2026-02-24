@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { Menu, X, Baby } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Menu, X, Baby, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const navLinks = [
   { label: "The Problem", href: "#problem" },
   { label: "Our Solution", href: "#demo" },
-  { label: "Interactive Demo", href: "#demo" },
   { label: "Technology", href: "#technology" },
   { label: "Impact", href: "#impact" },
   { label: "Team", href: "#team" },
@@ -19,12 +19,12 @@ export function Header() {
       <div className="container">
         <nav className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
-          <a href="/" className="flex items-center gap-2">
-            <Baby className="h-8 w-8 text-accent" />
-            <span className="font-heading text-xl font-bold text-primary">
+          <Link to="/" className="flex items-center gap-2 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+            <Baby className="h-8 w-8 text-primary" />
+            <span className="font-heading text-xl font-bold text-foreground">
               PediScreen AI
             </span>
-          </a>
+          </Link>
 
           {/* Desktop Navigation */}
           <ul className="hidden lg:flex items-center gap-8">
@@ -39,34 +39,51 @@ export function Header() {
                       target.scrollIntoView({ behavior: "smooth", block: "start" });
                     }
                   }}
-                  className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+                  className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors cursor-pointer rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
                   {link.label}
                 </a>
               </li>
             ))}
+            <li>
+              <Link to="/pediscreen">
+                <Button size="sm" className="gap-2 rounded-xl">
+                  <Sparkles className="h-4 w-4" />
+                  Try PediScreen
+                </Button>
+              </Link>
+            </li>
           </ul>
 
           {/* Mobile Menu Button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="lg:hidden"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </Button>
+          <div className="flex items-center gap-2 lg:hidden">
+            <Link to="/pediscreen">
+              <Button size="sm" variant="secondary" className="gap-1.5 rounded-xl">
+                <Sparkles className="h-4 w-4" />
+                Try
+              </Button>
+            </Link>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-expanded={mobileMenuOpen}
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </Button>
+          </div>
         </nav>
 
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
           <div className="lg:hidden pb-4 animate-fade-in">
-            <ul className="flex flex-col gap-2">
+            <ul className="flex flex-col gap-1">
               {navLinks.map((link) => (
                 <li key={link.href}>
                   <a
                     href={link.href}
-                    className="block py-2 px-4 text-sm font-medium text-muted-foreground hover:text-primary hover:bg-muted rounded-md transition-colors"
+                    className="block py-2.5 px-4 text-sm font-medium text-muted-foreground hover:text-primary hover:bg-muted rounded-lg transition-colors"
                     onClick={(e) => {
                       e.preventDefault();
                       setMobileMenuOpen(false);
@@ -82,6 +99,16 @@ export function Header() {
                   </a>
                 </li>
               ))}
+              <li>
+                <Link
+                  to="/pediscreen"
+                  className="flex items-center gap-2 py-2.5 px-4 text-sm font-medium text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Try PediScreen
+                </Link>
+              </li>
             </ul>
           </div>
         )}

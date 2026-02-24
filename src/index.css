@@ -19,7 +19,7 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 222.2 47.4% 11.2%;
+    --primary: 211 70% 28%;
     --primary-foreground: 210 40% 98%;
 
     --secondary: 210 40% 96.1%;
@@ -28,8 +28,8 @@ All colors MUST be HSL.
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 199 89% 48%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
@@ -42,7 +42,7 @@ All colors MUST be HSL.
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --ring: 211 70% 38%;
 
     --radius: 0.5rem;
 
@@ -80,7 +80,7 @@ All colors MUST be HSL.
     --popover-foreground: 210 40% 98%;
 
     --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary-foreground: 211 70% 28%;
 
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
@@ -88,8 +88,8 @@ All colors MUST be HSL.
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 199 89% 48%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
@@ -102,7 +102,7 @@ All colors MUST be HSL.
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --ring: 199 89% 55%;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -121,6 +121,12 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
+  /* Accessible focus ring for keyboard users */
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+
   html {
     scroll-behavior: smooth;
     scroll-padding-top: 5rem;
@@ -128,6 +134,12 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  /* Smooth link focus without overriding component focus-visible */
+  a:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -143,7 +155,7 @@ All colors MUST be HSL.
 
   .section-title::after {
     content: '';
-    @apply absolute w-20 h-1 bg-accent left-1/2 -translate-x-1/2 -bottom-4 rounded-full;
+    @apply absolute w-20 h-1 bg-primary left-1/2 -translate-x-1/2 -bottom-4 rounded-full;
   }
 
   .hero-gradient {
@@ -160,6 +172,11 @@ All colors MUST be HSL.
 
   .btn-shadow:hover {
     box-shadow: var(--shadow-button);
+  }
+
+  /* Skeleton pulse for loading states */
+  .skeleton-pulse {
+    @apply animate-pulse bg-muted rounded;
   }
 }
 

@@ -43,26 +43,28 @@ const PediScreenHome = () => {
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
       {/* Hero Section */}
-      <motion.div 
+      <motion.div
         className="text-center mb-12"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <motion.div 
+        <motion.div
           className="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-br from-primary/20 to-accent/20 rounded-3xl mb-6 shadow-lg"
           whileHover={{ scale: 1.05, rotate: 5 }}
           transition={{ type: 'spring', stiffness: 300 }}
         >
           <Baby className="w-12 h-12 text-primary" />
         </motion.div>
-        <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-4 tracking-tight">
-          Every child deserves a 
-          <span className="text-primary block sm:inline"> strong start</span>
-          <span className="block text-primary mt-2 text-2xl sm:text-3xl font-medium text-muted-foreground">A communication bridge for caregivers and clinicians</span>
+        <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-3 tracking-tight">
+          Every child deserves a{' '}
+          <span className="text-primary">strong start</span>
         </h2>
+        <p className="text-lg sm:text-xl text-muted-foreground mb-2 font-medium">
+          A communication bridge for caregivers and clinicians
+        </p>
         <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto mb-8 leading-relaxed">
-          PediScreen AI facilitates diagnostic workflows by organizing, contextualizing, and communicating screening evidence so clinicians can make more informed diagnostic decisions.
+          PediScreen AI organizes, contextualizes, and communicates screening evidence so clinicians can make more informed diagnostic decisions.
         </p>
         
         {/* New core framing points */}
@@ -115,7 +117,7 @@ const PediScreenHome = () => {
         <div className="flex flex-col sm:flex-row flex-wrap gap-4 justify-center">
           <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
             <Link to="/pediscreen/screening">
-              <Button size="lg" className="gap-2 w-full sm:w-auto rounded-xl shadow-lg hover:shadow-xl transition-shadow px-8">
+              <Button size="lg" className="gap-2 w-full sm:w-auto rounded-xl shadow-lg hover:shadow-xl transition-shadow px-8 ring-2 ring-primary/30">
                 <Sparkles className="w-5 h-5" />
                 Start Evidence Collection
                 <ArrowRight className="w-4 h-4" />

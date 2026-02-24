@@ -48,9 +48,9 @@ export function Footer() {
                 <li key={link.label}>
                   <a
                     href={link.href}
-                    className="text-background/70 hover:text-background transition-colors text-sm flex items-center gap-2"
+                    className="text-background/70 hover:text-background transition-colors text-sm flex items-center gap-2 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-background/50 focus-visible:ring-offset-2 focus-visible:ring-offset-foreground"
                   >
-                    <link.icon className="h-4 w-4" />
+                    <link.icon className="h-4 w-4 shrink-0" />
                     {link.label}
                   </a>
                 </li>
@@ -66,7 +66,7 @@ export function Footer() {
                 <li key={link.label}>
                   <a
                     href={link.href}
-                    className="text-background/70 hover:text-background transition-colors text-sm"
+                    className="text-background/70 hover:text-background transition-colors text-sm rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-background/50 focus-visible:ring-offset-2 focus-visible:ring-offset-foreground"
                   >
                     {link.label}
                   </a>
@@ -83,7 +83,7 @@ export function Footer() {
                 <li key={link.label}>
                   <a
                     href={link.href}
-                    className="text-background/70 hover:text-background transition-colors text-sm"
+                    className="text-background/70 hover:text-background transition-colors text-sm rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-background/50 focus-visible:ring-offset-2 focus-visible:ring-offset-foreground"
                   >
                     {link.label}
                   </a>

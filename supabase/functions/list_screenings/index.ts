@@ -79,7 +79,7 @@ serve(async (req) => {
     if (statusFilter) query = query.eq("status", statusFilter);
     if (modelFilter) query = query.eq("model_id", modelFilter);
     if (excludeMock) query = query.eq("is_mock", false);
-    if (!cursor || page === 0) query = query.limit(limit);
+    query = query.limit(limit);
 
     const { data, error, count } = await query;
 

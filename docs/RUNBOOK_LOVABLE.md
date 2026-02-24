@@ -72,6 +72,44 @@ supabase db push
 npm run build
 ```
 
+## Verify Edge Functions
+
+After deploying, confirm each function responds correctly. Set your Edge Functions base URL (e.g. `https://YOUR_PROJECT.supabase.co/functions/v1`) and run:
+
+```bash
+# From repo root; BASE is your Edge Functions base URL
+BASE="${VITE_SUPABASE_FUNCTION_URL:-https://YOUR_PROJECT.supabase.co/functions/v1}"
+
+# 1. Health (GET) — should return 200 and status "ok" or "degraded"
+curl -sS -o /dev/null -w "%{http_code}" "$BASE/health" && echo " health"
+curl -sS "$BASE/health" | head -c 500
+
+# 2. List screenings (GET) — should return 200 and { items, pagination }
+curl -sS -o /dev/null -w "%{http_code}" "$BASE/list_screenings?limit=5" && echo " list_screenings"
+curl -sS "$BASE/list_screenings?limit=2" | head -c 400
+
+# 3. Analyze (POST JSON) — should return 200 and { success: true, screening_id, report }
+curl -sS -X POST "$BASE/analyze" \
+  -H "Content-Type: application/json" \
+  -d '{"childAge":24,"domain":"general","observations":"Points to pictures, says about 10 words, follows simple commands."}' \
+  -o /tmp/analyze.json -w "%{http_code}\n"
+cat /tmp/analyze.json | head -c 600
+```
+
+Or use the verification script (requires `BASE` or `VITE_SUPABASE_FUNCTION_URL` in `.env`):
+
+```bash
+./scripts/verify-edge-functions.sh
+```
+
+Success criteria:
+
+- **health**: HTTP 200, JSON with `status` and `checks.db.connected === true` (or 503 if DB is down).
+- **list_screenings**: HTTP 200, JSON with `items` array and `pagination`.
+- **analyze**: HTTP 200, JSON with `success: true`, `screening_id`, and `report`.
+
+If **health** returns 503, check Supabase project env (e.g. `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`). If **analyze** returns fallback/mock (e.g. `model_used: false`), set `LOVABLE_API_KEY` in Supabase secrets for real AI.
+
 ## Troubleshooting
 
 ### 401 on Edge Functions
