@@ -48,6 +48,7 @@ export function ConnectWalletButton({
           <Button
             variant="outline"
             size="sm"
+            className="bg-background text-foreground border-border hover:bg-accent hover:text-accent-foreground"
             onClick={() => {
               disconnect();
               onDisconnect?.();
@@ -72,6 +73,7 @@ export function ConnectWalletButton({
       <Button
         variant="outline"
         size="sm"
+        className="bg-background text-foreground border-border hover:bg-accent hover:text-accent-foreground"
         onClick={() =>
           connect().then(() => {
             onConnect?.();
