@@ -18,7 +18,7 @@ export function WalletHeader() {
           }
         }}
         className={cn(
-          "px-4 py-2 md:px-5 md:py-3 rounded-2xl font-semibold text-xs md:text-sm shadow-xl backdrop-blur-sm flex items-center gap-2 md:gap-3 transition-all group min-w-[140px] justify-center",
+          "px-4 py-2 md:px-5 md:py-3 rounded-2xl font-semibold text-xs md:text-sm shadow-xl backdrop-blur-sm flex items-center gap-2 md:gap-3 transition-all group min-w-[140px] justify-center text-foreground",
           wallet.isConnected ? "wallet-connected scale-105" : "wallet-disconnected",
         )}
         aria-label={wallet.isConnected ? "Wallet connected" : "Connect wallet"}
