@@ -3,7 +3,7 @@
  * Uses usePediScreenWallet (window.ethereum), ConnectWalletButton, and blockchain config.
  * UX: irreversible action warnings, mobile-first, transaction status, NFT gallery, gasless (ERC-4337) flow.
  */
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState, useMemo } from "react";
 import { BrowserProvider, Contract } from "ethers";
 const getBrowserProviderClass = (): new (p: unknown) => BrowserProvider =>
   BrowserProvider;
@@ -15,8 +15,9 @@ import { ConnectWalletButton } from "@/components/blockchain/ConnectWalletButton
 import { AccessibleChainSelector } from "@/components/blockchain/AccessibleChainSelector";
 import { PEDISCREEN_REGISTRY_ADDRESS } from "@/config/blockchain";
 import { ERC721_REGISTRY_ABI } from "@/blockchain/erc721RegistryAbi";
+import { MOCK_WALLET_DATA } from "@/data/mockWallet";
 import { Button } from "@/components/ui/button";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Shield, Activity } from "lucide-react";
 
 // -------------------- Types --------------------
 
@@ -424,11 +425,39 @@ export function PediScreenBlockchainUI() {
   const [txStatus, setTxStatus] = useState<TxStatus>("idle");
   const [nftGallery, setNftGallery] = useState<PediScreenNft[]>([]);
   const [loadingGallery, setLoadingGallery] = useState(false);
-  /** Set when balance > 0 but we could not enumerate tokens (no tokenOfOwnerByIndex or API). */
   const [nftBalanceCount, setNftBalanceCount] = useState<number | null>(null);
+  const [useMock, setUseMock] = useState(false);
 
+  const hasEthereum = typeof window !== "undefined" && !!window.ethereum;
   const registryAddress = PEDISCREEN_REGISTRY_ADDRESS;
   const chainIdNum = chainId ?? 137;
+
+  // Build mock NFTs from mockWallet data
+  const mockNfts = useMemo<PediScreenNft[]>(() =>
+    MOCK_WALLET_DATA.nfts.map((n) => ({
+      tokenId: String(n.tokenId),
+      riskLevel: n.riskLevel,
+      childAgeMonths: n.childAgeMonths ?? 24,
+      assessmentTimestamp: Math.floor((n.timestamp ?? Date.now()) / 1000),
+      domains: {
+        communication: n.riskLevel === "LOW" ? 0.92 : n.riskLevel === "MEDIUM" ? 0.68 : 0.35,
+        motor: n.riskLevel === "LOW" ? 0.88 : n.riskLevel === "MEDIUM" ? 0.74 : 0.42,
+        socialEmotional: n.riskLevel === "LOW" ? 0.95 : n.riskLevel === "MEDIUM" ? 0.61 : 0.29,
+      },
+    })),
+  []);
+
+  // Auto-enable mock mode when no MetaMask
+  useEffect(() => {
+    if (!hasEthereum && !isConnected) {
+      setUseMock(true);
+    }
+  }, [hasEthereum, isConnected]);
+
+  const effectiveConnected = isConnected || useMock;
+  const effectiveAddress = useMock ? MOCK_WALLET_DATA.connected.address : address;
+  const effectiveChainId = useMock ? 137 : chainIdNum;
+  const effectiveNfts = useMock ? mockNfts : nftGallery;
 
   const fetchNftGallery = useCallback(async () => {
     if (!address || !registryAddress) return;
@@ -446,8 +475,6 @@ export function PediScreenBlockchainUI() {
       const balance = (await contract.balanceOf(address)) as bigint;
       const count = Number(balance);
       const nfts: PediScreenNft[] = [];
-
-      // Try on-chain enumeration first (tokenOfOwnerByIndex).
       let enumerationFailed = false;
       try {
         for (let i = 0; i < count; i++) {
@@ -457,8 +484,6 @@ export function PediScreenBlockchainUI() {
       } catch {
         enumerationFailed = true;
       }
-
-      // Fallback: fetch token IDs from backend when contract does not support enumeration.
       if (enumerationFailed && count > 0) {
         try {
           const res = await fetch(`${NFT_TOKENS_API}?address=${encodeURIComponent(address)}`);
@@ -470,11 +495,8 @@ export function PediScreenBlockchainUI() {
               if (nft) nfts.push(nft);
             }
           }
-        } catch {
-          // Ignore; we will show balance count only.
-        }
+        } catch { /* fallback to balance count */ }
       }
-
       setNftGallery(nfts);
       if (nfts.length === 0 && count > 0) setNftBalanceCount(count);
     } catch (e) {
@@ -492,6 +514,11 @@ export function PediScreenBlockchainUI() {
 
   const showMintPreview = useCallback(
     (data: ScreeningData) => {
+      if (useMock) {
+        // In mock mode, simulate a successful mint
+        toast.success("🎉 Demo: Screening NFT #8473 minted successfully!");
+        return;
+      }
       toast.custom(
         (t) => (
           <TransactionPreview
@@ -539,7 +566,7 @@ export function PediScreenBlockchainUI() {
         { duration: Infinity, position: "top-center" }
       );
     },
-    [chainIdNum, fetchNftGallery]
+    [chainIdNum, fetchNftGallery, useMock]
   );
 
   if (!registryAddress) {
@@ -552,46 +579,90 @@ export function PediScreenBlockchainUI() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50/50 via-background to-emerald-50/50 dark:from-indigo-950/20 dark:via-background dark:to-emerald-950/20">
-      <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
+      <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <h1 className="bg-gradient-to-r from-emerald-600 to-indigo-600 bg-clip-text text-xl font-bold text-transparent">
             PediScreen Dashboard
           </h1>
           <div className="flex items-center gap-4">
+            {useMock && (
+              <span className="text-[10px] px-2 py-1 rounded-md bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 font-semibold uppercase tracking-wider">
+                Demo Mode
+              </span>
+            )}
             <AccessibleChainSelector />
             <ConnectWalletButton />
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        {!isConnected ? (
+      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
+        {/* Stats bar */}
+        {effectiveConnected && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="grid grid-cols-2 md:grid-cols-4 gap-4"
+          >
+            <div className="rounded-xl border border-border bg-card p-4">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                <Shield className="w-3.5 h-3.5" /> Network
+              </div>
+              <p className="text-sm font-bold text-foreground">{getChainName(effectiveChainId)}</p>
+            </div>
+            <div className="rounded-xl border border-border bg-card p-4">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                <Activity className="w-3.5 h-3.5" /> NFTs Held
+              </div>
+              <p className="text-2xl font-bold text-foreground">{effectiveNfts.length}</p>
+            </div>
+            <div className="rounded-xl border border-border bg-card p-4">
+              <div className="text-xs text-muted-foreground mb-1">Oracle Verified</div>
+              <p className="text-2xl font-bold text-emerald-600">{effectiveNfts.filter(n => n.riskLevel === "LOW").length}</p>
+            </div>
+            <div className="rounded-xl border border-border bg-card p-4">
+              <div className="text-xs text-muted-foreground mb-1">Needs Review</div>
+              <p className="text-2xl font-bold text-amber-600">{effectiveNfts.filter(n => n.riskLevel !== "LOW").length}</p>
+            </div>
+          </motion.div>
+        )}
+
+        {!effectiveConnected ? (
           <ConnectWalletCTA />
         ) : (
           <AnimatePresence mode="wait">
-            {loadingGallery ? (
+            {loadingGallery && !useMock ? (
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {[1, 2, 3, 4].map((i) => (
-                  <div
-                    key={i}
-                    className="h-64 animate-pulse rounded-2xl bg-muted"
-                  />
+                  <div key={i} className="h-64 animate-pulse rounded-2xl bg-muted" />
                 ))}
               </div>
-            ) : nftGallery.length === 0 ? (
+            ) : effectiveNfts.length === 0 ? (
               <EmptyNFTGallery
                 txStatus={txStatus}
                 onMint={showMintPreview}
                 nftBalanceCount={nftBalanceCount}
-                chainId={chainIdNum}
+                chainId={effectiveChainId}
                 registryAddress={registryAddress}
               />
             ) : (
-              <NFTGalleryGrid
-                nfts={nftGallery}
-                chainId={chainIdNum}
-                registryAddress={registryAddress}
-              />
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-semibold text-foreground">Screening Certificates</h2>
+                  <Button
+                    size="sm"
+                    onClick={() => showMintPreview({ childAgeMonths: 12, riskLevel: "LOW" })}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  >
+                    + Mint New
+                  </Button>
+                </div>
+                <NFTGalleryGrid
+                  nfts={effectiveNfts}
+                  chainId={effectiveChainId}
+                  registryAddress={registryAddress}
+                />
+              </div>
             )}
           </AnimatePresence>
         )}
