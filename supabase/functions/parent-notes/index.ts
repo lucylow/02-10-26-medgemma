@@ -1,12 +1,12 @@
 /**
- * POST /parent-notes — AI-powered parent concern analysis.
- * Uses Lovable AI to analyze free-text parent observations for
- * developmental red flags, urgency assessment, and guided follow-up.
+ * POST /parent-notes — AI-powered parent concern analysis v5.1.
+ * Uses Lovable AI with retry, 402/429 error surfacing,
+ * and structured tool calling for developmental red flags.
  */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import {
-  corsHeaders, corsResponse, errorResponse, jsonResponse,
-  extractContext, recordMetric, withDeadline,
+  corsResponse, errorResponse, jsonResponse,
+  extractContext, recordMetric, callAIGateway, handleAIErrorResponse,
   checkRateLimit, rateLimitHeaders, rateLimitKey,
   LOVABLE_API_KEY, MODEL_ID,
 } from "../_shared/mod.ts";
@@ -35,17 +35,22 @@ const ANALYSIS_TOOL = {
         },
         suggestedDomains: {
           type: "array",
-          items: { type: "string", enum: ["communication", "gross_motor", "fine_motor", "problem_solving", "personal_social", "vision"] },
+          items: { type: "string", enum: ["communication", "gross_motor", "fine_motor", "problem_solving", "personal_social", "vision", "hearing", "feeding"] },
           description: "Developmental domains that should be formally screened"
         },
         parentGuidance: {
           type: "string",
-          description: "Brief reassuring guidance for the parent"
+          description: "Brief reassuring guidance for the parent at grade 6 reading level"
         },
         followUpQuestions: {
           type: "array",
           items: { type: "string" },
           description: "Follow-up questions to ask the parent for better assessment"
+        },
+        supportResources: {
+          type: "array",
+          items: { type: "string" },
+          description: "Helpful resources or services the parent can access"
         },
       },
       required: ["redFlags", "urgency", "confidence", "suggestedDomains", "parentGuidance"],
@@ -74,7 +79,6 @@ serve(async (req) => {
     }
 
     if (!LOVABLE_API_KEY) {
-      // Return safe fallback
       return jsonResponse({
         redFlags: [],
         urgency: "low",
@@ -82,62 +86,67 @@ serve(async (req) => {
         suggestedDomains: ["communication", "gross_motor"],
         parentGuidance: "Thank you for sharing your observations. Based on what you've described, we recommend completing a formal screening to get a clearer picture.",
         followUpQuestions: ["How does your child communicate their needs?", "Can your child walk independently?"],
+        supportResources: [],
         model_used: false,
         trace_id: traceId,
       }, 200, rlH);
     }
 
-    const resp = await withDeadline(
-      fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
+    const aiResult = await callAIGateway(
+      [
+        {
+          role: "system",
+          content: `You are a pediatric developmental specialist assistant. Analyze parent-reported developmental concerns for children${childAgeMonths ? ` (child age: ${childAgeMonths} months)` : ""}.
+
+INSTRUCTIONS:
+- Identify red flags using CDC/AAP developmental milestone guidelines
+- Assess urgency based on severity, number of concerns, and child's age
+- Suggest which developmental domains need formal screening (include hearing and feeding when relevant)
+- Provide reassuring, empathetic guidance at grade 6 reading level
+- Generate thoughtful follow-up questions to clarify concerns
+- Suggest relevant support resources (Early Intervention, Help Me Grow, etc.)
+
+Use the submit_parent_analysis tool to provide your structured assessment.`,
         },
-        body: JSON.stringify({
-          model: MODEL_ID,
-          messages: [
-            {
-              role: "system",
-              content: `You are a pediatric developmental specialist assistant. Analyze parent-reported developmental concerns for children${childAgeMonths ? ` (child age: ${childAgeMonths} months)` : ""}.
-Identify red flags, assess urgency, suggest which developmental domains need formal screening, and provide reassuring guidance.
-Be empathetic and evidence-based. Use the submit_parent_analysis tool.`,
-            },
-            { role: "user", content: notes },
-          ],
-          tools: [ANALYSIS_TOOL],
-          tool_choice: { type: "function", function: { name: "submit_parent_analysis" } },
-          temperature: 0.2,
-        }),
-      }),
-      8000,
+        { role: "user", content: notes },
+      ],
+      {
+        tools: [ANALYSIS_TOOL],
+        tool_choice: { type: "function", function: { name: "submit_parent_analysis" } },
+        temperature: 0.2,
+        deadlineMs: 10000,
+      },
     );
 
-    if (!resp.ok) {
-      if (resp.status === 429) return errorResponse("RATE_LIMITED", "AI rate limit exceeded", 429, traceId, rlH);
-      if (resp.status === 402) return errorResponse("PAYMENT_REQUIRED", "AI credits exhausted", 402, traceId, rlH);
-      console.error("[parent-notes] AI error:", resp.status);
-      return errorResponse("AI_ERROR", "AI service error", 502, traceId, rlH);
-    }
+    // Surface 402/429 to client
+    const aiErrorResp = handleAIErrorResponse(aiResult, traceId, rlH);
+    if (aiErrorResp) return aiErrorResp;
 
-    const data = await resp.json();
-    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
     let result: Record<string, unknown>;
 
-    if (toolCall?.function?.arguments) {
-      result = JSON.parse(toolCall.function.arguments);
+    if (aiResult.ok && aiResult.result && !("raw_content" in aiResult.result)) {
+      result = aiResult.result;
     } else {
       result = {
         redFlags: [], urgency: "low", confidence: 0.3,
         suggestedDomains: ["communication"],
         parentGuidance: "We recommend completing a formal developmental screening.",
+        followUpQuestions: [],
+        supportResources: [],
       };
     }
 
     const totalLatency = Math.round(performance.now() - start);
-    recordMetric("parent-notes", "success", totalLatency).catch(() => {});
+    recordMetric("parent-notes", "success", totalLatency, undefined, {
+      ai_latency_ms: aiResult.latencyMs,
+      model_used: aiResult.ok,
+    }).catch(() => {});
 
-    return jsonResponse({ ...result, model_used: true, trace_id: traceId }, 200, rlH);
+    return jsonResponse({
+      ...result,
+      model_used: aiResult.ok,
+      trace_id: traceId,
+    }, 200, rlH);
   } catch (err) {
     console.error("[parent-notes] error:", err);
     recordMetric("parent-notes", "error", performance.now() - start, "INTERNAL_ERROR").catch(() => {});

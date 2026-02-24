@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.edge-metrics]
 verify_jwt = false
+
+[functions.milestone-lookup]
+verify_jwt = false

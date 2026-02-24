@@ -1,14 +1,14 @@
 /**
- * POST /medgemma-analyze — Enhanced MedGemma clinical screening v5.0
- * Uses Lovable AI (Gemini 3 Flash) with structured tool calling for
- * reliable JSON output, streaming support, wearable data integration,
- * and multi-domain ASQ-3 aligned assessment.
+ * POST /medgemma-analyze — Enhanced MedGemma clinical screening v5.1
+ * Uses Lovable AI (Gemini 3 Flash) with structured tool calling,
+ * retry with exponential backoff, 402/429 error surfacing,
+ * wearable data integration, and multi-domain ASQ-3 aligned assessment.
  */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import {
-  corsHeaders, corsResponse, supabase, errorResponse, jsonResponse,
+  corsResponse, supabase, errorResponse, jsonResponse,
   extractContext, recordMetric, recordAIEvent, recordAuditEvent,
-  hashInput, withDeadline,
+  hashInput, callAIGateway, handleAIErrorResponse,
   checkRateLimit, rateLimitHeaders, rateLimitKey,
   LOVABLE_API_KEY, MODEL_ID, AGENT_VERSION, COST_PER_1K_TOKENS,
 } from "../_shared/mod.ts";
@@ -101,6 +101,15 @@ const SCREENING_TOOL = {
           items: { type: "string" },
           description: "Relevant ICD-10 codes if applicable"
         },
+        differentialConsiderations: {
+          type: "array",
+          items: { type: "string" },
+          description: "Differential diagnoses or conditions to consider"
+        },
+        culturalConsiderations: {
+          type: "string",
+          description: "Any cultural or environmental factors that may influence development"
+        },
       },
       required: ["riskLevel", "confidence", "summary", "keyFindings", "recommendations"],
       additionalProperties: false,
@@ -110,7 +119,7 @@ const SCREENING_TOOL = {
 
 // ── System prompt ───────────────────────────────────────────────
 function buildSystemPrompt(ageMonths: number, domains: string[], hasWearable: boolean): string {
-  return `You are PediScreen AI v5 — a pediatric developmental screening assistant powered by MedGemma.
+  return `You are PediScreen AI v5.1 — a pediatric developmental screening assistant powered by MedGemma.
 You are analyzing developmental screening data for a child aged ${ageMonths} months.
 Screening domains: ${domains.length ? domains.join(", ") : "general developmental assessment"}.
 
@@ -119,6 +128,7 @@ CLINICAL FRAMEWORK:
 - Reference AAP Bright Futures periodicity schedule
 - Apply CDC "Learn the Signs. Act Early." milestone framework
 - Consider age-corrected milestones for premature infants when noted
+- Cross-reference WHO Motor Development Study norms
 
 RISK STRATIFICATION:
 - low: Development within expected range, continue routine monitoring
@@ -126,25 +136,35 @@ RISK STRATIFICATION:
 - high: Significant concerns requiring clinical evaluation
 - urgent: Immediate referral needed (regression, seizures, safety concerns)
 
+CLINICAL REASONING:
+- Consider comorbidities and overlapping presentations
+- Account for environmental and socioeconomic factors
+- Note if findings are isolated vs. across multiple domains
+- Flag regression (loss of previously acquired skills) as always urgent
+- Consider prematurity adjustment when relevant
+
 ${hasWearable ? `WEARABLE DATA INTEGRATION:
 - Interpret HRV, sleep, activity, and SpO2 in pediatric context
 - Flag autonomic dysregulation patterns relevant to neurodevelopment
-- Consider activity levels relative to gross motor development` : ""}
+- Consider activity levels relative to gross motor development
+- Correlate sleep patterns with cognitive and behavioral development
+- Note circadian rhythm disruptions that may affect development` : ""}
 
 REQUIREMENTS:
 - Be evidence-based, concise, and clinically appropriate
 - Provide parent-friendly explanations at grade 6 reading level
 - Include specific, actionable recommendations
 - Flag any red flags requiring immediate attention
+- Consider differential diagnoses when risk is medium or above
 - Use the submit_screening_result tool to provide your structured assessment`;
 }
 
-// ── Build user prompt with optional wearable data ───────────────
+// ── Build user prompt ──────────────────────────────────────────
 function buildUserPrompt(
   ageMonths: number,
   domains: string[],
   observations: string,
-  wearable?: { hrvRmssd?: number; stepsPerDay?: number; sleepDurationHours?: number; spo2Average?: number; fallEvents?: number },
+  wearable?: Record<string, number>,
 ): string {
   let prompt = `Child age: ${ageMonths} months
 Developmental domains: ${domains.length ? domains.join(", ") : "general"}
@@ -160,81 +180,6 @@ Parent/caregiver observations: ${observations}`;
   }
 
   return prompt;
-}
-
-// ── Call Lovable AI with tool calling ────────────────────────────
-async function callMedGemmaAI(
-  ageMonths: number,
-  domains: string[],
-  observations: string,
-  wearable?: Record<string, number>,
-) {
-  if (!LOVABLE_API_KEY) return null;
-
-  const hasWearable = !!wearable && Object.keys(wearable).length > 0;
-  const systemPrompt = buildSystemPrompt(ageMonths, domains, hasWearable);
-  const userPrompt = buildUserPrompt(ageMonths, domains, observations, wearable);
-
-  try {
-    const resp = await withDeadline(
-      fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: MODEL_ID,
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt },
-          ],
-          tools: [SCREENING_TOOL],
-          tool_choice: { type: "function", function: { name: "submit_screening_result" } },
-          temperature: 0.2,
-        }),
-      }),
-      12000, // 12s deadline for tool-calling
-    );
-
-    if (!resp.ok) {
-      const errText = await resp.text();
-      console.error("[medgemma-analyze] AI error:", resp.status, errText);
-      return { ok: false, status: resp.status, error: errText };
-    }
-
-    const data = await resp.json();
-    const usage = data.usage;
-    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
-
-    if (toolCall?.function?.arguments) {
-      try {
-        const parsed = JSON.parse(toolCall.function.arguments);
-        return { ok: true, result: parsed, usage };
-      } catch {
-        return { ok: false, error: "tool_call_parse_failure", usage };
-      }
-    }
-
-    // Fallback: try to extract JSON from content
-    const content = data.choices?.[0]?.message?.content;
-    if (content) {
-      const first = content.indexOf("{");
-      const last = content.lastIndexOf("}");
-      if (first !== -1 && last !== -1) {
-        try {
-          const parsed = JSON.parse(content.slice(first, last + 1));
-          return { ok: true, result: parsed, usage };
-        } catch { /* fall through */ }
-      }
-    }
-
-    return { ok: false, error: "no_structured_output", usage };
-  } catch (e) {
-    const isTimeout = e instanceof Error && e.message === "DEADLINE_EXCEEDED";
-    console.error("[medgemma-analyze] AI call failed:", e);
-    return { ok: false, error: isTimeout ? "MODEL_TIMEOUT" : String(e) };
-  }
 }
 
 // ── Main handler ────────────────────────────────────────────────
@@ -293,32 +238,49 @@ serve(async (req) => {
     }
 
     const inputHash = await hashInput(`${ageMonths}|${domainStr}|${observations}`);
-    const promptHash = await hashInput(`system_v5|${ageMonths}|${domainStr}|${observations.slice(0, 200)}`);
+    const promptHash = await hashInput(`system_v5.1|${ageMonths}|${domainStr}|${observations.slice(0, 200)}`);
 
     // Build deterministic baseline
     const baseline = deterministicMock(ageMonths, domainStr, observations, false, inputHash);
 
-    // Call Lovable AI with tool calling
-    const aiStart = performance.now();
-    const aiResponse = await callMedGemmaAI(ageMonths, domainList, observations, wearable);
-    const aiLatency = Math.round(performance.now() - aiStart);
+    // Call Lovable AI via shared gateway helper (includes retry + deadline)
+    const hasWearable = !!wearable && Object.keys(wearable).length > 0;
+    const systemPrompt = buildSystemPrompt(ageMonths, domainList, hasWearable);
+    const userPrompt = buildUserPrompt(ageMonths, domainList, observations, wearable);
+
+    const aiResponse = await callAIGateway(
+      [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      {
+        tools: [SCREENING_TOOL],
+        tool_choice: { type: "function", function: { name: "submit_screening_result" } },
+        temperature: 0.2,
+        deadlineMs: 15000,
+      },
+    );
+
+    // Surface 402/429 errors to client
+    const aiErrorResp = handleAIErrorResponse(aiResponse, traceId, rlH);
+    if (aiErrorResp) return aiErrorResp;
 
     let finalReport: Record<string, unknown> = { ...baseline };
     let usedModel = false;
     let isFallback = false;
     let fallbackReason: string | null = null;
 
-    if (aiResponse && typeof aiResponse === "object" && "ok" in aiResponse && aiResponse.ok && aiResponse.result) {
+    if (aiResponse.ok && aiResponse.result && !("raw_content" in aiResponse.result)) {
       usedModel = true;
       const r = aiResponse.result;
       finalReport = {
         riskLevel: r.riskLevel || baseline.riskLevel,
-        confidence: Math.min(1, Math.max(0, r.confidence ?? baseline.confidence)),
+        confidence: Math.min(1, Math.max(0, (r.confidence as number) ?? baseline.confidence)),
         asq3Score: r.asq3Score ?? null,
         summary: r.summary || baseline.summary,
         parentFriendlyExplanation: r.parentFriendlyExplanation || null,
-        keyFindings: [...new Set([...(r.keyFindings || []), ...baseline.keyFindings])],
-        recommendations: [...new Set([...(r.recommendations || []), ...baseline.recommendations])],
+        keyFindings: [...new Set([...((r.keyFindings as string[]) || []), ...baseline.keyFindings])],
+        recommendations: [...new Set([...((r.recommendations as string[]) || []), ...baseline.recommendations])],
         parentFriendlyTips: r.parentFriendlyTips || [],
         domainBreakdown: r.domainBreakdown || {},
         referralGuidance: {
@@ -331,20 +293,24 @@ serve(async (req) => {
           redFlagsToWatch: r.redFlagsToWatch || [],
         },
         icdCodes: r.icdCodes || [],
+        differentialConsiderations: r.differentialConsiderations || [],
+        culturalConsiderations: r.culturalConsiderations || null,
         evidence: baseline.evidence,
         analysis_meta: {
           ...baseline.analysis_meta,
           model_used: true,
-          ai_latency_ms: aiLatency,
+          ai_latency_ms: aiResponse.latencyMs,
           tool_calling: true,
-          wearable_provided: !!wearable,
+          wearable_provided: hasWearable,
+          retried: false,
+          version: "v5.1",
         },
       };
     } else {
       isFallback = true;
       fallbackReason = !LOVABLE_API_KEY
         ? "no_api_key"
-        : aiResponse?.error
+        : aiResponse.error
         ? String(aiResponse.error)
         : "null_response";
     }
@@ -385,21 +351,21 @@ serve(async (req) => {
     Promise.all([
       recordMetric("medgemma-analyze", "success", totalLatency, undefined, {
         model_used: usedModel, fallback: isFallback, risk_level: finalReport.riskLevel,
-        wearable: !!wearable, domains: domainStr, org_id: ctx.orgId,
+        wearable: hasWearable, domains: domainStr, org_id: ctx.orgId,
       }),
       recordAIEvent({
         event_type: "medgemma_inference", screening_id: screeningId,
         model_provider: usedModel ? "google" : null, model_id: usedModel ? MODEL_ID : null,
-        adapter_id: "medgemma_pediscreen_v1", model_version: "v5.0",
+        adapter_id: "medgemma_pediscreen_v1", model_version: "v5.1",
         input_types: ["text", ...(wearable ? ["wearable"] : [])],
         input_hash: inputHash.slice(0, 16),
         risk_level: finalReport.riskLevel, confidence: finalReport.confidence,
         fallback: isFallback, fallback_reason: fallbackReason,
         latency_ms: totalLatency, status_code: 200,
-        cost_estimate_usd: usedModel ? ((aiResponse?.usage?.total_tokens || 300) / 1000) * COST_PER_1K_TOKENS : 0,
-        agent: "medgemma-v5", trace_id: traceId,
+        cost_estimate_usd: usedModel ? ((aiResponse.usage?.total_tokens || 300) / 1000) * COST_PER_1K_TOKENS : 0,
+        agent: "medgemma-v5.1", trace_id: traceId,
         org_id: ctx.orgId, case_id: case_id,
-        metadata: { ai_latency_ms: aiLatency, tool_calling: usedModel, wearable: !!wearable },
+        metadata: { ai_latency_ms: aiResponse.latencyMs, tool_calling: usedModel, wearable: hasWearable },
       }),
       recordAuditEvent("medgemma_screening", {
         screening_id: screeningId, risk_level: finalReport.riskLevel,
@@ -416,7 +382,7 @@ serve(async (req) => {
       fallback: isFallback,
       confidence: finalReport.confidence,
       trace_id: traceId,
-      version: "medgemma-v5.0",
+      version: "medgemma-v5.1",
       timestamp: new Date().toISOString(),
     }, 200, rlH);
   } catch (err) {
