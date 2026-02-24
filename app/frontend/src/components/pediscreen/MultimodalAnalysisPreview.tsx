@@ -2,6 +2,12 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Eye, Scan, Brain, Fingerprint, Ruler, Sparkles, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 type AnalysisFeature = {
   id: string;
@@ -23,31 +29,31 @@ const analysisFeatures: Omit<AnalysisFeature, 'active'>[] = [
     id: 'visual_encoding',
     label: 'Visual Encoding',
     icon: Eye,
-    description: 'MedSigLIP vision encoder processing',
+    description: 'MedSigLIP vision encoder at up to 420×420; extracts clinically relevant visual features.',
   },
   {
     id: 'pattern_detection',
-    label: 'Pattern Detection',
+    label: 'Developmental Markers',
     icon: Scan,
-    description: 'Detecting developmental markers',
+    description: 'Detects age-relevant patterns (e.g. grasp, stroke quality, form) for screening.',
   },
   {
     id: 'motor_skills',
-    label: 'Motor Skills Analysis',
+    label: 'Motor & Coordination',
     icon: Fingerprint,
-    description: 'Evaluating grip and stroke patterns',
+    description: 'Evaluates fine/gross motor indicators: grip, stroke control, bilateral use.',
   },
   {
     id: 'spatial',
-    label: 'Spatial Assessment',
+    label: 'Spatial & Form',
     icon: Ruler,
-    description: 'Analyzing form and proportions',
+    description: 'Analyzes form, proportions, and spatial organization against age expectations.',
   },
   {
     id: 'fusion',
-    label: 'Multimodal Fusion',
+    label: 'Clinical Reasoning',
     icon: Brain,
-    description: 'Combining visual + text context',
+    description: 'Fuses visual + text with age-expected milestones (ASQ-3 / CDC-aligned).',
   },
 ];
 
@@ -140,43 +146,52 @@ const MultimodalAnalysisPreview: React.FC<MultimodalAnalysisPreviewProps> = ({
       </div>
 
       {/* Analysis features indicators */}
-      <div className="mt-6 grid grid-cols-2 sm:grid-cols-5 gap-2">
-        {analysisFeatures.map((feature, index) => {
-          const Icon = feature.icon;
-          const isActive = isAnalyzing || analysisComplete;
-          
-          return (
-            <motion.div
-              key={feature.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className={cn(
-                'flex flex-col items-center gap-1 p-2 rounded-xl border transition-all text-center',
-                isActive
-                  ? 'bg-primary/5 border-primary/20 text-primary'
-                  : 'bg-muted/50 border-transparent text-muted-foreground'
-              )}
-            >
-              <div className={cn(
-                'w-8 h-8 rounded-lg flex items-center justify-center transition-colors',
-                isActive ? 'bg-primary/10' : 'bg-muted'
-              )}>
-                <Icon className="w-4 h-4" />
-              </div>
-              <span className="text-[10px] font-medium leading-tight">{feature.label}</span>
-            </motion.div>
-          );
-        })}
-      </div>
+      <TooltipProvider>
+        <div className="mt-6 grid grid-cols-2 sm:grid-cols-5 gap-2">
+          {analysisFeatures.map((feature, index) => {
+            const Icon = feature.icon;
+            const isActive = isAnalyzing || analysisComplete;
+
+            return (
+              <Tooltip key={feature.id}>
+                <TooltipTrigger asChild>
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    className={cn(
+                      'flex flex-col items-center gap-1 p-2 rounded-xl border transition-all text-center cursor-help',
+                      isActive
+                        ? 'bg-primary/5 border-primary/20 text-primary'
+                        : 'bg-muted/50 border-transparent text-muted-foreground'
+                    )}
+                  >
+                    <div className={cn(
+                      'w-8 h-8 rounded-lg flex items-center justify-center transition-colors',
+                      isActive ? 'bg-primary/10' : 'bg-muted'
+                    )}>
+                      <Icon className="w-4 h-4" />
+                    </div>
+                    <span className="text-[10px] font-medium leading-tight">{feature.label}</span>
+                  </motion.div>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-xs text-xs">
+                  <p>{feature.description}</p>
+                </TooltipContent>
+              </Tooltip>
+            );
+          })}
+        </div>
+      </TooltipProvider>
 
       {/* Technical info tooltip */}
       <div className="mt-4 p-3 bg-muted/50 rounded-xl border border-border/50">
         <div className="flex items-start gap-2">
           <Brain className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
           <div className="text-xs text-muted-foreground">
-            <strong className="text-foreground">Multimodal Fusion:</strong> MedSigLIP encodes visual features 
-            at up to 420×420 resolution, then fuses with text observations for joint clinical reasoning.
+            <strong className="text-foreground">Clinical fusion:</strong> MedSigLIP encodes visual features
+            at up to 420×420 resolution. Findings are combined with parent report and compared to
+            age-expected milestones (ASQ-3, CDC) for screening support—not diagnosis.
           </div>
         </div>
       </div>

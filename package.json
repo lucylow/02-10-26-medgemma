@@ -15,7 +15,8 @@
     "build-storybook": "storybook build",
     "gen:mock": "node scripts/generate_mock_data.js",
     "validate:mock": "node scripts/validate_mock_data.js",
-    "start:demo": "vite --mode demo"
+    "start:demo": "vite --mode demo",
+    "test:healthchain": "npx hardhat test test/HealthChainPOC.test.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

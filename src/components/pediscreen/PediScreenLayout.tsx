@@ -7,6 +7,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ConnectWalletButton } from '@/components/blockchain';
 
 const mainNavItems = [
   { title: 'Home', path: '/pediscreen', icon: Home },
@@ -144,12 +145,15 @@ const PediScreenLayout = () => {
           </div>
           
           {!isMobile && (
-            <Link to="/">
-              <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10 gap-2 rounded-xl">
-                <ArrowLeft className="w-4 h-4" />
-                Back to Home
-              </Button>
-            </Link>
+            <div className="flex items-center gap-3">
+              <ConnectWalletButton />
+              <Link to="/">
+                <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10 gap-2 rounded-xl">
+                  <ArrowLeft className="w-4 h-4" />
+                  Back to Home
+                </Button>
+              </Link>
+            </div>
           )}
         </div>
       </header>

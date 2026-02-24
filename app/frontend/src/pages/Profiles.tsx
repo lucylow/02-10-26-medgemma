@@ -1,17 +1,28 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Calendar, History, ArrowRight, Edit2, Trash2, Heart } from 'lucide-react';
+import { Plus, Calendar, History, ArrowRight, Edit2, Trash2, Heart, Search } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { MOCK_CHILD_PROFILES } from '@/data/demoMockData';
 
 const Profiles = () => {
   const navigate = useNavigate();
-  const children = MOCK_CHILD_PROFILES;
+  const [search, setSearch] = useState('');
+  const children = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return MOCK_CHILD_PROFILES;
+    return MOCK_CHILD_PROFILES.filter(
+      (c) =>
+        c.name.toLowerCase().includes(q) ||
+        c.age.toLowerCase().includes(q) ||
+        c.status.toLowerCase().includes(q)
+    );
+  }, [search]);
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
@@ -30,7 +41,22 @@ const Profiles = () => {
           </Button>
         </div>
 
+        <div className="relative max-w-md mb-6">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by name, age, or status..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9 rounded-xl"
+          />
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {children.length === 0 && search.trim() ? (
+            <div className="col-span-full text-center py-12 text-muted-foreground rounded-xl border border-dashed bg-muted/20">
+              No profiles match &quot;{search}&quot;. Try a different search.
+            </div>
+          ) : null}
           {children.map((child, index) => (
             <motion.div
               key={child.id}
@@ -39,6 +65,8 @@ const Profiles = () => {
               transition={{ delay: index * 0.1 }}
               className="cursor-pointer"
               onClick={() => navigate(`/pediscreen/profiles/${child.id}`, { state: { child } })}
+              whileHover={{ y: -4 }}
+              whileTap={{ scale: 0.98 }}
             >
               <Card className="overflow-hidden hover:shadow-xl transition-shadow border-none shadow-md">
                 <CardHeader className="pb-4">
@@ -97,13 +125,14 @@ const Profiles = () => {
             </motion.div>
           ))}
 
-          {/* Add Placeholder Card */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: children.length * 0.1 }}
-          >
-            <Card
+          {/* Add Placeholder Card - only when not in empty search state */}
+          {children.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: children.length * 0.1 }}
+            >
+              <Card
               className="border-dashed border-2 bg-muted/5 flex flex-col items-center justify-center p-8 h-full min-h-[300px] cursor-pointer hover:bg-muted/10 transition-colors"
               onClick={() => toast.info('Add profile form coming soon')}
             >

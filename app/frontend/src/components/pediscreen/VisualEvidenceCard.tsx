@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Eye, Image, Scan, CheckCircle2, AlertTriangle, Fingerprint, Ruler, Palette } from 'lucide-react';
+import { Eye, Image, Scan, CheckCircle2, AlertTriangle, Fingerprint, Ruler, Palette, Users, Brain } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type VisualFinding = {
@@ -23,19 +23,35 @@ const categoryIcons: Record<string, React.ElementType> = {
   'spatial': Ruler,
   'visual': Eye,
   'color': Palette,
+  'social': Users,
+  'cognitive': Brain,
   'default': Scan,
+};
+
+const domainLabels: Record<string, string> = {
+  communication: 'Communication & Language',
+  gross_motor: 'Gross Motor',
+  fine_motor: 'Fine Motor',
+  cognitive: 'Problem Solving',
+  social: 'Personal-Social',
 };
 
 const getCategoryIcon = (finding: string): React.ElementType => {
   const lowerFinding = finding.toLowerCase();
-  if (lowerFinding.includes('grip') || lowerFinding.includes('motor') || lowerFinding.includes('stroke')) {
+  if (lowerFinding.includes('grip') || lowerFinding.includes('motor') || lowerFinding.includes('stroke') || lowerFinding.includes('block') || lowerFinding.includes('scribble')) {
     return categoryIcons.motor;
   }
-  if (lowerFinding.includes('spatial') || lowerFinding.includes('proportion') || lowerFinding.includes('size')) {
+  if (lowerFinding.includes('spatial') || lowerFinding.includes('proportion') || lowerFinding.includes('size') || lowerFinding.includes('form')) {
     return categoryIcons.spatial;
   }
   if (lowerFinding.includes('color') || lowerFinding.includes('colour')) {
     return categoryIcons.color;
+  }
+  if (lowerFinding.includes('play') || lowerFinding.includes('pretend') || lowerFinding.includes('social') || lowerFinding.includes('peer')) {
+    return categoryIcons.social;
+  }
+  if (lowerFinding.includes('puzzle') || lowerFinding.includes('count') || lowerFinding.includes('rule') || lowerFinding.includes('sequence')) {
+    return categoryIcons.cognitive;
   }
   return categoryIcons.default;
 };
@@ -55,11 +71,16 @@ const VisualEvidenceCard: React.FC<VisualEvidenceCardProps> = ({
     >
       <Card className={cn('shadow-lg border-none overflow-hidden', className)}>
         <CardHeader className="pb-3 bg-gradient-to-r from-accent/10 to-transparent">
-          <CardTitle className="text-primary flex items-center gap-2 text-lg">
+          <CardTitle className="text-primary flex items-center gap-2 text-lg flex-wrap">
             <div className="w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center">
               <Eye className="w-4 h-4 text-accent" />
             </div>
             Visual Evidence Analysis
+            {domain && (
+              <Badge variant="secondary" className="text-xs font-medium">
+                {domainLabels[domain] || domain}
+              </Badge>
+            )}
             <Badge variant="outline" className="ml-auto border-accent/30 text-accent text-xs">
               MedSigLIP
             </Badge>
@@ -111,13 +132,18 @@ const VisualEvidenceCard: React.FC<VisualEvidenceCardProps> = ({
           </div>
 
           {/* Technical note */}
-          <div className="mt-4 pt-4 border-t border-border/50">
+          <div className="mt-4 pt-4 border-t border-border/50 space-y-2">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Scan className="w-3.5 h-3.5" />
+              <Scan className="w-3.5 h-3.5 flex-shrink-0" />
               <span>
-                Visual features extracted via MedSigLIP medical vision encoder and fused with text observations
+                Visual features from MedSigLIP medical vision encoder, fused with text for screening support. Not a substitute for clinical assessment.
               </span>
             </div>
+            {domain && (
+              <p className="text-[10px] text-muted-foreground italic pl-6">
+                Domain: {domainLabels[domain] || domain} — observations are interpreted in this developmental area only.
+              </p>
+            )}
           </div>
         </CardContent>
       </Card>

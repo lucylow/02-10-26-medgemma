@@ -254,6 +254,41 @@ const ResultsScreen = () => {
         showActions={true}
       />
 
+      {/* Key Findings — clinically salient points */}
+      {report.keyFindings && report.keyFindings.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.18 }}
+        >
+          <Card className="shadow-lg border-none border-l-4 border-l-primary">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-primary flex items-center gap-2 text-lg">
+                <ClipboardCheck className="w-5 h-5" />
+                {activeTab === 'clinician' ? 'Key Clinical Findings' : 'Key findings from this screening'}
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                {activeTab === 'clinician' 
+                  ? 'Salient observations that informed risk stratification (screening only, not diagnostic).'
+                  : 'Summary of what stood out in your child\'s responses and any images.'}
+              </p>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-2">
+                {report.keyFindings.map((finding: string, idx: number) => (
+                  <li key={idx} className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg border border-border/50">
+                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary">
+                      {idx + 1}
+                    </span>
+                    <span className="text-sm text-foreground leading-relaxed">{finding}</span>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
       {/* Explainability Panel - "See the Evidence" */}
       {evidence && (
         <ExplainabilityPanel

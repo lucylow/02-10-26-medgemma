@@ -17,6 +17,7 @@ import ProgressiveHelp from '@/components/pediscreen/ProgressiveHelp';
 import AccessibilityBar from '@/components/pediscreen/AccessibilityBar';
 import ClinicianReview from '@/components/pediscreen/ClinicianReview';
 import DisclaimerBanner from '@/components/pediscreen/DisclaimerBanner';
+import { ScreeningResultBlockchain, ConnectWalletButton } from '@/components/blockchain';
 
 type RiskLevel = 'on_track' | 'low' | 'monitor' | 'medium' | 'refer' | 'high';
 
@@ -795,6 +796,29 @@ const ResultsScreen = () => {
             </Button>
           </Link>
         </div>
+      </motion.div>
+
+      {/* Blockchain: on-chain record & mint NFT */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.5 }}
+      >
+        <Card className="bg-muted/20 border-border">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Shield className="w-4 h-4" />
+              On-chain record
+            </CardTitle>
+            <p className="text-muted-foreground text-sm font-normal">
+              Optional: save a hash of this result on-chain or mint a screening NFT. Connect your wallet to enable.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <ConnectWalletButton />
+            <ScreeningResultBlockchain screeningId={screeningId} report={report} />
+          </CardContent>
+        </Card>
       </motion.div>
 
       {/* Disclaimer */}

@@ -94,7 +94,7 @@ const VisualMilestoneTimeline: React.FC<VisualMilestoneTimelineProps> = ({
             </Badge>
           </div>
           <p className="text-sm text-muted-foreground mt-2">
-            Visual progress at <strong>{childAge} months</strong> — each step shows developmental achievements
+            Visual progress at <strong>{childAge} months</strong>. Benchmarks align with ASQ-3 and CDC “Learn the Signs. Act Early.” where applicable.
           </p>
         </CardHeader>
 

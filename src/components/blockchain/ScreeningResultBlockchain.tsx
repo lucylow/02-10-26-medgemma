@@ -2,28 +2,41 @@
  * Screening result blockchain — show hash and option to mint NFT / record on-chain.
  * Wire to PediScreenRegistry (ERC721) and PaymentEscrow when addresses are configured.
  */
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { usePediScreenWallet } from "@/hooks/usePediScreenWallet";
 import { isBlockchainConfigured } from "@/config/blockchain";
+import { computeRecordHash } from "@/services/healthChain";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export interface ScreeningResultBlockchainProps {
   screeningId?: string;
+  /** Precomputed hash of the report; if not set and report is set, hash is computed client-side */
   aiReportHash?: string;
+  /** If provided and aiReportHash is not set, hash will be computed from report */
+  report?: Record<string, unknown>;
   className?: string;
   onMinted?: (tokenId: string) => void;
 }
 
 export function ScreeningResultBlockchain({
   screeningId,
-  aiReportHash,
+  aiReportHash: aiReportHashProp,
+  report,
   className,
   onMinted,
 }: ScreeningResultBlockchainProps) {
   const { isConnected, address } = usePediScreenWallet();
   const [minting, setMinting] = useState(false);
   const [mintedTokenId, setMintedTokenId] = useState<string | null>(null);
+  const [computedHash, setComputedHash] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (aiReportHashProp || !report) return;
+    computeRecordHash(report).then(setComputedHash);
+  }, [report, aiReportHashProp]);
+
+  const aiReportHash = aiReportHashProp ?? computedHash ?? undefined;
 
   const handleMint = async () => {
     if (!isConnected || !address) return;

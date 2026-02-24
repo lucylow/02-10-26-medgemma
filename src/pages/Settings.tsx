@@ -15,12 +15,16 @@ import {
   Globe,
   Moon,
   Sun,
-  Lock
+  Lock,
+  Wallet
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { isAnalyticsOptedIn, setAnalyticsOptIn } from '@/analytics';
+import { ConnectWalletButton, FedLearningClient } from '@/components/blockchain';
+import { isBlockchainConfigured } from '@/config/blockchain';
+import { Link } from 'react-router-dom';
 
 const Settings = () => {
   const [analyticsOptIn, setAnalyticsOptInState] = useState(false);
@@ -63,6 +67,9 @@ const Settings = () => {
             </TabsTrigger>
             <TabsTrigger value="notifications" className="rounded-lg gap-2">
               <Bell className="w-4 h-4" /> Notifications
+            </TabsTrigger>
+            <TabsTrigger value="blockchain" className="rounded-lg gap-2">
+              <Wallet className="w-4 h-4" /> Blockchain
             </TabsTrigger>
           </TabsList>
 
@@ -203,6 +210,38 @@ const Settings = () => {
                   </div>
                   <Switch defaultChecked />
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="blockchain">
+            <Card>
+              <CardHeader>
+                <CardTitle>Blockchain & Wallet</CardTitle>
+                <CardDescription>
+                  Connect a wallet for on-chain screening records, HealthChain POC, and federated learning rewards. Optional.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-2">
+                  <Label className="text-base">Wallet</Label>
+                  <p className="text-sm text-muted-foreground">Connect MetaMask or another Web3 wallet to mint screening NFTs and use HealthChain.</p>
+                  <ConnectWalletButton />
+                </div>
+                <Separator />
+                <div className="space-y-2">
+                  <Label className="text-base">Federated learning</Label>
+                  <p className="text-sm text-muted-foreground">Register as a client and submit gradient hashes to earn $PEDI (when configured).</p>
+                  <FedLearningClient />
+                </div>
+                {!isBlockchainConfigured && (
+                  <>
+                    <Separator />
+                    <p className="text-sm text-muted-foreground">
+                      Blockchain is not configured. Set VITE_PEDISCREEN_REGISTRY_ADDRESS, VITE_HEALTH_CHAIN_POC_ADDRESS, or VITE_FED_COORDINATOR_ADDRESS in your environment. See docs/BLOCKCHAIN_INTEGRATION.md in the repo.
+                    </p>
+                  </>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

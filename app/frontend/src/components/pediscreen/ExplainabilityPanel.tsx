@@ -224,9 +224,15 @@ const ExplainabilityPanel: React.FC<ExplainabilityPanelProps> = ({
 
                 {/* Connection Note */}
                 <div className="flex items-center gap-2 text-xs text-muted-foreground p-3 bg-muted/30 rounded-lg">
-                  <Link2 className="w-4 h-4" />
+                  <Link2 className="w-4 h-4 flex-shrink-0" />
                   <span>
                     Evidence from multiple sources (text + images) strengthens assessment reliability through <strong>multimodal fusion</strong>.
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-100 dark:border-blue-900/50">
+                  <FileText className="w-4 h-4 flex-shrink-0 text-blue-600" />
+                  <span>
+                    Screening benchmarks align with <strong>ASQ-3</strong> and CDC &quot;Learn the Signs. Act Early.&quot; This tool supports clinical judgment and does not replace formal assessment or diagnosis.
                   </span>
                 </div>
               </motion.div>
