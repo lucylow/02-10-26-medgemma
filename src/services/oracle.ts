@@ -8,7 +8,7 @@ import { PEDISCREEN_ORACLE_ADDRESS } from "@/config/blockchain";
 
 // Support both ethers v5 (Web3Provider) and v6 (BrowserProvider) for Lovable/ESM builds
 const getBrowserProvider = (): new (p: unknown) => ethers.Provider =>
-  (ethers as any).BrowserProvider ?? (ethers as any).providers?.Web3Provider;
+  (ethers as any)["BrowserProvider"] ?? (ethers as any).providers?.["Web3Provider"];
 
 const ORACLE_ABI = [
   // Screening record storage

@@ -4,7 +4,7 @@ import { PEDISCREEN_REGISTRY_ABI } from "./pediscreenRegistryAbi";
 
 // Support both ethers v5 (Web3Provider) and v6 (BrowserProvider) for Lovable/ESM builds
 const getBrowserProviderClass = (): new (provider: unknown) => ethers.Provider =>
-  (ethers as any).BrowserProvider ?? (ethers as any).providers?.Web3Provider;
+  (ethers as any)["BrowserProvider"] ?? (ethers as any).providers?.["Web3Provider"];
 
 const REGISTRY_ADDRESS = import.meta.env.VITE_REGISTRY_ADDRESS as string | undefined;
 const TARGET_CHAIN_ID = Number(
