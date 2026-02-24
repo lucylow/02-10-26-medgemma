@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import { PARENT_ONE_LINER } from '@/constants/disclaimers';
-import { Baby, Home, Plus, History, ArrowLeft, Menu, Sparkles, ChevronRight, UserCircle, Settings, BookOpen, Scan, Layers, FileText, FlaskConical, Mic, Lock, Wallet, Link2, Puzzle, BookMarked, ClipboardList, Info, HelpCircle, Shield, MessageCircle, Users, Cpu } from 'lucide-react';
+import { Baby, Home, Plus, History, ArrowLeft, Menu, Sparkles, ChevronRight, UserCircle, Settings, BookOpen, Scan, Layers, FileText, FlaskConical, Mic, Lock, Wallet, Link2, Puzzle, BookMarked, ClipboardList, Info, HelpCircle, Shield, MessageCircle, Users, Cpu, Eye, FileImage } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
@@ -29,6 +29,8 @@ const clinicalNavItems = [
   { title: 'Voice Screening', path: '/pediscreen/voice', icon: Mic },
   { title: 'Radiology', path: '/pediscreen/radiology', icon: Scan },
   { title: 'CT 3D Edge', path: '/pediscreen/ct-3d', icon: Layers },
+  { title: 'ROP Screening', path: '/pediscreen/rop', icon: Eye },
+  { title: 'Multimodal Demo', path: '/pediscreen/multimodal-demo', icon: FileImage },
   { title: 'Guidelines', path: '/pediscreen/guidelines', icon: BookMarked },
   { title: 'Education', path: '/pediscreen/education', icon: BookOpen },
 ];

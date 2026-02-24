@@ -85,6 +85,7 @@ import IoTMonitoring from "./pages/iot/IoTMonitoring";
 import PatientDashboard from "./pages/iot/PatientDashboard";
 import DeviceSetup from "./pages/iot/DeviceSetup";
 import ROPScreening from "./pages/ROPScreening";
+import MultimodalDemoData from "./pages/MultimodalDemoData";
 
 interface RouterFutureConfig {
   v7_startTransition?: boolean;
@@ -214,6 +215,7 @@ const appRoutes = createRoutesFromElements(
       <Route path="patients" element={<HumanCenteredPatientsPage />} />
       <Route path="patient/:id" element={<PatientScreening />} />
       <Route path="rop" element={<ROPScreening />} />
+      <Route path="multimodal-demo" element={<MultimodalDemoData />} />
     </Route>
     <Route path="*" element={<NotFound />} />
   </>
