@@ -272,7 +272,6 @@ const Profiles = () => {
                   placeholder="e.g. Maya Johnson"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
-                  autoFocus
                 />
               </div>
               <div className="space-y-2">

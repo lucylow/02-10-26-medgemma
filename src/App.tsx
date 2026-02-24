@@ -50,6 +50,11 @@ import ChildProfileDetail from "./pages/pediscreen/ChildProfileDetail";
 import Telemetry from "./pages/Telemetry";
 import SmartLaunch from "./pages/SmartLaunch";
 import SmartCallback from "./pages/SmartCallback";
+import FederatedLearningPage from "./pages/FederatedLearningPage";
+import BlockchainPage from "./pages/BlockchainPage";
+import HealthChainPage from "./pages/HealthChainPage";
+import IntegrationsPage from "./pages/IntegrationsPage";
+import GuidelinesPage from "./pages/GuidelinesPage";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { ThemeProvider } from "./theme";
 
@@ -89,6 +94,11 @@ const appRoutes = createRoutesFromElements(
       <Route path="radiology" element={<RadiologyQueue />} />
       <Route path="technical-writer" element={<TechnicalWriter />} />
       <Route path="end2end-demo" element={<EndToEndDemo />} />
+      <Route path="federated" element={<FederatedLearningPage />} />
+      <Route path="blockchain" element={<BlockchainPage />} />
+      <Route path="healthchain" element={<HealthChainPage />} />
+      <Route path="integrations" element={<IntegrationsPage />} />
+      <Route path="guidelines" element={<GuidelinesPage />} />
       <Route path="report/:reportId" element={<DetailedReportEditor />} />
       <Route path="case/:id" element={<PediScreenCaseDetail />} />
     </Route>

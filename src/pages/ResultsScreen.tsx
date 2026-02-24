@@ -17,6 +17,7 @@ import ProgressiveHelp from '@/components/pediscreen/ProgressiveHelp';
 import AccessibilityBar from '@/components/pediscreen/AccessibilityBar';
 import ClinicianReview from '@/components/pediscreen/ClinicianReview';
 import DisclaimerBanner from '@/components/pediscreen/DisclaimerBanner';
+import { FeedbackCard } from '@/components/pediscreen/FeedbackCard';
 import { ScreeningResultBlockchain, ConnectWalletButton } from '@/components/blockchain';
 
 type RiskLevel = 'on_track' | 'low' | 'monitor' | 'medium' | 'refer' | 'high';
@@ -747,6 +748,12 @@ const ResultsScreen = () => {
               onDone={() => {
                 toast({ title: 'Report signed', description: 'Clinician review completed.' });
               }}
+            />
+            <FeedbackCard
+              inferenceId={screeningId}
+              caseId={screeningId}
+              currentRisk={report.riskLevel}
+              apiKey={import.meta.env.VITE_API_KEY}
             />
             <Card className="border-primary/20 bg-primary/5">
             <CardHeader className="py-3 px-4 flex flex-row items-center justify-between space-y-0">

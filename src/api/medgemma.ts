@@ -508,3 +508,51 @@ export async function exportReportPdf(
   a.click();
   URL.revokeObjectURL(url);
 }
+
+/** Optional: HAI-DEF agent orchestration (when backend exposes POST /orchestrate). */
+const ORCHESTRATE_BASE = import.meta.env.VITE_ORCHESTRATE_URL || (import.meta.env.DEV ? 'http://localhost:8010' : '');
+
+export interface OrchestrateCasePayload {
+  case_id: string;
+  age_months: number;
+  observations: string;
+  embedding_b64?: string;
+  shape?: number[];
+  consent_id?: string;
+  user_id_pseudonym?: string;
+}
+
+export interface OrchestrateCaseResult {
+  output?: InferResult['result'] | unknown;
+  diagnostics?: unknown;
+  provenance?: InferResult['provenance'];
+  inference_time_ms?: number;
+}
+
+/**
+ * Call backend orchestrate endpoint when VITE_ORCHESTRATE_URL is set (e.g. agent_system on 8010).
+ */
+export async function orchestrateCase(
+  payload: OrchestrateCasePayload,
+  apiKey?: string
+): Promise<OrchestrateCaseResult> {
+  if (!ORCHESTRATE_BASE) {
+    throw new MedGemmaApiError('Orchestrate URL not configured (VITE_ORCHESTRATE_URL)', 'ORCHESTRATE_DISABLED');
+  }
+  const url = `${ORCHESTRATE_BASE}/orchestrate`;
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (apiKey) headers['x-api-key'] = apiKey;
+  const signal =
+    typeof AbortSignal?.timeout === 'function' ? AbortSignal.timeout(DEFAULT_TIMEOUT_MS) : undefined;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(payload),
+    signal,
+  });
+  if (!res.ok) {
+    const { message, code } = await parseErrorResponse(res);
+    throw new MedGemmaApiError(message, code, res.status);
+  }
+  return res.json();
+}

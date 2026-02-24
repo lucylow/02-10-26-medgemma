@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import { PARENT_ONE_LINER } from '@/constants/disclaimers';
-import { Baby, Home, Plus, History, ArrowLeft, Menu, Sparkles, ChevronRight, UserCircle, Settings, BookOpen, Scan, FileText, FlaskConical, Mic } from 'lucide-react';
+import { Baby, Home, Plus, History, ArrowLeft, Menu, Sparkles, ChevronRight, UserCircle, Settings, BookOpen, Scan, FileText, FlaskConical, Mic, Lock, Wallet, Link2, Puzzle, BookMarked } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
@@ -21,6 +21,11 @@ const toolsNavItems = [
   { title: 'Voice', path: '/pediscreen/voice', icon: Mic },
   { title: 'Agent Pipeline', path: '/pediscreen/agent-pipeline', icon: Sparkles },
   { title: 'Education', path: '/pediscreen/education', icon: BookOpen },
+  { title: 'Guidelines', path: '/pediscreen/guidelines', icon: BookMarked },
+  { title: 'Integrations', path: '/pediscreen/integrations', icon: Puzzle },
+  { title: 'Blockchain', path: '/pediscreen/blockchain', icon: Wallet },
+  { title: 'Federated Learning', path: '/pediscreen/federated', icon: Lock },
+  { title: 'HealthChain', path: '/pediscreen/healthchain', icon: Link2 },
   { title: 'Settings', path: '/pediscreen/settings', icon: Settings },
   { title: 'Radiology', path: '/pediscreen/radiology', icon: Scan },
   { title: 'Technical Writer', path: '/pediscreen/technical-writer', icon: FileText },
@@ -40,6 +45,11 @@ const getBreadcrumbs = (pathname: string) => {
   if (pathname.includes('/radiology')) crumbs.push({ label: 'Radiology Worklist', path: '/pediscreen/radiology' });
   if (pathname.includes('/technical-writer')) crumbs.push({ label: 'Technical Writer', path: '/pediscreen/technical-writer' });
   if (pathname.includes('/end2end-demo')) crumbs.push({ label: 'End2End Demo', path: '/pediscreen/end2end-demo' });
+  if (pathname.includes('/federated')) crumbs.push({ label: 'Federated Learning', path: '/pediscreen/federated' });
+  if (pathname.includes('/blockchain')) crumbs.push({ label: 'Blockchain', path: '/pediscreen/blockchain' });
+  if (pathname.includes('/healthchain')) crumbs.push({ label: 'HealthChain POC', path: '/pediscreen/healthchain' });
+  if (pathname.includes('/integrations')) crumbs.push({ label: 'Integrations', path: '/pediscreen/integrations' });
+  if (pathname.includes('/guidelines')) crumbs.push({ label: 'Guidelines', path: '/pediscreen/guidelines' });
   if (pathname.includes('/results')) crumbs.push({ label: 'Results', path: pathname });
   if (pathname.includes('/case/')) crumbs.push({ label: 'Case Detail', path: pathname });
   if (pathname.includes('/learn-more')) crumbs.push({ label: 'Architecture', path: '/pediscreen/learn-more' });

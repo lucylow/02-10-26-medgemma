@@ -24,9 +24,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { isAnalyticsOptedIn, setAnalyticsOptIn } from '@/analytics';
 import { ConnectWalletButton, FedLearningClient } from '@/components/blockchain';
 import { isBlockchainConfigured } from '@/config/blockchain';
+import { exportData, eraseData, rectifyData } from '@/api/dsr';
+import { useToast } from '@/hooks/use-toast';
 
 const Settings = () => {
   const [analyticsOptIn, setAnalyticsOptInState] = useState(false);
+  const [dsrCaseId, setDsrCaseId] = useState('');
+  const [dsrRectifyField, setDsrRectifyField] = useState('observations');
+  const [dsrRectifyValue, setDsrRectifyValue] = useState('');
+  const [dsrLoading, setDsrLoading] = useState<'export' | 'erase' | 'rectify' | null>(null);
+  const { toast } = useToast();
   useEffect(() => {
     setAnalyticsOptInState(isAnalyticsOptedIn());
   }, []);
@@ -173,6 +180,129 @@ const Settings = () => {
                     <p className="text-sm text-muted-foreground">Delete screening data after 30 days of inactivity.</p>
                   </div>
                   <Switch />
+                </div>
+                <Separator />
+                <div className="space-y-4">
+                  <p className="text-sm font-medium text-foreground">Data rights (GDPR)</p>
+                  <p className="text-xs text-muted-foreground">
+                    Export your data, request erasure, or request correction. Requires API key.
+                  </p>
+                  <div className="space-y-2">
+                    <Label>Case or user ID</Label>
+                    <Input
+                      placeholder="Case ID or pseudonymized user ID"
+                      value={dsrCaseId}
+                      onChange={(e) => setDsrCaseId(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      disabled={!dsrCaseId || dsrLoading !== null}
+                      onClick={async () => {
+                        setDsrLoading('export');
+                        try {
+                          const blob = await exportData(
+                            dsrCaseId.length > 20 ? { case_id: dsrCaseId } : { user_id: dsrCaseId }
+                          );
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = 'dsr_export.zip';
+                          a.click();
+                          URL.revokeObjectURL(url);
+                          toast({ title: 'Export started', description: 'dsr_export.zip downloaded.' });
+                        } catch (e) {
+                          toast({
+                            title: 'Export failed',
+                            description: e instanceof Error ? e.message : 'Unknown error',
+                            variant: 'destructive',
+                          });
+                        } finally {
+                          setDsrLoading(null);
+                        }
+                      }}
+                    >
+                      {dsrLoading === 'export' ? 'Exporting…' : 'Export my data'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2 text-destructive"
+                      disabled={!dsrCaseId || dsrLoading !== null}
+                      onClick={async () => {
+                        if (!confirm('Permanently erase data for this case/user? This cannot be undone.')) return;
+                        setDsrLoading('erase');
+                        try {
+                          const res = await eraseData(
+                            dsrCaseId.length > 20 ? { case_id: dsrCaseId } : { user_id: dsrCaseId }
+                          );
+                          toast({
+                            title: 'Erasure complete',
+                            description: `${res.deleted_count} record(s) marked deleted.`,
+                          });
+                        } catch (e) {
+                          toast({
+                            title: 'Erasure failed',
+                            description: e instanceof Error ? e.message : 'Unknown error',
+                            variant: 'destructive',
+                          });
+                        } finally {
+                          setDsrLoading(null);
+                        }
+                      }}
+                    >
+                      {dsrLoading === 'erase' ? 'Erasing…' : 'Request deletion'}
+                    </Button>
+                  </div>
+                  <div className="pt-2 border-t space-y-2">
+                    <Label>Request correction (case ID + field + new value)</Label>
+                    <div className="flex flex-wrap gap-2">
+                      <Input
+                        placeholder="Field (e.g. observations)"
+                        value={dsrRectifyField}
+                        onChange={(e) => setDsrRectifyField(e.target.value)}
+                        className="max-w-[140px]"
+                      />
+                      <Input
+                        placeholder="New value"
+                        value={dsrRectifyValue}
+                        onChange={(e) => setDsrRectifyValue(e.target.value)}
+                        className="flex-1 min-w-[120px]"
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={!dsrCaseId || !dsrRectifyValue || dsrLoading !== null}
+                        onClick={async () => {
+                          setDsrLoading('rectify');
+                          try {
+                            await rectifyData({
+                              case_id: dsrCaseId,
+                              field: dsrRectifyField,
+                              new_value: dsrRectifyValue,
+                            });
+                            toast({
+                              title: 'Request logged',
+                              description: 'Clinician review required for correction.',
+                            });
+                          } catch (e) {
+                            toast({
+                              title: 'Request failed',
+                              description: e instanceof Error ? e.message : 'Unknown error',
+                              variant: 'destructive',
+                            });
+                          } finally {
+                            setDsrLoading(null);
+                          }}
+                        }}
+                      >
+                        {dsrLoading === 'rectify' ? 'Sending…' : 'Request correction'}
+                      </Button>
+                    </div>
+                  </div>
                 </div>
                 <Separator />
                 <div className="space-y-4">

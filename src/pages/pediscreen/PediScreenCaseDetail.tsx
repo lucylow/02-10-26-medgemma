@@ -4,11 +4,12 @@
 
 import React from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Brain } from 'lucide-react';
+import { ArrowLeft, Brain, CheckCircle, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAgents } from '@/contexts/AgentContext';
 import { getScreening } from '@/services/screeningApi';
+import { getDataQuality } from '@/api/dataQuality';
 import { useQuery } from '@tanstack/react-query';
 import { AgentNode } from '@/components/pediscreen/AgentNode';
 
@@ -23,6 +24,12 @@ export default function PediScreenCaseDetail() {
   const { data: caseData, isLoading } = useQuery({
     queryKey: ['pediscreen-case', id],
     queryFn: () => getScreening(id!),
+    enabled: !!id && !id.startsWith('case_'),
+  });
+
+  const { data: quality } = useQuery({
+    queryKey: ['data-quality', id],
+    queryFn: () => getDataQuality(id!),
     enabled: !!id && !id.startsWith('case_'),
   });
 
@@ -107,6 +114,37 @@ export default function PediScreenCaseDetail() {
             )}
           </CardContent>
         </Card>
+
+        {!id.startsWith('case_') && quality && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                {quality.completeness_score >= 0.8 ? (
+                  <CheckCircle className="w-4 h-4 text-emerald-600" />
+                ) : (
+                  <AlertTriangle className="w-4 h-4 text-amber-600" />
+                )}
+                Data quality
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              <p>Completeness: {Math.round(quality.completeness_score * 100)}%</p>
+              {quality.missing_fields?.length > 0 && (
+                <p className="text-amber-700">Missing: {quality.missing_fields.join(', ')}</p>
+              )}
+              {quality.warnings?.length > 0 && (
+                <ul className="list-disc list-inside text-muted-foreground">
+                  {quality.warnings.map((w, i) => (
+                    <li key={i}>{w}</li>
+                  ))}
+                </ul>
+              )}
+              {quality.consent_present != null && (
+                <p className="text-muted-foreground">Consent: {quality.consent_present ? 'Yes' : 'No'}</p>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Agent Chain Transparency */}
         {hasPipeline && (

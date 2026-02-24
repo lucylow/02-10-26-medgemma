@@ -15,6 +15,9 @@ import {
   Eye,
   Heart,
   Info,
+  Smartphone,
+  WifiOff,
+  MapPin,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -465,25 +468,115 @@ export function DemoSection() {
           </TabsContent>
 
           <TabsContent value="visual">
-            <div className="bg-card rounded-2xl p-10 card-shadow text-center">
-              <h3 className="font-heading text-xl font-semibold mb-4">
-                MedGemma Visual Analysis Demo
-              </h3>
-              <p className="text-muted-foreground">
-                See how MedGemma's multimodal capabilities analyze visual developmental evidence.
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="bg-card rounded-2xl p-6 md:p-10 card-shadow"
+            >
+              <div className="text-center mb-8">
+                <h3 className="font-heading text-xl font-semibold mb-4">
+                  MedGemma Visual Analysis Demo
+                </h3>
+                <p className="text-muted-foreground max-w-2xl mx-auto">
+                  See how MedGemma's multimodal capabilities analyze visual developmental evidence — block towers, drawings, and play activities.
+                </p>
+              </div>
+              <div className="grid sm:grid-cols-3 gap-6 max-w-3xl mx-auto">
+                {[
+                  {
+                    icon: Image,
+                    title: "Block towers",
+                    desc: "Stacking and construction reveal fine motor and cognitive planning.",
+                  },
+                  {
+                    icon: Camera,
+                    title: "Drawings",
+                    desc: "Scribbles and shapes inform visual-motor and symbolic development.",
+                  },
+                  {
+                    icon: Eye,
+                    title: "Play activities",
+                    desc: "Structured play clips show social, language, and motor skills.",
+                  },
+                ].map((item) => (
+                  <div
+                    key={item.title}
+                    className="bg-muted/50 rounded-xl p-5 text-center border border-border/50"
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                      <item.icon className="h-5 w-5 text-primary" />
+                    </div>
+                    <h4 className="font-heading font-semibold text-sm mb-1">{item.title}</h4>
+                    <p className="text-xs text-muted-foreground">{item.desc}</p>
+                  </div>
+                ))}
+              </div>
+              <p className="text-center text-sm text-muted-foreground mt-6">
+                In the full app, upload images or short clips to get MedGemma analysis and risk insights. Use the <strong>Developmental Screening</strong> tab to run the interactive demo.
               </p>
-            </div>
+            </motion.div>
           </TabsContent>
 
           <TabsContent value="workflow">
-            <div className="bg-card rounded-2xl p-10 card-shadow text-center">
-              <h3 className="font-heading text-xl font-semibold mb-4">
-                Community Health Worker Workflow
-              </h3>
-              <p className="text-muted-foreground">
-                Explore how CHWs use PediScreen AI in field settings with limited connectivity.
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="bg-card rounded-2xl p-6 md:p-10 card-shadow"
+            >
+              <div className="text-center mb-8">
+                <h3 className="font-heading text-xl font-semibold mb-4">
+                  Community Health Worker Workflow
+                </h3>
+                <p className="text-muted-foreground max-w-2xl mx-auto">
+                  Explore how CHWs use PediScreen AI in field settings with limited connectivity.
+                </p>
+              </div>
+              <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+                {[
+                  {
+                    icon: "Smartphone",
+                    label: "On-device screening",
+                    description: "Run ASQ-3 and developmental checks offline on phones and tablets.",
+                  },
+                  {
+                    icon: "WifiOff",
+                    label: "Works without connectivity",
+                    description: "Sync results when back in range; no dependency on live internet.",
+                  },
+                  {
+                    icon: "MapPin",
+                    label: "Built for the field",
+                    description: "Designed for home visits, clinics, and low-resource settings.",
+                  },
+                ].map((item) => {
+                  const Icon =
+                    item.icon === "Smartphone"
+                      ? Smartphone
+                      : item.icon === "WifiOff"
+                        ? WifiOff
+                        : MapPin;
+                  return (
+                    <div
+                      key={item.label}
+                      className="bg-muted/50 rounded-xl p-6 text-center border border-border/50"
+                    >
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                        <Icon className="h-5 w-5 text-primary" />
+                      </div>
+                      <h4 className="font-heading font-semibold text-primary mb-2">
+                        {item.label}
+                      </h4>
+                      <p className="text-sm text-muted-foreground">{item.description}</p>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="text-center text-sm text-muted-foreground mt-6">
+                For more on the CHW workflow, see the <a href="#chw-workflow" className="text-primary underline hover:no-underline">CHW Workflow</a> section on this page.
               </p>
-            </div>
+            </motion.div>
           </TabsContent>
         </Tabs>
       </div>
