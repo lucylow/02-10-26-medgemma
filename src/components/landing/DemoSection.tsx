@@ -1,4 +1,5 @@
 import { useState } from "react";
+import CaptureFlow, { type CaptureFlowResult } from "@/components/pediscreen/CaptureFlow";
 import { motion } from "framer-motion";
 import {
   Keyboard,
@@ -89,11 +90,13 @@ export function DemoSection() {
   const [observation, setObservation] = useState(
     "My 2-year-old says only about 10 words and doesn't seem to combine them. He points to things he wants but doesn't use words. He understands simple instructions like \"come here\" or \"give me the ball.\""
   );
+  const [showCaptureFlow, setShowCaptureFlow] = useState(false);
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
 
-  const handleUploadClick = () => {
-    toast.info("In the full application, this would open your device camera or gallery to capture visual evidence. For this demo, visual analysis is simulated.", {
-      duration: 4000,
-    });
+  const handleCaptureComplete = (result: CaptureFlowResult) => {
+    setCapturedImage(result.dataUrl);
+    setShowCaptureFlow(false);
+    toast.success(`Image added (${result.preference === "embeddings_only" ? "embeddings only" : "raw upload"})`, { duration: 3000 });
   };
 
   const handleAnalyze = () => {
@@ -225,29 +228,47 @@ export function DemoSection() {
 
                   <div className="space-y-2">
                     <Label>Visual Evidence (Optional)</Label>
-                    <div
-                      role="button"
-                      tabIndex={0}
-                      onClick={handleUploadClick}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          handleUploadClick();
-                        }
-                      }}
-                      className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group"
-                    >
-                      <div className="relative">
-                        <CloudUpload className="h-10 w-10 text-muted-foreground mx-auto mb-3 group-hover:scale-110 transition-transform" />
-                        <Camera className="h-4 w-4 text-primary absolute -right-1 -bottom-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    {showCaptureFlow ? (
+                      <CaptureFlow
+                        onComplete={handleCaptureComplete}
+                        onCancel={() => setShowCaptureFlow(false)}
+                      />
+                    ) : capturedImage ? (
+                      <div className="relative rounded-xl border border-border overflow-hidden">
+                        <img src={capturedImage} alt="Captured" className="w-full max-h-48 object-contain bg-muted/30" />
+                        <button
+                          onClick={() => { setCapturedImage(null); setShowCaptureFlow(true); }}
+                          className="absolute top-2 right-2 h-7 w-7 rounded-full bg-black/60 flex items-center justify-center text-white hover:bg-black/80"
+                          aria-label="Remove image"
+                        >
+                          ✕
+                        </button>
                       </div>
-                      <p className="text-muted-foreground">
-                        Drag & drop or click to upload
-                      </p>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        e.g., child's drawing, block tower, play activity
-                      </p>
-                    </div>
+                    ) : (
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => setShowCaptureFlow(true)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            setShowCaptureFlow(true);
+                          }
+                        }}
+                        className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group"
+                      >
+                        <div className="relative">
+                          <CloudUpload className="h-10 w-10 text-muted-foreground mx-auto mb-3 group-hover:scale-110 transition-transform" />
+                          <Camera className="h-4 w-4 text-primary absolute -right-1 -bottom-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                        <p className="text-muted-foreground">
+                          Take a photo or upload from gallery
+                        </p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          e.g., child's drawing, block tower, play activity
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   <Button
