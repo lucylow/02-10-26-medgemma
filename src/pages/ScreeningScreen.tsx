@@ -97,7 +97,13 @@ const ScreeningScreen = () => {
   const isOnWrongChain = chainId != null && chainId !== CHAIN_ID;
 
   React.useEffect(() => {
-    const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    interface SpeechRecognitionWindow extends Window {
+      SpeechRecognition?: typeof SpeechRecognition;
+      webkitSpeechRecognition?: typeof SpeechRecognition;
+    }
+
+    const win = window as SpeechRecognitionWindow;
+    const SpeechRecognitionAPI = win.SpeechRecognition || win.webkitSpeechRecognition;
     setVoiceSupported(!!SpeechRecognitionAPI);
   }, []);
 
@@ -105,7 +111,13 @@ const ScreeningScreen = () => {
   observationsRef.current = currentScreening.observations || '';
 
   const startVoiceRecording = () => {
-    const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    interface SpeechRecognitionWindow extends Window {
+      SpeechRecognition?: typeof SpeechRecognition;
+      webkitSpeechRecognition?: typeof SpeechRecognition;
+    }
+
+    const win = window as SpeechRecognitionWindow;
+    const SpeechRecognitionAPI = win.SpeechRecognition || win.webkitSpeechRecognition;
     if (!SpeechRecognitionAPI) {
       toast({ title: 'Voice not supported', description: 'Your browser does not support voice input. Try Chrome or Edge.', variant: 'destructive' });
       return;

@@ -230,7 +230,14 @@ function AgentPipeline({ agents }: { agents: AgentStatus[] }) {
 }
 
 // Health Vitals Display Component
-function HealthVitalsDisplay({ data }: { data: { vitals: any } }) {
+interface HealthVitals {
+  heartRate: number;
+  respiratoryRate: number;
+  temperature: number;
+  oxygenSaturation: number;
+}
+
+function HealthVitalsDisplay({ data }: { data: { vitals: HealthVitals } }) {
   const vitals = data.vitals;
 
   return (

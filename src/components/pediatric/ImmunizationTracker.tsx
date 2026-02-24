@@ -233,10 +233,14 @@ export function ImmunizationTracker({ country = "WHO_EPI", className }: Immuniza
           </div>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
+          <label
+            className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1"
+            htmlFor="immunization-schedule-select"
+          >
             Schedule
           </label>
           <select
+            id="immunization-schedule-select"
             value={scheduleId}
             onChange={(e) => setScheduleId(e.target.value as ScheduleId)}
             className="rounded-lg border border-input bg-background px-3 py-2 text-sm font-medium"

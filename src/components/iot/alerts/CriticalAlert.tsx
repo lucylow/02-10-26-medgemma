@@ -62,8 +62,12 @@ export const CriticalAlert: React.FC<CriticalAlertProps> = ({ alert }) => {
 
 const playCriticalAlertSound = () => {
   try {
-    const AudioContextRef =
-      (window as any).AudioContext || (window as any).webkitAudioContext;
+    type WindowWithAudioContext = Window & {
+      webkitAudioContext?: typeof AudioContext;
+    };
+
+    const win = window as WindowWithAudioContext;
+    const AudioContextRef = win.AudioContext || win.webkitAudioContext;
     if (!AudioContextRef) return;
     const audioCtx = new AudioContextRef();
     const oscillator = audioCtx.createOscillator();

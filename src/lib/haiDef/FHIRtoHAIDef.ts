@@ -29,7 +29,7 @@ export interface HAIDefModelConfig {
 
 interface ClinicalContext {
   text: string;
-  pathologie_image_b64?: string;
+  pathology_image_b64?: string;
   cxr_image_b64?: string;
 }
 
@@ -124,8 +124,8 @@ export async function fhirToHAIDefInference(
 
   const [textResult, pathEmb, cxrEmb] = await Promise.all([
     medGemmaInference(clinicalContext.text, haiDefModels.medgemma),
-    pathFoundationEmbed((clinicalContext as any).pathology_image_b64, haiDefModels.pathFoundation),
-    cxrFoundationEmbed((clinicalContext as any).cxr_image_b64, haiDefModels.cxrFoundation),
+    pathFoundationEmbed(clinicalContext.pathology_image_b64, haiDefModels.pathFoundation),
+    cxrFoundationEmbed(clinicalContext.cxr_image_b64, haiDefModels.cxrFoundation),
   ]);
 
   const risk_level = mapRiskToOntrack(textResult.risk);

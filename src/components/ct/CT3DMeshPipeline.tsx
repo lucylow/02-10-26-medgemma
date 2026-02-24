@@ -179,7 +179,10 @@ export const CT3DMeshPipeline: React.FC<CT3DMeshPipelineProps> = ({ className })
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <label className="text-xs font-medium text-muted-foreground">
+            <label
+              className="text-xs font-medium text-muted-foreground"
+              htmlFor="ct3d-file-input"
+            >
               CT study files (512×512×N DICOM stack or NIfTI)
             </label>
             <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
@@ -208,9 +211,9 @@ export const CT3DMeshPipeline: React.FC<CT3DMeshPipelineProps> = ({ className })
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-2">
-              <label className="text-xs font-medium text-muted-foreground">
+              <p className="text-xs font-medium text-muted-foreground">
                 Anatomy / protocol
-              </label>
+              </p>
               <Select
                 value={anatomy}
                 onValueChange={(value) => setAnatomy(value as CTAnatomy)}
@@ -230,9 +233,9 @@ export const CT3DMeshPipeline: React.FC<CT3DMeshPipelineProps> = ({ className })
               </Select>
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-medium text-muted-foreground">
+              <p className="text-xs font-medium text-muted-foreground">
                 Edge target (example)
-              </label>
+              </p>
               <div className="flex flex-wrap gap-2 text-[11px]">
                 <Badge variant="secondary" className="gap-1 rounded-full px-2 py-0.5">
                   <Cpu className="w-3 h-3" />

@@ -27,9 +27,14 @@ const formatTime = (timestamp: string) => {
   });
 };
 
+interface TooltipPayloadItem {
+  dataKey?: string;
+  value?: number;
+}
+
 const CustomTooltip: React.FC<{
   active?: boolean;
-  payload?: any[];
+  payload?: TooltipPayloadItem[];
   label?: string;
 }> = ({ active, payload, label }) => {
   if (!active || !payload || payload.length === 0) {

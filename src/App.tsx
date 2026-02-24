@@ -87,6 +87,10 @@ import IoTMonitoring from "./pages/iot/IoTMonitoring";
 import PatientDashboard from "./pages/iot/PatientDashboard";
 import DeviceSetup from "./pages/iot/DeviceSetup";
 
+interface RouterFutureConfig {
+  v7_startTransition?: boolean;
+}
+
 const queryClient = new QueryClient();
 
 const appRoutes = createRoutesFromElements(
@@ -219,7 +223,7 @@ const appRoutes = createRoutesFromElements(
 const routerBasename = (import.meta.env.BASE_URL || "/").replace(/\/$/, "") || "/";
 const defaultRouter = createBrowserRouter(appRoutes, {
   basename: routerBasename,
-  future: { v7_startTransition: true } as any,
+  future: { v7_startTransition: true } as RouterFutureConfig,
 });
 
 interface AppProps {

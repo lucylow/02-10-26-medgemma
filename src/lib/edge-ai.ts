@@ -293,8 +293,20 @@ export class EdgeAIDeviceManager {
         return MOCK_DEPLOYMENTS;
       }
 
+      type EdgeDeploymentRow = {
+        id: string;
+        hardware_id: string;
+        patient_count?: number;
+        location?: string;
+        uptime_hours?: number;
+        last_heartbeat?: string | null;
+        models_loaded?: unknown;
+        status?: string;
+        tags?: unknown;
+      };
+
       return data
-        .map((row: any) => {
+        .map((row: EdgeDeploymentRow) => {
           const hardware = HARDWARE_CATALOG.find((h) => h.id === row.hardware_id);
           if (!hardware) return null;
           return {

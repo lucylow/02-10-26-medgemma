@@ -42,7 +42,7 @@ export function RiskTimeline() {
                   borderRadius: "12px",
                   boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)",
                 }}
-                formatter={(value: unknown, name: string, entry: any) => {
+                formatter={(value: unknown, name: string) => {
                   if (name === "riskScore" && typeof value === "number") {
                     return [`${Math.round(value * 100)}%`, "Risk"];
                   }

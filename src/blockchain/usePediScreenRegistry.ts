@@ -43,8 +43,10 @@ export function usePediScreenRegistry() {
     }
 
     setError(null);
-    const accounts = (await (provider as any).send("eth_requestAccounts", [])) as string[];
-    const signerInstance = await (provider as any).getSigner();
+
+    const browserProvider = provider as BrowserProvider;
+    const accounts = (await browserProvider.send("eth_requestAccounts", [])) as string[];
+    const signerInstance = await browserProvider.getSigner();
     const network = await provider.getNetwork();
 
     if (Number(network.chainId) !== TARGET_CHAIN_ID) {

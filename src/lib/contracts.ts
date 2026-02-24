@@ -38,8 +38,12 @@ export interface ScreeningNFTMetadata {
   chwAddress: string;
 }
 
+type Eip1193ProviderLike = {
+  request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+};
+
 function getBrowserProvider(windowEthereum: unknown): BrowserProvider {
-  return new BrowserProvider(windowEthereum as any);
+  return new BrowserProvider(windowEthereum as Eip1193ProviderLike);
 }
 
 /**
@@ -82,16 +86,21 @@ export async function mintScreeningNFT(
   );
 
   const receipt = await tx.wait();
+
+  type ScreeningMintedLog = {
+    name: string;
+    args?: { tokenId?: bigint | number };
+  };
+
   const event = receipt.logs
-    .map((log: unknown) => {
+    .map((log: unknown): ScreeningMintedLog | null => {
       try {
-        const parsed = contract.interface.parseLog(log as any);
-        return parsed;
+        return contract.interface.parseLog(log as { topics: string[]; data: string }) as ScreeningMintedLog;
       } catch {
         return null;
       }
     })
-    .find((e: any) => e && e.name === "ScreeningMinted");
+    .find((e): e is ScreeningMintedLog => !!e && e.name === "ScreeningMinted");
 
   const tokenId =
     (event?.args?.tokenId != null

@@ -46,7 +46,7 @@ export interface HeartbeatPayload {
   latencyMs?: number;
 }
 
-export interface WebSocketMessage<T = any> {
+export interface WebSocketMessage<T = unknown> {
   type: WebSocketMessageType;
   deviceId: string;
   timestamp: number;

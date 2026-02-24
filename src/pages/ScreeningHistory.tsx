@@ -100,13 +100,16 @@ const ScreeningHistory = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
             >
-              <Link to="/pediscreen/results" state={{
-                screeningId: screening.screening_id,
-                report: screening.report,
-                childAge: String(screening.child_age_months),
-                domain: screening.domain,
-                confidence: (screening.report as any)?.confidence,
-              }}>
+              <Link
+                to="/pediscreen/results"
+                state={{
+                  screeningId: screening.screening_id,
+                  report: screening.report,
+                  childAge: String(screening.child_age_months),
+                  domain: screening.domain,
+                  confidence: screening.report?.confidence,
+                }}
+              >
                 <Card className="hover:shadow-lg transition-all duration-300 border-none shadow-md cursor-pointer">
                   <CardHeader>
                     <div className="flex items-center justify-between">

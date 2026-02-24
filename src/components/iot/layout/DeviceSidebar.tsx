@@ -33,7 +33,6 @@ export function DeviceSidebar({
         <div className="space-y-2">
           {Array.from({ length: 4 }).map((_, idx) => (
             <div
-              // eslint-disable-next-line react/no-array-index-key
               key={idx}
               className="h-14 animate-pulse rounded-2xl bg-slate-100/80 dark:bg-slate-800/70"
             />

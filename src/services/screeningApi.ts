@@ -455,7 +455,12 @@ export type ScreeningListItem = {
   domain: string | null;
   observations: string | null;
   image_path: string | null;
-  report: { riskLevel?: string; summary?: string; keyFindings?: string[] };
+  report: {
+    riskLevel?: string;
+    summary?: string;
+    keyFindings?: string[];
+    confidence?: number;
+  };
   created_at: string;
 };
 

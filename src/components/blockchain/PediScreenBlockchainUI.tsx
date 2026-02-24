@@ -4,8 +4,8 @@
  * UX: irreversible action warnings, mobile-first, transaction status, NFT gallery, gasless (ERC-4337) flow.
  */
 import React, { useCallback, useEffect, useState } from "react";
-import { BrowserProvider, Contract, type Provider } from "ethers";
-const getBrowserProviderClass = (): new (p: unknown) => Provider =>
+import { BrowserProvider, Contract } from "ethers";
+const getBrowserProviderClass = (): new (p: unknown) => BrowserProvider =>
   BrowserProvider;
 
 import { motion, AnimatePresence } from "framer-motion";
@@ -155,7 +155,7 @@ async function signScreeningMessage(data: ScreeningData): Promise<string> {
   const w = typeof window !== "undefined" ? (window as unknown as { ethereum?: unknown }).ethereum : undefined;
   if (!w) throw new Error("Wallet not available for signing");
   const ProviderClass = getBrowserProviderClass();
-  const provider = new ProviderClass(w) as any;
+  const provider = new ProviderClass(w);
   const signer = await provider.getSigner();
   const message = `PediScreen Screening Certificate:\n${JSON.stringify(data)}`;
   return await signer.signMessage(message);

@@ -144,10 +144,14 @@ export function GrowthChart({ initialData, className }: GrowthChartProps) {
       <div className="mt-6 p-4 sm:p-6 bg-white/50 dark:bg-gray-900/50 backdrop-blur-xl rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-600">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 items-end">
           <div>
-            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+            <label
+              className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1"
+              htmlFor="growth-age-months"
+            >
               Age (mo)
             </label>
             <input
+              id="growth-age-months"
               type="number"
               min={0}
               max={60}
@@ -158,10 +162,14 @@ export function GrowthChart({ initialData, className }: GrowthChartProps) {
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+            <label
+              className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1"
+              htmlFor="growth-length-cm"
+            >
               Length (cm)
             </label>
             <input
+              id="growth-length-cm"
               type="number"
               step={0.1}
               min={40}
@@ -173,10 +181,14 @@ export function GrowthChart({ initialData, className }: GrowthChartProps) {
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+            <label
+              className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1"
+              htmlFor="growth-weight-kg"
+            >
               Weight (kg)
             </label>
             <input
+              id="growth-weight-kg"
               type="number"
               step={0.1}
               min={2}

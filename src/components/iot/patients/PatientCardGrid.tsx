@@ -18,7 +18,6 @@ export function PatientCardGrid({
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: 3 }).map((_, idx) => (
           <div
-            // eslint-disable-next-line react/no-array-index-key
             key={idx}
             className="h-40 animate-pulse rounded-3xl bg-white/60 shadow-inner shadow-white/50 dark:bg-slate-900/70"
           />
