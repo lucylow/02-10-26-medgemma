@@ -38,3 +38,6 @@ verify_jwt = false
 
 [functions.developmental-chat]
 verify_jwt = false
+
+[functions.end2end-report]
+verify_jwt = false
