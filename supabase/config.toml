@@ -41,3 +41,12 @@ verify_jwt = false
 
 [functions.end2end-report]
 verify_jwt = false
+
+[functions.referral-letter]
+verify_jwt = false
+
+[functions.screening-trends]
+verify_jwt = false
+
+[functions.translate-summary]
+verify_jwt = false
